@@ -162,3 +162,25 @@ async def test_the_audit_copy_excludes_only_skill_directories(
     out = await _run(ctx, task)
     assert out["audit"].outcome == "pass"
     assert seen == [True, False]
+
+
+async def test_hashes_cover_the_targets_the_verifier_resolved(workspace: Any) -> None:
+    await _paper(workspace)
+    results = [
+        {"status": "resolved", "resolved_path": "data/model.pt"},
+        {"status": "resolved", "resolved_path": "data/run"},
+        {"status": "resolved", "resolved_path": "results/aliased.bin"},
+        {"status": "resolved", "resolved_path": "/abs/model.pt"},
+    ]
+    report = json.dumps({"summary": {}, "results": results}).encode()
+    await workspace.write_bytes(f"{PAPER_DIR}/scientific-evidence/verification-report.json", report)
+    await workspace.write_bytes(f"{PAPER_DIR}/data/model.pt", b"weights")
+    await workspace.write_bytes(f"{PAPER_DIR}/data/run/metrics.bin", b"1")
+    await workspace.write_bytes(f"{PAPER_DIR}/results/aliased.bin", b"1")
+    before = await audit_input_sha256(workspace, PAPER_DIR)
+    assert "evidence-source/data/model.pt" in before
+    assert "evidence-tree/data/run" in before
+    assert not any("aliased" in key or "abs" in key for key in before)
+    await workspace.write_bytes(f"{PAPER_DIR}/data/run/metrics.bin", b"2")
+    after = await audit_input_sha256(workspace, PAPER_DIR)
+    assert after["evidence-tree/data/run"] != before["evidence-tree/data/run"]

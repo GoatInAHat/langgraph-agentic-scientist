@@ -24,6 +24,7 @@ from __future__ import annotations
 import hashlib
 import json
 import operator
+import os
 import re
 from collections.abc import Mapping
 from datetime import UTC, datetime
@@ -57,7 +58,7 @@ from .contexts import (
 )
 from .models import AuditPayload, AuditResult
 from .validation.evidence import WORKSPACE_ALIAS_DIRS
-from .validation.files import SnapshotTree
+from .validation.files import SnapshotTree, resolve_inside
 from .validation.fingerprint import AUDIT_INPUT_PATHS, paper_input_sha256
 from .validation.tex import AGENT_SKILL_DIR_PREFIXES
 
@@ -169,14 +170,17 @@ def _hash_read_bytes(relative: str) -> int | None:
     return None
 
 
-async def _input_tree(workspace: Workspace, paper_dir: str) -> SnapshotTree:
+async def _input_tree(
+    workspace: Workspace, paper_dir: str
+) -> tuple[SnapshotTree, dict[str, FileEntry]]:
     listing = await workspace.list_tree(paper_dir, with_digest=True)
     contents: dict[str, bytes] = {}
     for entry in listing:
         keep = _hash_read_bytes(entry.path) if entry.kind == "file" else None
         if keep:
             contents[entry.path] = (await workspace.read_bytes(join(paper_dir, entry.path)))[:keep]
-    return SnapshotTree({entry.path: entry for entry in listing}, contents)
+    entries = {entry.path: entry for entry in listing}
+    return SnapshotTree(entries, contents), entries
 
 
 async def _file_digest(workspace: Workspace, paper_dir: str, entry: FileEntry) -> str:
@@ -186,6 +190,111 @@ async def _file_digest(workspace: Workspace, paper_dir: str, entry: FileEntry) -
     return hashlib.sha256(await workspace.read_bytes(join(paper_dir, entry.path))).hexdigest()
 
 
+def _is_generated_directory_hash_artifact(relative: str) -> bool:
+    return relative == "latest_manifest.json" or is_generated_audit_artifact(relative)
+
+
+def _resolve(tree: SnapshotTree, relative: str) -> str | None:
+    try:
+        resolved = resolve_inside(tree, relative)
+    except ValueError:
+        return None
+    if resolved is None:
+        return None
+    resolved = resolved or "."
+    if resolved != "." and PurePosixPath(resolved).parts[0] in WORKSPACE_ALIAS_DIRS:
+        return None
+    return resolved if tree.kind(resolved) is not None else None
+
+
+def _resolved_evidence_targets(tree: SnapshotTree) -> list[str]:
+    """``_resolved_evidence_targets``: the local targets the verifier resolved."""
+    data = tree.read("scientific-evidence/verification-report.json")
+    try:
+        report = json.loads(data.decode("utf-8")) if data is not None else None
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return []
+    if not isinstance(report, dict) or not isinstance(report.get("results"), list):
+        return []
+    targets: set[str] = set()
+    for result in report["results"]:
+        if not isinstance(result, dict):
+            continue
+        raw_path = result.get("resolved_path")
+        if not isinstance(raw_path, str) or not raw_path.strip():
+            continue
+        if PurePosixPath(raw_path).is_absolute():
+            continue
+        resolved = _resolve(tree, raw_path)
+        if resolved is None or is_generated_audit_artifact(resolved):
+            continue
+        targets.add(resolved)
+    return sorted(targets)
+
+
+async def _directory_sha256(
+    workspace: Workspace,
+    paper_dir: str,
+    tree: SnapshotTree,
+    entries: Mapping[str, FileEntry],
+    directory: str,
+) -> str:
+    """``_directory_sha256``: a resolved evidence directory, without following external links."""
+    children: dict[str, list[str]] = {}
+    for path in entries:
+        parent = PurePosixPath(path).parent.as_posix()
+        children.setdefault(parent, []).append(PurePosixPath(path).name)
+    digest = hashlib.sha256()
+    visited: set[str] = set()
+
+    def record(kind: bytes, relative: PurePosixPath, payload: bytes = b"") -> None:
+        encoded = os.fsencode(relative.as_posix())
+        digest.update(kind)
+        digest.update(len(encoded).to_bytes(8, "big"))
+        digest.update(encoded)
+        digest.update(len(payload).to_bytes(8, "big"))
+        digest.update(payload)
+
+    async def hash_file(path: str, relative: PurePosixPath) -> None:
+        file_digest = await _file_digest(workspace, paper_dir, entries[path])
+        record(b"F", relative, bytes.fromhex(file_digest))
+
+    async def hash_directory(path: str, prefix: PurePosixPath) -> None:
+        if path in visited:
+            record(b"C", prefix)
+            return
+        visited.add(path)
+        for name in sorted(children.get(path, [])):
+            child = name if path == "." else f"{path}/{name}"
+            child_relative = prefix / name
+            if _is_generated_directory_hash_artifact(child):
+                continue
+            kind = tree.kind(child)
+            if kind == "symlink":
+                target = tree.readlink(child) or ""
+                if PurePosixPath(target).is_absolute():
+                    continue
+                resolved = _resolve(tree, child)
+                if resolved is None:
+                    continue
+                record(b"L", child_relative, os.fsencode(target))
+                if _is_generated_directory_hash_artifact(resolved):
+                    continue
+                if tree.kind(resolved) == "file":
+                    await hash_file(resolved, child_relative)
+                elif tree.kind(resolved) == "dir":
+                    await hash_directory(resolved, child_relative)
+                continue
+            if kind == "dir":
+                record(b"D", child_relative)
+                await hash_directory(child, child_relative)
+            elif kind == "file":
+                await hash_file(child, child_relative)
+
+    await hash_directory(directory, PurePosixPath("."))
+    return digest.hexdigest()
+
+
 async def audit_input_sha256(workspace: Workspace, paper_dir: str) -> dict[str, str]:
     """``audit_input_sha256``: the audit inputs plus every evidence source of the workspace.
 
@@ -193,9 +302,9 @@ async def audit_input_sha256(workspace: Workspace, paper_dir: str) -> dict[str, 
         ValueError: Where upstream raises: an input that is not UTF-8 or not the JSON object it
             must be, an unsafe figure or TeX reference, or an input beyond upstream's bounds.
     """
-    tree = await _input_tree(workspace, paper_dir)
+    tree, entries = await _input_tree(workspace, paper_dir)
     hashes = paper_input_sha256(tree, AUDIT_INPUT_PATHS)
-    for entry in await workspace.list_tree(paper_dir, with_digest=True):
+    for entry in entries.values():
         if entry.kind != "file":
             continue
         parts = PurePosixPath(entry.path).parts
@@ -220,6 +329,15 @@ async def audit_input_sha256(workspace: Workspace, paper_dir: str) -> dict[str, 
         hashes["evidence-source/scientific-evidence/ledger.jsonl"] = hashlib.sha256(
             await workspace.read_bytes(ledger)
         ).hexdigest()
+    for target in _resolved_evidence_targets(tree):
+        if tree.kind(target) == "file":
+            hashes[f"evidence-source/{target}"] = await _file_digest(
+                workspace, paper_dir, entries[target]
+            )
+        elif tree.kind(target) == "dir":
+            hashes[f"evidence-tree/{target}"] = await _directory_sha256(
+                workspace, paper_dir, tree, entries, target
+            )
     return hashes
 
 

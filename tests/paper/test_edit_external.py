@@ -15,13 +15,14 @@ from test_loop_support import (
     models,
     no_gaps,
     paper_config,
+    paper_data,
     prompts_of,
     reports,
     run,
     setup_task,
 )
 
-from langgraph_agentic_scientist.core.results import EditOptions
+from langgraph_agentic_scientist.core.results import EditOptions, GroundingSource
 from langgraph_agentic_scientist.models import Role
 from langgraph_agentic_scientist.paper.validation import WorkspacePaperToolchain
 from langgraph_agentic_scientist.paper.watermark import add_watermark, has_managed_watermark
@@ -246,3 +247,61 @@ async def test_edit_mode_on_an_external_multi_file_paper(make_context: Any, work
     prompt = prompts_of(scripted, Role.PAPER_WRITER)[0]
     assert "No venue-specific brief is provided for this run." in prompt
     assert "Edit mode is enabled for this run." in prompt
+
+
+async def test_a_paper_grounded_in_several_tasks_uses_the_cross_task_route(
+    make_context: Any, workspace: Any
+) -> None:
+    task = await setup_task(workspace)
+    await _external_paper(workspace)
+    for name in ("sorting", "routing"):
+        await workspace.write_bytes(f"studies/extra/{name}/task.md", f"# {name}\n".encode())
+        await workspace.write_bytes(f"studies/aggregated/{name}/run_summary.csv", b"variant_id\n")
+    data = paper_data(
+        task_names=["packing", "sorting", "routing"],
+        cross_task_results={
+            "sorting": {"control_best": {"metric_name": "time", "mean": 1.5}},
+            "routing": {"control_best": {"metric_name": "cost", "mean": 7.0}},
+        },
+    )
+    data.grounding_sources["result.sorting.control_best.time.mean"] = GroundingSource(
+        type="metric", value=1.5
+    )
+    data.grounding_sources["result.routing.control_best.cost.mean"] = GroundingSource(
+        type="metric", value=7.0
+    )
+    scripted = models(
+        {
+            Role.PAPER_WRITER: edit_outputs(),
+            Role.DRAFT_GAP_ANALYST: [no_gaps()],
+            Role.EVIDENCE_AUDITOR: [audit_pass()],
+        }
+    )
+    ctx = make_context(
+        models=scripted, paper_toolchain=reports(True), config=fast_config(paper=paper_config())
+    )
+    out = await run(
+        build(),
+        ctx,
+        task,
+        mode="edit",
+        previous_paper_dir=EXT,
+        edit_options=EditOptions(main_file="main.tex"),
+        paper_data=data,
+        artifact_paths={"extra_tasks": "studies/extra", "aggregated": "studies/aggregated"},
+    )
+    assert out["paper"].status == "complete", out["paper"]
+    paper_dir = out["paper"].paper_dir
+    written = json.loads((await workspace.read_bytes(f"{paper_dir}/paper_data.json")).decode())
+    assert written["task_names"] == ["packing", "sorting", "routing"]
+    assert "result.routing.control_best.cost.mean" in written["grounding_sources"]
+    assert await workspace.exists(f"{paper_dir}/extra_tasks/sorting/task.md")
+    context = json.loads(
+        (await workspace.read_bytes(f"{paper_dir}/paper_edit_context.json")).decode()
+    )
+    rows = context["results_task_linkage"]["linked_results_tasks"]
+    linked = {row["task_name"]: row for row in rows}
+    assert linked["routing"]["extra_task_workspace_path"] == "./extra_tasks/routing"
+    assert linked["sorting"]["aggregated_workspace_path"] == "./aggregated/sorting"
+    markdown = (await workspace.read_bytes(f"{paper_dir}/paper_edit_context.md")).decode()
+    assert "- Task `routing` -> `./aggregated/routing` and `./extra_tasks/routing`" in markdown

@@ -216,6 +216,18 @@ manuscript that carries the LaTeX markers of a declared venue (`WorkspacePaperTo
 VenueCatalog.from_directory(...))` declares your own, with `page_budget: null` for none), and
 `config.paper.watermark=False` leaves the watermark out. The scope audit of edit mode is kept.
 
+**A paper grounded in several tasks** uses upstream's cross-task route, which the writer prompts
+already read: `task` is the primary task (staged as `./task`), `paper_data.task_names` lists
+every task, each task's grounding is in `paper_data.grounding_sources` under its own ids
+(upstream's are `result.<task>.<variant>.<statistic>`) and its results in
+`paper_data.cross_task_results[<task>]`, and `artifact_paths["extra_tasks"]` and
+`artifact_paths["aggregated"]` stage one directory per task (`./extra_tasks/<task>`,
+`./aggregated/<task>`) with its `task.md` and tables. In edit mode `paper_edit_context.*` links
+each task to its directories, and the one scope audit separates shared from task-specific claims
+by their `scope`. A results bundle with upstream's `paper_bundle_manifest.json` (`"tasks":
+{<task>: {"role": ..., "task_dir": ...}}`), given as the output directory of `variants`, builds
+such paper data itself (`build_multitask_ablation_paper_data`).
+
 The same works through the pipeline: `{"task_dir": ..., "phases": ["paper"], "investigation": result,
 "previous_paper_dir": "paper_v1", "edit_options": EditOptions(...)}`. A pipeline run that starts
 later takes the results of the earlier phases in its input, as upstream's

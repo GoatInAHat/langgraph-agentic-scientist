@@ -3,10 +3,9 @@
 # third_party/ai-scientist-v3/, paths of `target` to src/langgraph_agentic_scientist/.
 # Kinds A1-A8 are the systematic adaptations described in docs/ADAPTATIONS.md.
 #
-# Texts of upstream's shell code (src/scripts/task.sh, src/scripts/lib/task_gate.sh) are written
-# under third_party/ai-scientist-v3/extracted/drafting_scaffold/ by the helper in
-# tests/drafting/test_scaffold_texts.py, which also re-extracts and compares them on every test
-# run. Texts of upstream's Python modules are extracted by tools/derive_prompts.py.
+# Texts of upstream's shell code (src/scripts/task.sh, src/scripts/lib/task_gate.sh) and of the
+# Python heredocs inside it, like the texts of its Python modules, are extracted by
+# tools/derive_prompts.py into third_party/ai-scientist-v3/extracted/drafting_scaffold/.
 
 # --- texts that live in upstream Python code ---------------------------------------------------
 
@@ -173,3 +172,54 @@ reason = "An agent has no exit status; the blocker is reported through the tool.
 upstream = "src/agents/skills/draft-task/SKILL.md"
 target = "skills/draft-task/SKILL.md"
 reason = "Staged for the task drafter only (upstream stages it under the draft directory, which the repair and judge roles never work in); verbatim, rendered with the drafter's placeholder values when staged."
+
+# --- texts extracted from code of shapes the first extractor kinds cannot read -------------------
+
+[[extract]]
+upstream = "src/scripts/task.sh"
+lines = "1221-1229"
+kind = "shell_string"
+strip_prefix = "retry_prompt=\"$PROMPT"
+strip_suffix = "\""
+names = { "${diagnostic#MISSING:}" = "DIAGNOSTIC" }
+output = "extracted/drafting_scaffold/draft_retry_feedback.md"
+reason = "A shell string of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/task.sh"
+lines = "2202-2209"
+kind = "print"
+names = { "encoded" = "DIAGNOSTIC_BASE64" }
+output = "extracted/drafting_scaffold/continue_provisional_repair.md"
+reason = "The prompt text printed by a Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/task.sh"
+lines = "2472-2479"
+kind = "print"
+names = { "diagnostic_base64" = "DIAGNOSTIC_BASE64" }
+output = "extracted/drafting_scaffold/alignment_report_correction.md"
+reason = "The prompt text printed by a Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/task.sh"
+lines = "2595-2602"
+kind = "print"
+names = { "diagnostic_base64" = "DIAGNOSTIC_BASE64" }
+output = "extracted/drafting_scaffold/candidate_boundary_repair.md"
+reason = "The prompt text printed by a Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/task.sh"
+lines = "2856-2874"
+kind = "print"
+names = { "diagnostic" = "DIAGNOSTIC_BASE64", "design" = "DESIGN_BASE64", "alignment" = "ALIGNMENT_REPORT_BASE64", "calibration" = "CALIBRATION_RECORD_BASE64", "post_validation" = "POST_VALIDATION_BASE64", "boundary_policy" = "BOUNDARY_POLICY", "repair_policy" = "REPAIR_POLICY" }
+output = "extracted/drafting_scaffold/qualification_repair.md"
+reason = "The prompt text printed by a Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/lib/task_gate.sh"
+lines = "5-17"
+kind = "heredoc"
+output = "extracted/drafting_scaffold/task_gate.md"
+reason = "The body of a quoted heredoc of the upstream script."

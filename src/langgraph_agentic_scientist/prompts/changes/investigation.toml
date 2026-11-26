@@ -304,3 +304,17 @@ old = "8. Before finishing, reread both files and confirm every implementation r
 new = "8. Before returning, reread your bundle and confirm every implementation rubric satisfies the active harness rules."
 count = 1
 reason = "There are no files to reread before the harness writes them."
+
+# --- texts extracted from code of shapes the first extractor kinds cannot read -------------------
+
+[[extract]]
+upstream = "src/scripts/idea.sh"
+lines = "841-850"
+output = "extracted/investigation/harness_rubric_requirements_on.md"
+reason = "The harness rubric requirements of the idea prompt when the attempt is harness-evaluated: a string in the Python heredoc of idea.sh; the f-string field is {{MAX_SOURCE_PATTERN_CHARS}}."
+
+[[extract]]
+upstream = "src/scripts/idea.sh"
+lines = "853-854"
+output = "extracted/investigation/harness_rubric_requirements_off.md"
+reason = "The harness rubric requirements of the idea prompt otherwise."

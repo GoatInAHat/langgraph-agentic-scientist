@@ -17,7 +17,6 @@ from langgraph_agentic_scientist.review import texts
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 UPSTREAM = REPO_ROOT / "third_party" / "ai-scientist-v3" / "src" / "aireview.py"
-EXTRACTED = REPO_ROOT / "third_party" / "ai-scientist-v3" / "extracted" / "review"
 
 
 @pytest.fixture(scope="module")
@@ -79,10 +78,6 @@ def test_the_few_shot_files_are_the_decoded_upstream_constants(
     review = json.loads(decode("_FEWSHOT_REVIEW_B85"))["review"]
     assert prompts.text("review/fewshot_paper") == paper
     assert prompts.text("review/fewshot_review") == review
-    for name, text in (("fewshot_paper.md", paper), ("fewshot_review.md", review)):
-        first, _, rest = (EXTRACTED / name).read_text(encoding="utf-8").partition("\n")
-        assert first.startswith("<!-- Extracted from src/aireview.py")
-        assert rest == text
     assert len(paper) > 50_000  # the single in-context example is long
 
 

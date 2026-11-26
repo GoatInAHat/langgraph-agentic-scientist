@@ -1,0 +1,2 @@
+<!-- Extracted from src/posthoc_pipeline/rubric_contract.py lines 25-25 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
+interestingness_rubric.json exists with structured qualitative assessments.

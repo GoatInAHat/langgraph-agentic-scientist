@@ -1,4 +1,4 @@
-<!-- Extracted from src/scripts/task.sh lines 2472-2479 of AI-Scientist-v3 df8313889a00 by tests/drafting/test_scaffold_texts.py; deriving a package file drops this line. -->
+<!-- Extracted from src/scripts/task.sh lines 2472-2479 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
 
 
 # Output-contract correction

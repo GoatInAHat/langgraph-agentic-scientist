@@ -2,8 +2,8 @@
 # planning, figure-quality, evidence-audit and in-loop review prompts, the review-paper skill, and
 # the workflow texts of paper.sh and paper_edit.sh. Paths of `upstream` are relative to
 # third_party/ai-scientist-v3/, paths of `target` to src/langgraph_agentic_scientist/.
-# Texts extracted from shell code and from lists of lines are verified by
-# tests/paper/test_loop_provenance.py; single Python string expressions by [[extract]] below.
+# Texts of paper.sh and paper_edit.sh (shell strings and Python heredocs) and of the packet
+# builders (lists of lines) are extracted by tools/derive_prompts.py like the rest.
 
 # --- writer families (R30) -------------------------------------------------------------
 
@@ -618,3 +618,175 @@ new = '''
 return a corrected ranking as your structured response (the harness replaces ./posthoc_ranking.json).'''
 count = 1
 reason = "The ranker answers through structured output; it does not write the file itself."
+
+# --- texts extracted from code of shapes the first extractor kinds cannot read -------------------
+
+[[extract]]
+upstream = "src/scripts/paper.sh"
+lines = "1368-1372"
+output = "extracted/paper_loop/strategy_context_ready.md"
+reason = "A string expression of the Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/paper.sh"
+lines = "1376-1378"
+output = "extracted/paper_loop/strategy_context_pending.md"
+reason = "A string expression of the Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/paper.sh"
+lines = "1382-1383"
+output = "extracted/paper_loop/strategy_context_none.md"
+reason = "A string expression of the Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/paper.sh"
+lines = "1395-1400"
+names = { "validation_feedback_json.name" = "FEEDBACK_JSON_NAME", "validation_feedback_md.name" = "FEEDBACK_MD_NAME" }
+output = "extracted/paper_loop/validation_feedback_context_present.md"
+reason = "A string expression of the Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/paper.sh"
+lines = "1404"
+output = "extracted/paper_loop/validation_feedback_context_absent.md"
+reason = "A string expression of the Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/paper.sh"
+lines = "1411-1417"
+output = "extracted/paper_loop/review_feedback_context_present.md"
+reason = "A string expression of the Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/paper.sh"
+lines = "1421"
+output = "extracted/paper_loop/review_feedback_context_pending.md"
+reason = "A string expression of the Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/paper.sh"
+lines = "1424"
+strip_prefix = "review_feedback_context = "
+output = "extracted/paper_loop/review_feedback_context_disabled.md"
+reason = "A string expression of the Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/paper.sh"
+lines = "536"
+kind = "shell_string"
+strip_prefix = "PAPER_OPENAI_API_KEY_CONTEXT=\""
+strip_suffix = "\""
+output = "extracted/paper_loop/openai_key_available.md"
+reason = "A shell string of the upstream script, decoded by the strict shell extractor."
+
+[[extract]]
+upstream = "src/scripts/paper.sh"
+lines = "539"
+kind = "shell_string"
+strip_prefix = "PAPER_OPENAI_API_KEY_CONTEXT=\""
+strip_suffix = "\""
+output = "extracted/paper_loop/openai_key_missing.md"
+reason = "A shell string of the upstream script, decoded by the strict shell extractor."
+
+[[extract]]
+upstream = "src/scripts/paper.sh"
+lines = "548"
+kind = "shell_string"
+strip_prefix = "PAPER_GEMINI_API_KEY_CONTEXT=\""
+strip_suffix = "\""
+output = "extracted/paper_loop/gemini_key_available.md"
+reason = "A shell string of the upstream script, decoded by the strict shell extractor."
+
+[[extract]]
+upstream = "src/scripts/paper.sh"
+lines = "551"
+kind = "shell_string"
+strip_prefix = "PAPER_GEMINI_API_KEY_CONTEXT=\""
+strip_suffix = "\""
+output = "extracted/paper_loop/gemini_key_missing.md"
+reason = "A shell string of the upstream script, decoded by the strict shell extractor."
+
+[[extract]]
+upstream = "src/scripts/paper.sh"
+lines = "3077-3078"
+kind = "shell_string"
+strip_suffix = "\""
+output = "extracted/paper_loop/ranking_repair.md"
+reason = "A shell string of the upstream script, decoded by the strict shell extractor."
+
+[[extract]]
+upstream = "src/scripts/paper.sh"
+lines = "862-865"
+kind = "elements"
+output = "extracted/paper_loop/global_memory_summary_header.md"
+reason = "The string elements of a list in upstream code, joined by newlines."
+
+[[extract]]
+upstream = "src/scripts/paper_edit.sh"
+lines = "1929-1932"
+output = "extracted/paper_loop/edit_strategy_context_edit.md"
+reason = "A string expression of the Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/paper_edit.sh"
+lines = "1934"
+strip_prefix = "else "
+output = "extracted/paper_loop/edit_strategy_context_fresh.md"
+reason = "A string expression of the Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/paper_edit.sh"
+lines = "1937-1941"
+output = "extracted/paper_loop/edit_context_edit.md"
+reason = "A string expression of the Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/paper_edit.sh"
+lines = "1943"
+strip_prefix = "else "
+output = "extracted/paper_loop/edit_context_fresh.md"
+reason = "A string expression of the Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/paper_edit.sh"
+lines = "1353-1365"
+kind = "elements"
+output = "extracted/paper_loop/paper_edit_contract.md"
+reason = "The string elements of a list in upstream code, joined by newlines."
+
+[[extract]]
+upstream = "src/orchestrator/paper_evidence_audit.py"
+lines = "1413-1423"
+kind = "elements"
+output = "extracted/paper_loop/audit_packet_intro.md"
+reason = "The string elements of a list in upstream code, joined by newlines."
+
+[[extract]]
+upstream = "src/orchestrator/paper_review.py"
+lines = "189-197"
+kind = "elements"
+output = "extracted/paper_loop/review_packet_intro.md"
+reason = "The string elements of a list in upstream code, joined by newlines."
+
+[[extract]]
+upstream = "src/scripts/paper_edit.sh"
+lines = "1334-1336"
+kind = "elements"
+output = "extracted/paper_loop/edit_interpretation_guidance.md"
+reason = "The string elements of a list in upstream code, joined by newlines."
+
+[[extract]]
+upstream = "src/scripts/paper_edit.sh"
+lines = "1390"
+strip_prefix = "lines.append("
+strip_suffix = ")"
+output = "extracted/paper_loop/edit_results_linkage_intro.md"
+reason = "A string expression of the Python heredoc of the upstream script."
+
+[[extract]]
+upstream = "src/scripts/paper_edit.sh"
+lines = "1422-1423"
+kind = "elements"
+output = "extracted/paper_loop/edit_results_linkage_outro.md"
+reason = "The string elements of a list in upstream code, joined by newlines."

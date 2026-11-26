@@ -58,8 +58,8 @@ names = { "index + 1" = "INDEX", "len(reviews)" = "COUNT", "json.dumps(review)" 
 reason = "The f-string of one review block in upstream's _meta_review_prompt(); upstream concatenates one block per reviewer after the form."
 
 # The few-shot paper and review (aireview.py:163-199) are bz2-compressed and Base85-encoded in
-# upstream. Their decoded texts are in extracted/review/fewshot_paper.md and fewshot_review.md; a
-# test decodes the upstream constants again and compares them with these files.
+# upstream. Their decoded texts are extracted to extracted/review/fewshot_paper.md and
+# fewshot_review.md by the assignment extractor below.
 
 # --- package files derived from them -------------------------------------------------------------
 
@@ -152,3 +152,22 @@ reason = "One review block of the area chair's user message, verbatim; code rend
 upstream = "src/prompts/paper_revision.md"
 target = "prompts/paper/paper_revision.md"
 reason = "The revision writer's prompt, verbatim: the revision runs the paper graph in revision mode, which fills its placeholders as the edit prompts' are filled."
+
+# --- texts extracted from code of shapes the first extractor kinds cannot read -------------------
+
+[[extract]]
+upstream = "src/aireview.py"
+kind = "assignment"
+name = "_FEWSHOT_PAPER_B85"
+decode = "base85-bz2"
+output = "extracted/review/fewshot_paper.md"
+reason = "The few-shot paper, Base85 and bz2 packed in upstream code, decoded."
+
+[[extract]]
+upstream = "src/aireview.py"
+kind = "assignment"
+name = "_FEWSHOT_REVIEW_B85"
+decode = "base85-bz2"
+json_key = "review"
+output = "extracted/review/fewshot_review.md"
+reason = "The few-shot review, packed like the paper; the decoded JSON holds the review text under the key review."

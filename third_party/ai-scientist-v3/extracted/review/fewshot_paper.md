@@ -1,4 +1,4 @@
-<!-- Extracted from src/aireview.py lines 163-191 of AI-Scientist-v3 df8313889a04 by decoding it (Base85, bz2) with tools/derive_prompts.py conventions; deriving a package file drops this line. -->
+<!-- Extracted from src/aireview.py lines 164-190 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
 # AUTOMATED RELATIONAL META-LEARNING
 
 **Anonymous authors**

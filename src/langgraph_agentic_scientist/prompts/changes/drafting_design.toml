@@ -81,9 +81,9 @@ count = 1
 reason = "The auditor returns the delta audit as its structured answer; the host writes the file."
 
 # --- texts that live in the shell driver ---------------------------------------------------------
-# The driver appends them to a rendered prompt. They are shell strings, so they are extracted by
-# hand into third_party/ai-scientist-v3/extracted/drafting_design/ and a test re-extracts them
-# from the vendored driver and compares bytes.
+# The driver appends them to a rendered prompt. They are shell appends of quoted strings around one
+# expansion, extracted by tools/derive_prompts.py into
+# third_party/ai-scientist-v3/extracted/drafting_design/.
 
 [[file]]
 upstream = "extracted/drafting_design/focused_repair_verification.md"
@@ -104,3 +104,37 @@ reason = "The section appended to the delta auditor prompt after an audit that f
 upstream = "extracted/drafting_design/patch_format_retry_feedback.md"
 target = "prompts/workflow/drafting/patch_format_retry_feedback.md"
 reason = "The section appended to the repairer prompt after a patch that failed its format; verbatim. The shell variable of the failure data is {{DIAGNOSTIC}} (upstream passes its first 8192 characters)."
+
+# --- texts extracted from code of shapes the first extractor kinds cannot read -------------------
+
+[[extract]]
+upstream = "src/scripts/lib/task_design.sh"
+lines = "846-848"
+kind = "shell_concat"
+names = { "$target_dimensions" = "TARGET_DIMENSIONS" }
+output = "extracted/drafting_design/focused_repair_verification.md"
+reason = "Appends to a prompt variable in the upstream driver: ANSI-C strings around one expansion."
+
+[[extract]]
+upstream = "src/scripts/lib/task_design.sh"
+lines = "856-858"
+kind = "shell_concat"
+names = { "$diagnostic" = "DIAGNOSTIC" }
+output = "extracted/drafting_design/review_retry_feedback.md"
+reason = "Appends to a prompt variable in the upstream driver: ANSI-C strings around one expansion."
+
+[[extract]]
+upstream = "src/scripts/lib/task_design.sh"
+lines = "1225-1227"
+kind = "shell_concat"
+names = { "$diagnostic" = "DIAGNOSTIC" }
+output = "extracted/drafting_design/delta_retry_feedback.md"
+reason = "Appends to a prompt variable in the upstream driver: ANSI-C strings around one expansion."
+
+[[extract]]
+upstream = "src/scripts/lib/task_design.sh"
+lines = "1090-1092"
+kind = "shell_concat"
+names = { "${previous_diagnostic:0:8192}" = "DIAGNOSTIC" }
+output = "extracted/drafting_design/patch_format_retry_feedback.md"
+reason = "Appends to a prompt variable in the upstream driver: ANSI-C strings around one expansion."

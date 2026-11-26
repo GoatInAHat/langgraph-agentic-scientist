@@ -1,2 +1,2 @@
-<!-- Extracted from src/scripts/idea.sh lines 840-856 of AI-Scientist-v3 df8313889a04 by hand (a python heredoc inside a shell script, which tools/derive_prompts.py cannot parse): the value of the string expression, with the f-string field {MAX_SOURCE_PATTERN_CHARS} written as a placeholder; deriving a package file drops this line. -->
+<!-- Extracted from src/scripts/idea.sh lines 853-854 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
 Harness mode is disabled. Omit `verification` from every rubric; static source verification is not used in this mode.

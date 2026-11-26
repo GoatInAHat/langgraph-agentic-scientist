@@ -108,7 +108,7 @@ reason = 'Structured answer (D2): the planner answers through structured output 
 [[file]]
 upstream = "extracted/paper_host/reference_repair_context.md"
 target = "prompts/workflow/paper/reference_repair_context.md"
-reason = 'The fixed text of upstream `reference_repair_context` (`paper_diagnostics.py`), appended to the reference planner prompt in repair rounds. The extracted file was written by hand because the text is assembled from several expressions (see docs/adaptations/paper_host.md); the allowed query categories and the previous artifacts are added by code.'
+reason = 'The fixed text of upstream `reference_repair_context` (`paper_diagnostics.py`), appended to the reference planner prompt in repair rounds. The extraction takes the three opening elements of the sections list; the previous artifacts are added by code.'
 
 [[file]]
 upstream = "src/agents/skills/write-paper/SKILL.md"
@@ -326,3 +326,13 @@ reason = "Self-contained retrieval helper or template, vendored unchanged; the f
 upstream = "src/agents/skills/generate-concept-figure/SKILL.md"
 target = "skills/generate-concept-figure/SKILL.md"
 reason = 'Documentation of the concept-figure pipeline for the paper writers (they must not run it); verbatim.'
+
+# --- texts extracted from code of shapes the first extractor kinds cannot read -------------------
+
+[[extract]]
+upstream = "src/orchestrator/paper_diagnostics.py"
+lines = "58-60"
+kind = "elements"
+names = { "', '.join(sorted(VALID_QUERY_CATEGORIES))" = "ALLOWED_QUERY_CATEGORIES" }
+output = "extracted/paper_host/reference_repair_context.md"
+reason = "The opening lines of the reference repair context; the allowed categories are the sorted valid query categories."

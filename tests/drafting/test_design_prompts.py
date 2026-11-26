@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import difflib
 import importlib.util
-import re
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -18,7 +17,6 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 THIRD_PARTY = REPO_ROOT / "third_party" / "ai-scientist-v3"
 PACKAGE = REPO_ROOT / "src" / "langgraph_agentic_scientist"
 CHANGES = PACKAGE / "prompts" / "changes" / "drafting_design.toml"
-DRIVER = THIRD_PARTY / "src" / "scripts" / "lib" / "task_design.sh"
 
 ROLE_PROMPTS = {
     "design_task": "design_task",
@@ -143,68 +141,7 @@ def test_the_dormant_adjudicator_is_vendored_and_carried_nowhere() -> None:
     assert not (PACKAGE / "prompts" / "drafting" / "adjudicate_task_design.md").exists()
 
 
-# --- the texts that live in the shell driver ----------------------------------------------------
-
-
-def _shell_string(line: str) -> str:
-    """Decode the ANSI-C quoted string ``$'...'`` that ends a line of the driver."""
-    match = re.search(r"\$'((?:[^'\\]|\\.)*)'\s*$", line)
-    assert match, line
-    text = match.group(1)
-    out: list[str] = []
-    index = 0
-    escapes = {"n": "\n", "\\": "\\", "'": "'", "t": "\t"}
-    while index < len(text):
-        if text[index] == "\\":
-            out.append(escapes[text[index + 1]])
-            index += 2
-        else:
-            out.append(text[index])
-            index += 1
-    return "".join(out)
-
-
-def _driver_lines() -> list[str]:
-    return DRIVER.read_text(encoding="utf-8").split("\n")
-
-
-DRIVER_TEXTS = {
-    "focused_repair_verification": (
-        846,
-        848,
-        "TARGET_DIMENSIONS",
-        'review_prompt+="$target_dimensions"',
-    ),
-    "review_retry_feedback": (856, 858, "DIAGNOSTIC", 'review_prompt+="$diagnostic"'),
-    "delta_retry_feedback": (1225, 1227, "DIAGNOSTIC", 'attempt_prompt+="$diagnostic"'),
-    "patch_format_retry_feedback": (
-        1090,
-        1092,
-        "DIAGNOSTIC",
-        'repair_prompt+="${previous_diagnostic:0:8192}"',
-    ),
-}
-
-
-@pytest.mark.parametrize("name", sorted(DRIVER_TEXTS))
-def test_the_driver_texts_are_the_shell_strings_of_the_vendored_driver(name: str) -> None:
-    first, last, variable, middle = DRIVER_TEXTS[name]
-    lines = _driver_lines()
-    assert lines[first].strip() == middle, "the variable between the two strings moved"
-    expected = (
-        _shell_string(lines[first - 1]) + "{{" + variable + "}}" + _shell_string(lines[last - 1])
-    )
-    extracted = (THIRD_PARTY / "extracted" / "drafting_design" / f"{name}.md").read_text(
-        encoding="utf-8"
-    )
-    header, _, body = extracted.partition("\n")
-    assert header.startswith("<!-- Extracted from src/scripts/lib/task_design.sh")
-    assert f"lines {first}-{last}" in header
-    assert body == expected
-    package = (PACKAGE / "prompts" / "workflow" / "drafting" / f"{name}.md").read_text(
-        encoding="utf-8"
-    )
-    assert package == expected
+# --- the texts that live in the shell driver (extracted by tools/derive_prompts.py) -------------
 
 
 def test_the_retry_texts_render_with_their_diagnostics() -> None:

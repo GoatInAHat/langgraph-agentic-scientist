@@ -1,4 +1,4 @@
-<!-- Extracted from src/orchestrator/paper_evidence_audit.py lines 1413-1423 of AI-Scientist-v3 df8313889a00 by tests/paper/test_loop_provenance.py; deriving a package file drops this line. -->
+<!-- Extracted from src/orchestrator/paper_evidence_audit.py lines 1413-1423 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
 Use this packet as the default entrypoint. Read raw artifacts only when this packet is insufficient.
 The goal is narrow: check whether the paper's visible claims remain consistent with claims_grounding.json, paper_data.json, and the scientific-evidence trail.
 

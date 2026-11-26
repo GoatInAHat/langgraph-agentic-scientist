@@ -1,4 +1,4 @@
-<!-- Extracted from src/scripts/paper.sh lines 1411-1417 of AI-Scientist-v3 df8313889a00 by tests/paper/test_loop_provenance.py; deriving a package file drops this line. -->
+<!-- Extracted from src/scripts/paper.sh lines 1411-1417 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
 Reviewer feedback from a prior draft is present.
 Read these files before editing:
 - `./paper_review_feedback.json`

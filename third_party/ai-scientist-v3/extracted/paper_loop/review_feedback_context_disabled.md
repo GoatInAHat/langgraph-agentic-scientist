@@ -1,2 +1,2 @@
-<!-- Extracted from src/scripts/paper.sh lines 1424-1424 of AI-Scientist-v3 df8313889a00 by tests/paper/test_loop_provenance.py; deriving a package file drops this line. -->
+<!-- Extracted from src/scripts/paper.sh lines 1424-1424 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
 Paper review gate is disabled for this run.

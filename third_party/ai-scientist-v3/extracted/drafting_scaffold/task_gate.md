@@ -1,4 +1,4 @@
-<!-- Extracted from src/scripts/lib/task_gate.sh lines 5-17 of AI-Scientist-v3 df8313889a00 by tests/drafting/test_scaffold_texts.py; deriving a package file drops this line. -->
+<!-- Extracted from src/scripts/lib/task_gate.sh lines 5-17 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
 
 # Harness-owned validation gate
 After each edit, run the complete acceptance check. Invoke:

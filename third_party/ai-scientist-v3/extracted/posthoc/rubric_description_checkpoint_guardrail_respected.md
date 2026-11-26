@@ -1,0 +1,2 @@
+<!-- Extracted from src/posthoc_pipeline/rubric_contract.py lines 28-28 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
+Any evaluator rerun preserved correctness and respected the bootstrap metric guardrail.

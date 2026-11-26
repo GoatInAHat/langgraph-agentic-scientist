@@ -1,4 +1,4 @@
-<!-- Extracted from src/scripts/lib/task_design.sh lines 846-848 of AI-Scientist-v3 df8313889a00 by hand from shell strings (tests/drafting/test_design_prompts.py re-extracts them); deriving a package file drops this line. -->
+<!-- Extracted from src/scripts/lib/task_design.sh lines 846-848 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
 
 
 # Focused repair verification

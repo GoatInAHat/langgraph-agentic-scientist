@@ -1,2 +1,2 @@
-<!-- Extracted from src/scripts/paper.sh lines 539-539 of AI-Scientist-v3 df8313889a00 by tests/paper/test_loop_provenance.py; deriving a package file drops this line. -->
+<!-- Extracted from src/scripts/paper.sh lines 539-539 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
 OPENAI_API_KEY was not detected from the current shell or configured container env file before launch. Re-check inside the active workspace or process environment before deciding it is unavailable; the orchestrator will use Gemini when available or otherwise ship the deterministic export with --skip-enhance.

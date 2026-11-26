@@ -1,4 +1,4 @@
-<!-- Extracted from src/scripts/paper_edit.sh lines 1353-1365 of AI-Scientist-v3 df8313889a00 by tests/paper/test_loop_provenance.py; deriving a package file drops this line. -->
+<!-- Extracted from src/scripts/paper_edit.sh lines 1353-1365 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
 ## Editing Contract
 
 - Treat the current `paper.tex` and `claims_grounding.json` as seeded drafts to revise surgically.

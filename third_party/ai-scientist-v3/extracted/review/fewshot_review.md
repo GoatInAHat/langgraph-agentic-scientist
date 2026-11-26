@@ -1,4 +1,4 @@
-<!-- Extracted from src/aireview.py lines 195-199 of AI-Scientist-v3 df8313889a04 by decoding it (Base85, bz2) with tools/derive_prompts.py conventions; deriving a package file drops this line. -->
+<!-- Extracted from src/aireview.py lines 196-198 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
 {
     "Summary": "The paper provides an interesting direction in the meta-learning field. In particular, it proposes to enhance meta learning performance by fully exploring relations across multiple tasks. To capture such information, the authors develop a heterogeneity-aware meta-learning framework by introducing a novel architecture--meta-knowledge graph, which can dynamically find the most relevant structure for new tasks.",
     "Strengths": [

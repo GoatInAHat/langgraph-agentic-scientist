@@ -21,9 +21,6 @@ with its failure (upstream exit status 1, and in edit mode every exit of ``paper
 
 from __future__ import annotations
 
-import hashlib
-import json
-import re
 from collections.abc import Hashable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, cast
@@ -43,7 +40,7 @@ from ..core.state import Event, Failure
 from ..core.steps import StepGraph
 from ..models import Role
 from ..workspace.paths import join
-from .audit import build_audit_graph, validation_input_sha256
+from .audit import build_audit_graph
 from .contexts import (
     read_json_or_none,
     read_text_or_none,
@@ -377,27 +374,6 @@ def decide_loop(
 def has_actionable_figure_quality_warnings(warnings: list[str]) -> bool:
     """Upstream ``has_actionable_figure_quality_warnings``."""
     return any(marker in w for w in warnings for marker in FIGURE_QUALITY_WARNING_MARKERS)
-
-
-def validation_failure_fingerprint(hard_errors: list[str], inputs: Mapping[str, str]) -> str | None:
-    """Upstream ``validation_failure_fingerprint``: the normalised hard errors with the hashes of
-    the validation inputs."""
-    normalized = sorted(
-        {n for e in hard_errors if isinstance(e, str) and (n := re.sub(r"\s+", " ", e).strip())}
-    )
-    if not normalized or not inputs:
-        return None
-    errors = hashlib.sha256(
-        json.dumps(normalized, ensure_ascii=True, separators=(",", ":")).encode()
-    ).hexdigest()
-    return hashlib.sha256(
-        json.dumps(
-            {"hard_errors": errors, "paper_inputs": dict(inputs)},
-            ensure_ascii=True,
-            separators=(",", ":"),
-            sort_keys=True,
-        ).encode()
-    ).hexdigest()
 
 
 # --- helpers -----------------------------------------------------------------------------
@@ -1200,9 +1176,16 @@ async def _default_validation(
         pass
     fingerprint = None
     if not passed:
-        fingerprint = validation_failure_fingerprint(
-            list(feedback.get("hard_errors") or []), await validation_input_sha256(ws, paper_dir)
-        )
+        from .validation.fingerprint import validation_failure_fingerprint
+        from .validation.validator import load_validation_tree
+
+        try:
+            fingerprint = validation_failure_fingerprint(
+                list(feedback.get("hard_errors") or []),
+                await load_validation_tree(ws, paper_dir),
+            )
+        except RuntimeError:
+            fingerprint = None
     validation = report or ValidationReport(
         passed=False, errors=list(feedback.get("hard_errors") or [])
     )
@@ -1495,5 +1478,4 @@ __all__ = [
     "decide_review_check",
     "decide_select_stage",
     "has_actionable_figure_quality_warnings",
-    "validation_failure_fingerprint",
 ]

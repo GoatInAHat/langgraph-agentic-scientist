@@ -243,11 +243,6 @@ async def audit_input_sha256(workspace: Workspace, paper_dir: str) -> dict[str, 
     return hashes
 
 
-async def validation_input_sha256(workspace: Workspace, paper_dir: str) -> dict[str, str]:
-    """``validation_input_sha256``: the inputs whose change makes a repeated failure new."""
-    return await paper_input_sha256(workspace, paper_dir, VALIDATION_INPUT_PATHS)
-
-
 # --- packet ------------------------------------------------------------------------------------
 
 
@@ -948,7 +943,6 @@ __all__ = [
     "paper_input_sha256",
     "refresh_evidence_report",
     "render_audit_markdown",
-    "validation_input_sha256",
     "verify_final_outcome",
     "write_audit_artifacts",
 ]

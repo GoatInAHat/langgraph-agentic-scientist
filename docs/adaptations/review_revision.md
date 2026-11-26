@@ -225,7 +225,9 @@ a failed second review keeps the revision and degrades the phase.
 
 - Upstream's `revision.py` keeps five fields of the review (`_FEEDBACK_FIELDS`) and uses them only to
   validate the review. The sixteen-field feedback, with `untrusted_reviewer_data` and `source_sha256`,
-  is written by `paper_edit.sh` (`stage_external_review_feedback`); both are in `feedback.py`.
+  is written by `paper_edit.sh` (`stage_external_review_feedback`). The first check is in
+  `revision/feedback.py`; the second and the renderings are in `paper/workspace.py`, which the
+  paper edit and `feedback.py` both use.
 - The `paper_edit.sh` check on the review (at most 100 items per list) and the `revision.py` check
   (types) are separate in upstream; the port applies both before the edit.
 - Upstream's `review_text` and `load_paper` each require 100 characters; the port requires them of

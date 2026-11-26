@@ -55,8 +55,9 @@ set is never merged into a fallback's set, as upstream.
 the paper loop, but `ValidationReport.fingerprint` (the repeated-failure check of the loop) needs
 the hash of the validation inputs. `paper/validation/fingerprint.py` ports
 `validation_input_sha256` with its bounds, and the fingerprint of a failure
-(`validation_failure_fingerprint`). The audit's own input hashes (`AUDIT_INPUT_PATHS`, evidence
-sources) are the paper loop's.
+(`validation_failure_fingerprint`), which the loop uses. Its `paper_input_sha256` also takes
+the audit's input paths, so the audit's hashes (`AUDIT_INPUT_PATHS` and the evidence sources,
+which are the paper loop's) share its bounds and errors.
 
 **The query planners and the memory protocol.** `reference_query_plan.md` ends with a memory
 protocol that asks the agent to append to `./memory.md` and the global memory files. The design

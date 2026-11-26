@@ -50,6 +50,7 @@ class WorkspaceBase(ABC):
         execute_timeout: int = 600,
         execute_max_timeout: int = 7200,
         env: Mapping[str, str] | None = None,
+        max_output_bytes: int = 100_000,
     ) -> BackendProtocol:
         """Return a Deep Agents backend rooted at ``root`` (see :class:`Workspace`)."""
 

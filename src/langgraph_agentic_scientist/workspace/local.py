@@ -38,12 +38,13 @@ AGENT_ARTIFACTS_DIR = ".agent_artifacts"
 AGENT_ARTIFACTS_ROUTE = "/.agent_artifacts/"
 
 
-class _BoundedShellBackend(LocalShellBackend):
-    """``LocalShellBackend`` that refuses a per-command timeout above a maximum.
+class _BoundedCompositeBackend(CompositeBackend):
+    """``CompositeBackend`` that refuses a per-command timeout above a maximum.
 
-    The check wraps the public ``execute`` and ``aexecute``; a command within the bound runs
-    through the base class unchanged, which keeps its cancellation cleanup (when the session's
-    wall clock cancels a running command, the command's process group is stopped).
+    The bound sits on the composite so that the shell stays an unmodified ``LocalShellBackend``:
+    Deep Agents gives cancellation cleanup only to a ``LocalShellBackend`` whose ``execute`` is not
+    overridden, and that cleanup is what kills a command's process group when the session's wall
+    clock cancels it.
     """
 
     def __init__(self, *args: Any, max_timeout: int, **kwargs: Any) -> None:
@@ -128,11 +129,14 @@ class LocalWorkspace:
         execute_timeout: int = 600,
         execute_max_timeout: int = 7200,
         env: Mapping[str, str] | None = None,
+        max_output_bytes: int = 100_000,
     ) -> BackendProtocol:
         """Return a Deep Agents backend rooted at the workspace directory ``root``.
 
-        Writable backends execute commands with ``execute_timeout`` as the default timeout and
-        refuse longer requests than ``execute_max_timeout``. Deep Agents' own files (offloaded
+        Writable backends execute commands with ``execute_timeout`` as the default timeout,
+        refuse longer requests than ``execute_max_timeout`` and keep at most ``max_output_bytes``
+        of a command's output. A command that times out or whose session is cancelled is killed
+        with its whole process group. Deep Agents' own files (offloaded
         large tool results and conversation history) are routed to
         ``.agent_artifacts/<root>/`` outside the role's root, so that the role's directory holds
         only what the agent wrote on purpose.
@@ -142,23 +146,24 @@ class LocalWorkspace:
         if read_only:
             return ReadOnlyBackend(FilesystemBackend(root_dir=root_path, virtual_mode=True))
         command_env = {**self.env, **dict(env or {})}
-        shell = _BoundedShellBackend(
+        shell = LocalShellBackend(
             root_dir=root_path,
             virtual_mode=True,
             timeout=execute_timeout,
+            max_output_bytes=max_output_bytes,
             env=command_env,
             inherit_env=self.inherit_env,
-            max_timeout=execute_max_timeout,
         )
         key = hashlib.sha256(safe_relpath(root).encode()).hexdigest()[:16]
         artifacts = self.root / AGENT_ARTIFACTS_DIR / key
         artifacts.mkdir(parents=True, exist_ok=True)
-        return CompositeBackend(
+        return _BoundedCompositeBackend(
             default=shell,
             routes={
                 AGENT_ARTIFACTS_ROUTE: FilesystemBackend(root_dir=artifacts, virtual_mode=True)
             },
             artifacts_root=AGENT_ARTIFACTS_ROUTE.rstrip("/"),
+            max_timeout=execute_max_timeout,
         )
 
     async def read_bytes(self, path: str) -> bytes:

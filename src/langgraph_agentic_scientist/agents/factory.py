@@ -19,7 +19,13 @@ calling node. :class:`DeepAgentFactory` is the default and sets, for every agent
   (upstream's 7200 s; Deep Agents' own default is 3600 s);
 * a copy of the model whose profile carries the role's context window when the registry gives
   one, so that Deep Agents summarises at 85 % of the real window (the caller's model object is
-  never changed).
+  never changed);
+* the same middleware on Deep Agents' ``general-purpose`` subagent (the ``task`` tool), which
+  otherwise inherits only the ``FilesystemMiddleware``: a delegated task is retried and bounded
+  as the session that delegates it.
+
+:meth:`DeepAgentFactory.middleware` is the place to add middleware of one's own (a subclass that
+extends its list); the subagent gets the same list.
 """
 
 from __future__ import annotations
@@ -32,6 +38,7 @@ from deepagents import create_deep_agent
 from deepagents.backends import StateBackend
 from deepagents.backends.protocol import BackendProtocol
 from deepagents.middleware.filesystem import FilesystemMiddleware
+from deepagents.middleware.subagents import GENERAL_PURPOSE_SUBAGENT, SubAgent
 from langchain.agents.middleware import ModelCallLimitMiddleware, ModelRetryMiddleware
 from langchain.agents.structured_output import ProviderStrategy, ToolStrategy
 from langchain_core.language_models import BaseChatModel
@@ -215,7 +222,20 @@ class DeepAgentFactory:
             execute_timeout=agents.execute_timeout_seconds,
             execute_max_timeout=agents.execute_max_timeout_seconds,
             env=env,
+            max_output_bytes=agents.max_tool_output_bytes,
         )
+
+    def subagents(
+        self, ctx: ScientistContext, backend: BackendProtocol, skills: Sequence[str]
+    ) -> list[SubAgent]:
+        """Return Deep Agents' ``general-purpose`` subagent with the factory's middleware."""
+        spec: SubAgent = {
+            **GENERAL_PURPOSE_SUBAGENT,
+            "middleware": self.middleware(ctx, backend),
+        }
+        if skills:
+            spec["skills"] = [SKILLS_SOURCE]
+        return [spec]
 
     def _build(
         self,
@@ -233,6 +253,7 @@ class DeepAgentFactory:
             tools=list(tools),
             system_prompt=ctx.prompts.text("harness/agent_system").strip(),
             middleware=self.middleware(ctx, backend),
+            subagents=self.subagents(ctx, backend, skills),
             skills=[SKILLS_SOURCE] if skills else None,
             backend=backend,
             response_format=response_format,

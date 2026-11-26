@@ -5,12 +5,18 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from test_loop_support import paper_config
+import pytest
+from test_loop_support import audit_pass, models, paper_config, paper_data, setup_task
 from testkit import fast_config
 
 from langgraph_agentic_scientist.core.results import ValidationReport
 from langgraph_agentic_scientist.core.runconfig import build_run_config
-from langgraph_agentic_scientist.paper.audit import build_audit_packet
+from langgraph_agentic_scientist.models import Role
+from langgraph_agentic_scientist.paper.audit import (
+    audit_input_sha256,
+    build_audit_graph,
+    build_audit_packet,
+)
 from langgraph_agentic_scientist.paper.graph import _default_validation
 from langgraph_agentic_scientist.testing import FakePaperToolchain
 
@@ -45,3 +51,67 @@ async def test_failure_fingerprint_covers_imported_tex_sources(
     await workspace.write_bytes(f"{PAPER_DIR}/sections/results.tex", b"second")
     second = (await _default_validation(state, _Runtime(ctx)))["validation_fingerprint"]
     assert first and second and first != second
+
+
+async def _paper(workspace: Any, tex: str = TEX) -> None:
+    await workspace.write_bytes(f"{PAPER_DIR}/paper.tex", tex.encode())
+    await workspace.write_bytes(f"{PAPER_DIR}/claims_grounding.json", b'{"claims": []}')
+    await workspace.write_bytes(
+        f"{PAPER_DIR}/paper_data.json",
+        json.dumps(paper_data().model_dump(mode="json")).encode(),
+    )
+    await workspace.write_bytes(f"{PAPER_DIR}/validation_report.json", b'{"ok": true}')
+
+
+async def _run(ctx: Any, task: Any, **extra: Any) -> dict[str, Any]:
+    payload = {"run_config": build_run_config(ctx), "task": task, "paper_dir": PAPER_DIR, **extra}
+    return dict(await build_audit_graph().ainvoke(payload, context=ctx))
+
+
+async def test_hashes_cover_referenced_figures_with_upstream_suffixes(workspace: Any) -> None:
+    await _paper(workspace, TEX.replace("Result 2.6.", "\\includegraphics{figures/plot.svg}"))
+    await workspace.write_bytes(f"{PAPER_DIR}/figures/plot.svg", b"<svg/>")
+    await workspace.write_bytes(f"{PAPER_DIR}/figures/unused.pdf", b"pdf")
+    hashes = await audit_input_sha256(workspace, PAPER_DIR)
+    assert "figure-asset/figures/plot.svg" in hashes
+    assert "figure-asset/figures/unused.pdf" not in hashes
+
+
+@pytest.mark.parametrize(
+    ("name", "content", "message"),
+    [
+        ("paper.tex", b"\xff\xfe", "utf-8"),
+        ("scientific-evidence/verification-report.json", b"{bad", "Expecting"),
+        ("scientific-evidence/verification-report.json", b"[1]", "Expected JSON object"),
+        ("figure_manifest.json", b"{bad", "figure_manifest.json is invalid JSON"),
+        (
+            "figure_manifest.json",
+            json.dumps({"figures": [{}] * 257}).encode(),
+            "more than 256 figures",
+        ),
+        ("paper.tex", b"\\includegraphics{a.png}", "Unsafe figure reference"),
+        ("paper.tex", b"x" * (16 * 1024 * 1024 + 1), "exceeds 16777216 bytes"),
+    ],
+)
+async def test_hash_inputs_raise_where_upstream_raises(
+    workspace: Any, name: str, content: bytes, message: str
+) -> None:
+    await _paper(workspace)
+    await workspace.write_bytes(f"{PAPER_DIR}/{name}", content)
+    with pytest.raises(ValueError, match=message):
+        await audit_input_sha256(workspace, PAPER_DIR)
+
+
+async def test_an_unreadable_input_is_an_operational_failure(
+    make_context: Any, workspace: Any
+) -> None:
+    ctx = make_context(
+        models=models({Role.EVIDENCE_AUDITOR: [audit_pass()]}),
+        config=fast_config(paper=paper_config()),
+    )
+    task = await setup_task(workspace)
+    await _paper(workspace)
+    await workspace.write_bytes(f"{PAPER_DIR}/figure_manifest.json", b"{bad")
+    out = await _run(ctx, task)
+    assert out["audit"].outcome == "operational_failure"
+    assert out["audit"].detail == "figure_manifest.json is invalid JSON"

@@ -356,9 +356,17 @@ def _file_hex(tree: PaperTree, rel: str) -> str | None:
 
 def validation_input_sha256(tree: PaperTree) -> dict[str, str]:
     """Hash the canonical validation inputs without unrelated workspace churn."""
+    return paper_input_sha256(tree, VALIDATION_INPUT_PATHS)
+
+
+def paper_input_sha256(tree: PaperTree, input_paths: Sequence[str]) -> dict[str, str]:
+    """Hash ``input_paths`` with the TeX sources, styles, figures and prompt logs they reference.
+
+    Upstream ``_paper_input_sha256``.
+    """
     hashes: dict[str, str] = {}
     remaining_metadata_bytes = _MAX_VALIDATION_METADATA_TOTAL_BYTES
-    for relative_path in VALIDATION_INPUT_PATHS:
+    for relative_path in input_paths:
         per_file_limit = (
             _MAX_AUDIT_TEX_BYTES if relative_path == "paper.tex" else _MAX_VALIDATION_METADATA_BYTES
         )
@@ -479,6 +487,7 @@ def validation_failure_fingerprint(hard_errors: Sequence[object], tree: PaperTre
 __all__ = [
     "AUDIT_INPUT_PATHS",
     "VALIDATION_INPUT_PATHS",
+    "paper_input_sha256",
     "validation_failure_fingerprint",
     "validation_hard_error_fingerprint",
     "validation_input_sha256",

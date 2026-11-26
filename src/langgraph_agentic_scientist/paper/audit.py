@@ -43,7 +43,7 @@ from ..core.state import Event, RunConfigRecord, TaskRef, merge_dicts
 from ..core.steps import StepGraph
 from ..models import Role
 from ..workspace.paths import join
-from ..workspace.protocol import Workspace
+from ..workspace.protocol import FileEntry, Workspace
 from .contexts import (
     read_json_or_none,
     read_text_or_none,
@@ -56,32 +56,15 @@ from .contexts import (
     write_validation_feedback_from_current_report,
 )
 from .models import AuditPayload, AuditResult
+from .validation.files import SnapshotTree
+from .validation.fingerprint import AUDIT_INPUT_PATHS, paper_input_sha256
 
 MAX_TEX_CHARS = 30000
 MAX_JSON_CHARS = 14000
 MAX_CONTRACT_ATTEMPTS = 2
 """Upstream ``max_contract_attempts`` of the audit gate."""
 
-AUDIT_INPUT_PATHS = (
-    "paper.tex",
-    "claims_grounding.json",
-    "paper_data.json",
-    "references.bib",
-    "references_provenance.json",
-    "figure_manifest.json",
-    "scientific-evidence/verification-report.json",
-)
-VALIDATION_INPUT_PATHS = (
-    *AUDIT_INPUT_PATHS,
-    "VENUE.md",
-    "paper_authors.tex",
-    "paper_strategy.md",
-    "paper_strategy.json",
-    "method_scope_audit.md",
-    "method_scope_audit.json",
-)
 AUDIT_INPUT_HASH_MANIFEST = ".paper_evidence_audit_input_sha256.json"
-VOLATILE_VERIFICATION_FIELDS = frozenset({"root_dir", "verified_at"})
 EVIDENCE_SCAN_EXTENSIONS = frozenset(
     {
         ".bash",
@@ -132,34 +115,11 @@ EVIDENCE_GENERATED_NAMES = frozenset(
         ".latest_manifest.lock",
     }
 )
-GRAPHICS_SUFFIXES = frozenset({".pdf", ".png", ".jpg", ".jpeg", ".eps"})
 PROMPT_ARTIFACT_RE = re.compile(r".+_prompt(?:_round_\d+(?:_contract_retry_\d+)?)?\.md$")
 SCIENTIFIC_EVIDENCE_SCRIPT = ".agents/skills/scientific-evidence/scripts/scientific_evidence.py"
 
 
 # --- hashing -------------------------------------------------------------------------------------
-
-
-def _strip_watermark(text: str) -> str:
-    try:
-        from .watermark import strip_managed_block
-    except ImportError:  # pragma: no cover - the host side ships it
-        return text
-    return strip_managed_block(text)
-
-
-def _stable_input_bytes(relative: str, data: bytes) -> bytes:
-    if relative == "paper.tex":
-        return _strip_watermark(data.decode("utf-8", errors="replace")).encode("utf-8")
-    if relative == "scientific-evidence/verification-report.json":
-        try:
-            payload = json.loads(data.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError):
-            return data
-        if isinstance(payload, dict):
-            stable = {k: v for k, v in payload.items() if k not in VOLATILE_VERIFICATION_FIELDS}
-            return json.dumps(stable, sort_keys=True, separators=(",", ":")).encode()
-    return data
 
 
 def is_generated_audit_artifact(relative: str) -> bool:
@@ -182,37 +142,45 @@ def is_generated_audit_artifact(relative: str) -> bool:
     )
 
 
-async def paper_input_sha256(
-    workspace: Workspace, paper_dir: str, paths: tuple[str, ...] = AUDIT_INPUT_PATHS
-) -> dict[str, str]:
-    """``_paper_input_sha256`` over ``paths`` plus the referenced figures."""
-    hashes: dict[str, str] = {}
-    for relative in paths:
-        path = join(paper_dir, relative)
-        entry = await workspace.stat(path)
-        if entry is None or entry.kind != "file":
-            continue
-        data = _stable_input_bytes(relative, await workspace.read_bytes(path))
-        hashes[relative] = hashlib.sha256(data).hexdigest()
-    figures = join(paper_dir, "figures")
-    if await workspace.exists(figures):
-        for entry in await workspace.list_tree(figures, with_digest=True):
-            if (
-                entry.kind == "file"
-                and PurePosixPath(entry.path).suffix.lower() in GRAPHICS_SUFFIXES
-            ):
-                digest = (entry.sha256 or "").removeprefix("sha256:")
-                if not digest:
-                    digest = hashlib.sha256(
-                        await workspace.read_bytes(join(figures, entry.path))
-                    ).hexdigest()
-                hashes[f"figure-asset/figures/{entry.path}"] = digest
-    return hashes
+_HASH_READ_SUFFIXES = frozenset({".tex", ".sty", ".cls", ".bst"})
+_HASH_READ_BYTES = 16 * 1024 * 1024 + 1
+
+
+def _hash_read_bytes(relative: str) -> int | None:
+    path = PurePosixPath(relative)
+    if relative in AUDIT_INPUT_PATHS or path.suffix.casefold() in _HASH_READ_SUFFIXES:
+        return _HASH_READ_BYTES
+    if path.parts[0] == "figures" and path.name.endswith(".prompts.json"):
+        return _HASH_READ_BYTES
+    return None
+
+
+async def _input_tree(workspace: Workspace, paper_dir: str) -> SnapshotTree:
+    listing = await workspace.list_tree(paper_dir, with_digest=True)
+    contents: dict[str, bytes] = {}
+    for entry in listing:
+        keep = _hash_read_bytes(entry.path) if entry.kind == "file" else None
+        if keep:
+            contents[entry.path] = (await workspace.read_bytes(join(paper_dir, entry.path)))[:keep]
+    return SnapshotTree({entry.path: entry for entry in listing}, contents)
+
+
+async def _file_digest(workspace: Workspace, paper_dir: str, entry: FileEntry) -> str:
+    digest = (entry.sha256 or "").removeprefix("sha256:")
+    if digest:
+        return digest
+    return hashlib.sha256(await workspace.read_bytes(join(paper_dir, entry.path))).hexdigest()
 
 
 async def audit_input_sha256(workspace: Workspace, paper_dir: str) -> dict[str, str]:
-    """``audit_input_sha256``: the audit inputs plus every evidence source of the workspace."""
-    hashes = await paper_input_sha256(workspace, paper_dir)
+    """``audit_input_sha256``: the audit inputs plus every evidence source of the workspace.
+
+    Raises:
+        ValueError: Where upstream raises: an input that is not UTF-8 or not the JSON object it
+            must be, an unsafe figure or TeX reference, or an input beyond upstream's bounds.
+    """
+    tree = await _input_tree(workspace, paper_dir)
+    hashes = paper_input_sha256(tree, AUDIT_INPUT_PATHS)
     for entry in await workspace.list_tree(paper_dir, with_digest=True):
         if entry.kind != "file":
             continue
@@ -229,12 +197,7 @@ async def audit_input_sha256(workspace: Workspace, paper_dir: str) -> dict[str, 
             or name in ("Dockerfile", "Makefile")
         ):
             continue
-        digest = (entry.sha256 or "").removeprefix("sha256:")
-        if not digest:
-            digest = hashlib.sha256(
-                await workspace.read_bytes(join(paper_dir, entry.path))
-            ).hexdigest()
-        hashes[f"evidence-source/{entry.path}"] = digest
+        hashes[f"evidence-source/{entry.path}"] = await _file_digest(workspace, paper_dir, entry)
     ledger = join(paper_dir, "scientific-evidence/ledger.jsonl")
     if await workspace.exists(ledger):
         hashes["evidence-source/scientific-evidence/ledger.jsonl"] = hashlib.sha256(
@@ -754,7 +717,12 @@ async def _prepare(state: AuditState, runtime: Runtime[ScientistContext]) -> dic
         await ws.remove(copy_dir)
         update["operational"] = str(exc)
         return update
-    hashes = await audit_input_sha256(ws, copy_dir)
+    try:
+        hashes = await audit_input_sha256(ws, copy_dir)
+    except (ValueError, OSError) as exc:
+        await ws.remove(copy_dir)
+        update["operational"] = str(exc)
+        return update
     await write_json(ws, join(copy_dir, AUDIT_INPUT_HASH_MANIFEST), hashes)
     await ws.write_bytes(
         join(paper_dir, "paper_evidence_audit_packet.md"),
@@ -815,8 +783,13 @@ async def _finalize(state: AuditState, runtime: Runtime[ScientistContext]) -> di
         refresh_error = await refresh_evidence_report(
             runtime.context, paper_dir, join(paper_dir, SCIENTIFIC_EVIDENCE_SCRIPT)
         )
-        current = await audit_input_sha256(ws, paper_dir)
-        if refresh_error is not None or current != state.get("input_hashes"):
+        current: dict[str, str] | None = None
+        if refresh_error is None:
+            try:
+                current = await audit_input_sha256(ws, paper_dir)
+            except (ValueError, OSError) as exc:
+                refresh_error = str(exc)
+        if refresh_error is not None or current is None or current != state.get("input_hashes"):
             detail = refresh_error or (
                 "Paper inputs changed after the read-only audit snapshot was prepared"
             )
@@ -931,7 +904,6 @@ def build_audit_graph(
 __all__ = [
     "AUDIT_INPUT_PATHS",
     "MAX_CONTRACT_ATTEMPTS",
-    "VALIDATION_INPUT_PATHS",
     "AuditInput",
     "AuditOutput",
     "AuditState",
@@ -940,7 +912,6 @@ __all__ = [
     "build_audit_packet",
     "final_outcome_summary",
     "is_generated_audit_artifact",
-    "paper_input_sha256",
     "refresh_evidence_report",
     "render_audit_markdown",
     "verify_final_outcome",

@@ -304,7 +304,13 @@ override by role; `pool` is upstream's multi-agent sampling (one model chosen pe
   `ModelRegistry(default=ChatOpenAI(base_url=..., model=...), context_window=200_000)`
   (`context_window_by_role` for one role). The package warns once per role when neither is known.
   `config.review.fewshot=True` adds upstream's 60,000-character few-shot review (about 20,000
-  tokens) to each review call; turn it off for a small window.
+  tokens) to each review call; turn it off for a small window, or set
+  `config.review.max_paper_tokens` to the reviewer's input budget (its window less
+  `max_completion_tokens`): a request above it is sent without the few-shot review, and a paper
+  that does not fit even then is not sent and the review fails with the category
+  `paper_exceeds_review_window`. The estimate is the reviewer model's own token count when its
+  class has one (`get_num_tokens_from_messages`), else LangChain's `count_tokens_approximately`
+  (four characters per token).
 - **Structured output.** Roles that answer with one structured artefact use LangChain's structured
   output. The default, `structured_output_method="function_calling"`, works with any tool-calling
   model; choose `"json_schema"` (per role with `structured_output_by_role`) only when the server

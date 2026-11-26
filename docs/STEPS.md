@@ -142,6 +142,7 @@ The end-to-end pipeline.
 | `review.aggregate` | `aggregate` |
 | `review.area_chair` | `meta` |
 | `review.extract_text` | `paper_text` |
+| `review.fit_window` | `fewshot` |
 | `review.publish` | none |
 | `revision.check_preconditions` | none |
 | `revision.finalize` | none |
@@ -462,6 +463,7 @@ The AI review.
 | `review.aggregate` | `aggregate` |
 | `review.area_chair` | `meta` |
 | `review.extract_text` | `paper_text` |
+| `review.fit_window` | `fewshot` |
 | `review.publish` | none |
 
 ## revision (`build_revision_graph`)
@@ -509,6 +511,7 @@ The revision.
 | `review.aggregate` | `aggregate` |
 | `review.area_chair` | `meta` |
 | `review.extract_text` | `paper_text` |
+| `review.fit_window` | `fewshot` |
 | `review.publish` | none |
 | `revision.check_preconditions` | none |
 | `revision.finalize` | none |

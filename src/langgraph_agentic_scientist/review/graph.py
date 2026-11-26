@@ -11,8 +11,15 @@ paper: a failed review is a recorded failure and the paper stays.
 
 The graph::
 
-    record_run_config -> extract_text -> reviewer x N (Send) -> join -> area_chair -> aggregate
-        -> publish
+    record_run_config -> extract_text -> fit_window -> reviewer x N (Send) -> join -> area_chair
+        -> aggregate -> publish
+
+``fit_window`` applies ``config.review.max_paper_tokens`` (upstream has no bound): when the
+estimated tokens of a reviewer's request exceed it, the few-shot example is left out, and a request
+that still exceeds it is not sent; the review fails with the category
+``paper_exceeds_review_window``. The estimate is the reviewer model's own count
+(``get_num_tokens_from_messages``) when its class provides one, else LangChain's
+``count_tokens_approximately`` (four characters per token, plus three tokens per message).
 
 The reviewers run in parallel (upstream: one after the other; the calls are identical and
 independent). An invalid answer is asked for again in a new node execution, not in a loop inside
@@ -22,8 +29,9 @@ own and a resume never repeats one. The join is deferred until every reviewer ta
 Selecting the review phase is the consent to send the manuscript to the reviewer
 models, as it is upstream; the graph asks nothing.
 
-Step names for hooks: ``review.extract_text``, ``review.area_chair``, ``review.aggregate`` and
-``review.publish``. The reviewer tasks are the targets of ``Send`` and carry no hook nodes.
+Step names for hooks: ``review.extract_text``, ``review.fit_window``, ``review.area_chair``,
+``review.aggregate`` and ``review.publish``. The reviewer tasks are the targets of ``Send`` and
+carry no hook nodes.
 """
 
 from __future__ import annotations
@@ -32,9 +40,11 @@ import asyncio
 import posixpath
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypedDict
 
+from langchain_core.language_models import BaseChatModel, BaseLanguageModel
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages.utils import count_tokens_approximately
 from langchain_core.runnables import Runnable
 from langgraph.errors import NodeError
 from langgraph.graph import END, START, StateGraph
@@ -223,14 +233,94 @@ def _extract_failed(detail: str) -> dict[str, Any]:
     return {"failure": failure, "failures": {"extract": failure}}
 
 
-def _route_after_extract(state: Mapping[str, Any]) -> Any:
+def _route_after_extract(state: Mapping[str, Any]) -> str:
+    return "publish" if state.get("failure") is not None else "fit_window"
+
+
+def counts_own_tokens(model: BaseChatModel) -> bool:
+    """Whether a model counts tokens itself (LangChain's default counts with GPT-2's tokenizer)."""
+    if getattr(model, "custom_get_token_ids", None) is not None:
+        return True
+    cls = type(model)
+    return any(
+        getattr(cls, name) is not getattr(BaseLanguageModel, name)
+        for name in ("get_num_tokens_from_messages", "get_num_tokens", "get_token_ids")
+    )
+
+
+async def estimate_tokens(model: BaseChatModel, messages: list[BaseMessage]) -> int:
+    """Estimate the input tokens of ``messages`` for ``model``.
+
+    The model's own ``get_num_tokens_from_messages`` when its class provides a count (or a
+    ``custom_get_token_ids``), run in a thread because it may load a tokenizer or call the
+    provider; otherwise, or when that count fails, ``count_tokens_approximately``.
+    """
+    if counts_own_tokens(model):
+        try:
+            return int(await asyncio.to_thread(model.get_num_tokens_from_messages, messages))
+        except Exception:
+            pass
+    return count_tokens_approximately(messages)
+
+
+def _reviewer_request(
+    runtime: Runtime[ScientistContext], config: ReviewConfig, paper_text: str, *, fewshot: bool
+) -> list[BaseMessage]:
+    prompts = runtime.context.prompts
+    message = review_message(prompts, paper_text, fewshot=fewshot)
+    if config.max_attempts > 1:
+        message = with_retry_correction(prompts, message)
+    return [SystemMessage(content=reviewer_system_message(prompts)), HumanMessage(content=message)]
+
+
+async def _fit_window(state: ReviewState, runtime: Runtime[ScientistContext]) -> dict[str, Any]:
+    """Leave out the few-shot example, or refuse the review, when the request exceeds the bound."""
+    config = method_config(state).review
+    limit = config.max_paper_tokens
+    if limit is None:
+        return {"fewshot": config.fewshot}
+    model = runtime.context.models.for_role(Role.AI_REVIEWER)
+    paper_text = state["paper_text"]
+    estimates: dict[str, int] = {}
+    for fewshot in (True, False) if config.fewshot else (False,):
+        request = _reviewer_request(runtime, config, paper_text, fewshot=fewshot)
+        tokens = await estimate_tokens(model, request)
+        estimates["with_fewshot" if fewshot else "without_fewshot"] = tokens
+        if tokens <= limit:
+            update: dict[str, Any] = {"fewshot": fewshot}
+            if config.fewshot and not fewshot:
+                data = {"max_paper_tokens": limit, **estimates}
+                update["events"] = [
+                    Event(
+                        kind="review_fewshot_left_out", phase="review", step="fit_window", data=data
+                    )
+                ]
+            return update
+    failure = Failure(
+        category="paper_exceeds_review_window",
+        scope="task",
+        detail=(
+            f"the reviewer's request is about {estimates['without_fewshot']} tokens without the "
+            f"few-shot example, above review.max_paper_tokens={limit}"
+        ),
+    )
+    return {"fewshot": False, "failure": failure, "failures": {"fit_window": failure}}
+
+
+def _route_after_fit(state: Mapping[str, Any]) -> Any:
     if state.get("failure") is not None:
         return "publish"
     count = method_config(state).review.num_reviewers
     run_config = state.get("run_config")
     paper_text = state["paper_text"]
+    fewshot = bool(state.get("fewshot", method_config(state).review.fewshot))
     return [
-        Send("reviewer", ReviewerTask(index=index, paper_text=paper_text, run_config=run_config))
+        Send(
+            "reviewer",
+            ReviewerTask(
+                index=index, paper_text=paper_text, run_config=run_config, fewshot=fewshot
+            ),
+        )
         for index in range(1, count + 1)
     ]
 
@@ -244,7 +334,8 @@ async def _reviewer(task: ReviewerTask, runtime: Runtime[ScientistContext]) -> C
     notes = list(task.get("notes") or [])
     context = f"review {index}"
     source = f"reviewer {index}"
-    message = review_message(ctx.prompts, task["paper_text"], fewshot=config.fewshot)
+    fewshot = task.get("fewshot", config.fewshot)
+    message = review_message(ctx.prompts, task["paper_text"], fewshot=fewshot)
     attempt = await review_attempt(
         runtime,
         role=Role.AI_REVIEWER,
@@ -263,6 +354,7 @@ async def _reviewer(task: ReviewerTask, runtime: Runtime[ScientistContext]) -> C
             index=index,
             paper_text=task["paper_text"],
             run_config=task.get("run_config"),
+            fewshot=fewshot,
             attempt=attempt_number + 1,
             notes=notes,
         )
@@ -346,12 +438,23 @@ def _area_chair_invalid(state: ReviewState) -> dict[str, Any]:
     return {"failure": failure, "failures": {META_REVIEW: failure}}
 
 
+class AreaChairOutput(TypedDict, total=False):
+    """What the area chair step returns to the review graph (not the appended ``events``)."""
+
+    meta: AIReview | None
+    meta_attempt: int
+    meta_error: str | None
+    notes: dict[str, list[str]]
+    failure: Failure | None
+    failures: dict[str, Failure]
+
+
 def _build_area_chair_graph(
     policy: RetryPolicy,
-) -> CompiledStateGraph[ReviewState, ScientistContext, ReviewState, ReviewState]:
+) -> CompiledStateGraph[ReviewState, ScientistContext, ReviewState, AreaChairOutput]:
     """Build the area chair step: one call per node execution, asked again while invalid."""
-    graph: StateGraph[ReviewState, ScientistContext, ReviewState, ReviewState] = StateGraph(
-        ReviewState, context_schema=ScientistContext
+    graph: StateGraph[ReviewState, ScientistContext, ReviewState, AreaChairOutput] = StateGraph(
+        ReviewState, context_schema=ScientistContext, output_schema=AreaChairOutput
     )
     graph.add_node("attempt", _area_chair_attempt, retry_policy=policy)
     graph.add_node("invalid", _area_chair_invalid)
@@ -497,6 +600,7 @@ def build_review_graph(
     sg = StepGraph("review", ReviewState, input_schema=ReviewInput, output_schema=ReviewOutput)
     sg.add_node("record_run_config", record_run_config)
     sg.step("extract_text", _extract_text, hook_writable=("paper_text",))
+    sg.step("fit_window", _fit_window, hook_writable=("fewshot",))
     sg.add_node(
         "reviewer",
         _reviewer,
@@ -516,7 +620,10 @@ def build_review_graph(
 
     sg.add_edge(START, "record_run_config")
     sg.add_edge("record_run_config", "extract_text")
-    sg.add_conditional_edges("extract_text", _route_after_extract)
+    sg.add_conditional_edges(
+        "extract_text", _route_after_extract, {"fit_window": "fit_window", "publish": "publish"}
+    )
+    sg.add_conditional_edges("fit_window", _route_after_fit)
     sg.add_conditional_edges(
         "join_reviews", _route_after_join, {"complete": "area_chair", "failed": "publish"}
     )
@@ -531,6 +638,8 @@ def build_review_graph(
 __all__ = [
     "ReviewAttempt",
     "build_review_graph",
+    "counts_own_tokens",
+    "estimate_tokens",
     "review_attempt",
     "reviewer_retry_policy",
     "sampling_kwargs",

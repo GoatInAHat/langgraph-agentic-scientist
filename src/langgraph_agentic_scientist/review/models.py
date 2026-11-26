@@ -132,6 +132,8 @@ class ReviewState(ReviewInput):
     """The state of the review graph."""
 
     hook_outputs: Annotated[dict[str, Any], merge_dicts]
+    fewshot: bool
+    """Whether the reviewers' message carries the few-shot example (``fit_window`` decides)."""
     reviews: Annotated[dict[str, AIReview], merge_dicts]
     """The reviewers' reviews by reviewer number (``"1"`` ... ``"5"``)."""
     meta: AIReview | None
@@ -163,6 +165,8 @@ class ReviewerTask(TypedDict):
     index: int
     paper_text: str
     run_config: RunConfigRecord | None
+    fewshot: NotRequired[bool]
+    """Whether the message carries the few-shot example (default: ``config.review.fewshot``)."""
     attempt: NotRequired[int]
     """The attempt number (0 for the first call); a later attempt adds the retry correction."""
     notes: NotRequired[list[str]]

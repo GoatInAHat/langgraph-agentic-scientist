@@ -8,7 +8,8 @@ from collections.abc import Callable, Mapping
 from typing import Any
 
 import pytest
-from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages.utils import count_tokens_approximately
 from langgraph.checkpoint.memory import InMemorySaver
 from review_helpers import PAPER_TEXT, answer, last_text, make_pdf, review_dict
 from testkit import SessionRoots, fast_config
@@ -24,6 +25,12 @@ from langgraph_agentic_scientist.core.results import AIReview, ReviewResult
 from langgraph_agentic_scientist.models import Role
 from langgraph_agentic_scientist.review import build_review_graph, reviewer_retry_policy
 from langgraph_agentic_scientist.review.models import SCORE_KEYS
+from langgraph_agentic_scientist.review.texts import (
+    fewshot_block,
+    review_message,
+    reviewer_system_message,
+    with_retry_correction,
+)
 from langgraph_agentic_scientist.testing import ScriptedChatModel, ScriptedModels
 
 RETRY_TEXT = "Retry correction: The previous response did not satisfy the required review JSON"
@@ -809,3 +816,101 @@ async def test_every_reviewer_and_area_chair_call_is_a_marked_session(
         ("agsci:area_chair", "review", "area_chair"),
     ]
     assert all(run.tags[-2:] == ["agsci", run.name[6:]] for run in handler.runs)
+
+
+# --- the review window ------------------------------------------------------------------------
+
+
+def _request_tokens(ctx: ScientistContext, *, fewshot: bool) -> int:
+    message = review_message(ctx.prompts, PAPER_TEXT, fewshot=fewshot)
+    return count_tokens_approximately(
+        [
+            SystemMessage(content=reviewer_system_message(ctx.prompts)),
+            HumanMessage(content=with_retry_correction(ctx.prompts, message)),
+        ]
+    )
+
+
+async def test_a_request_within_the_bound_keeps_the_fewshot_example(
+    make_context: Callable[..., ScientistContext],
+) -> None:
+    ctx = make_context({Role.AI_REVIEWER: [answer()] * 2, Role.AREA_CHAIR: [answer()]})
+    limit = _request_tokens(ctx, fewshot=True)
+    ctx = make_context(
+        {Role.AI_REVIEWER: [answer()] * 2, Role.AREA_CHAIR: [answer()]},
+        config=_config(num_reviewers=2, max_paper_tokens=limit),
+    )
+    out = await _run(ctx)
+    assert out["result"].status == "completed"
+    reviewer_call = _model(ctx, Role.AI_REVIEWER).calls[0]
+    assert fewshot_block(ctx.prompts) in last_text(reviewer_call)
+
+
+async def test_above_the_bound_the_fewshot_example_is_left_out_first(
+    make_context: Callable[..., ScientistContext],
+) -> None:
+    ctx = make_context({Role.AI_REVIEWER: [answer()] * 2, Role.AREA_CHAIR: [answer()]})
+    limit = _request_tokens(ctx, fewshot=True) - 1
+    assert limit >= _request_tokens(ctx, fewshot=False)
+    ctx = make_context(
+        {Role.AI_REVIEWER: [answer()] * 2, Role.AREA_CHAIR: [answer()]},
+        config=_config(num_reviewers=2, max_paper_tokens=limit),
+    )
+    graph = build_review_graph(checkpointer=InMemorySaver(), retry_policy=FAST)
+    out = await _run(ctx, graph=graph)
+    assert out["result"].status == "completed"
+    for call in _model(ctx, Role.AI_REVIEWER).calls:
+        assert fewshot_block(ctx.prompts) not in last_text(call)
+        assert PAPER_TEXT.strip() in last_text(call)
+    state = await graph.aget_state({"configurable": {"thread_id": "t"}})
+    events = [event for event in state.values["events"] if event.kind == "review_fewshot_left_out"]
+    assert len(events) == 1
+    assert events[0].data["max_paper_tokens"] == limit
+
+
+async def test_a_paper_that_does_not_fit_without_the_example_is_not_sent(
+    make_context: Callable[..., ScientistContext], workspace: LocalWorkspace
+) -> None:
+    ctx = make_context({Role.AI_REVIEWER: [answer()] * 2, Role.AREA_CHAIR: [answer()]})
+    limit = _request_tokens(ctx, fewshot=False) - 1
+    ctx = make_context(
+        {Role.AI_REVIEWER: [answer()] * 2, Role.AREA_CHAIR: [answer()]},
+        config=_config(num_reviewers=2, max_paper_tokens=limit),
+    )
+    out = await _run(ctx)
+    result: ReviewResult = out["result"]
+    assert result.status == "failed"
+    assert result.failure is not None
+    assert result.failure.category == "paper_exceeds_review_window"
+    assert f"max_paper_tokens={limit}" in (result.failure.detail or "")
+    assert _model(ctx, Role.AI_REVIEWER).call_count == 0
+    assert _model(ctx, Role.AREA_CHAIR).call_count == 0
+    assert (workspace.root / "paper" / "ai_review.log").is_file()
+
+
+async def test_the_reviewer_models_own_token_count_is_used_when_it_has_one(
+    make_context: Callable[..., ScientistContext],
+) -> None:
+    ctx = make_context(
+        {Role.AI_REVIEWER: [answer()] * 2, Role.AREA_CHAIR: [answer()]},
+        config=_config(num_reviewers=2, max_paper_tokens=1_000_000, fewshot=False),
+    )
+    reviewer = _model(ctx, Role.AI_REVIEWER)
+    reviewer.custom_get_token_ids = lambda text: [0] * (len(text) * 10_000)
+    out = await _run(ctx)
+    assert out["result"].failure.category == "paper_exceeds_review_window"
+    assert reviewer.call_count == 0
+
+
+async def test_without_a_bound_the_request_is_sent_unmeasured(
+    make_context: Callable[..., ScientistContext],
+) -> None:
+    ctx = make_context(
+        {Role.AI_REVIEWER: [answer()] * 2, Role.AREA_CHAIR: [answer()]},
+        config=_config(num_reviewers=2),
+    )
+    reviewer = _model(ctx, Role.AI_REVIEWER)
+    reviewer.custom_get_token_ids = lambda text: [0] * (len(text) * 10_000)
+    out = await _run(ctx)
+    assert out["result"].status == "completed"
+    assert fewshot_block(ctx.prompts) in last_text(reviewer.calls[0])

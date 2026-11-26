@@ -90,6 +90,18 @@ manifest key and under `ai_review`; a failed review never discards the paper.
   reviewer models. The graph asks nothing.
 - *`review.fewshot`* leaves the example paper and review (about 60,000 characters) out of the
   reviewer's message, for models with a small context. Upstream always includes them.
+- *`review.max_paper_tokens`* bounds the reviewer's request; upstream sends a request of any length
+  and a model whose window it exceeds rejects it, which fails the review as a model-call failure.
+  The step `fit_window`, after the text is extracted, estimates the tokens of the reviewer's
+  longest request (system message, form, few-shot example, manuscript and, when a second attempt
+  is allowed, the retry correction). Above the bound it leaves the few-shot example out (the event
+  `review_fewshot_left_out` records the estimates); a request that still exceeds it is not sent
+  and the review fails with the category `paper_exceeds_review_window`, so the paper is kept and
+  the run degrades as for any failed review. The estimate is the reviewer model's own
+  `get_num_tokens_from_messages` when its class provides a count (LangChain's default counts with
+  GPT-2's tokenizer and is not used), else LangChain's `count_tokens_approximately` (four
+  characters per token plus three per message). The area chair's request (the form and five
+  reviews) is not measured. Unset, the default, nothing is measured.
 - *`review.sampling`* set to `none` leaves temperature, seed and the token limit to the model, for
   providers that reject them.
 - *The text is in state*, and may be given as `paper_text`, in which case the PDF is not read. The

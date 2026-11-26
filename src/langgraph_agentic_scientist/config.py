@@ -171,13 +171,20 @@ class PaperConfig(_Section):
 
 
 class ReviewConfig(_Section):
-    """AI review (``src/aireview.py``)."""
+    """AI review (``src/aireview.py``).
+
+    ``max_paper_tokens`` bounds the estimated tokens of a reviewer's request (system message,
+    form, few-shot example and manuscript; upstream has no bound). Above it the few-shot example
+    is left out; a request that still exceeds it is not sent and the review fails with the
+    category ``paper_exceeds_review_window``. ``None`` (the default) sends every request.
+    """
 
     num_reviewers: int = Field(5, ge=1)
     max_attempts: int = Field(2, ge=1)
     max_completion_tokens: int = Field(16384, ge=1)
     min_pdf_text_chars: int = Field(100, ge=0)
     fewshot: bool = True
+    max_paper_tokens: int | None = Field(None, ge=1)
     sampling: Literal["upstream", "none"] = Field("upstream", json_schema_extra=RUNTIME_ONLY)
 
 

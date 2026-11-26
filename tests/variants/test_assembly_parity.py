@@ -96,3 +96,23 @@ async def test_an_infrastructure_failure_of_an_adapted_variant_fails_the_phase(
     assert result.status == "failed" and result.failure is not None
     assert result.failure.scope == "infrastructure"
     assert result.readme_path is None
+
+
+async def test_ignore_patterns_apply_to_top_level_names_as_written(
+    workspace: LocalWorkspace,
+) -> None:
+    from langgraph_agentic_scientist.variants.materialize import copy_task_files
+
+    await workspace.write_bytes("s/.agentic_task_ignore", b"data/cache/\n*.tmp\nbig\n")
+    for path in ("data/cache/x", "data/keep", "a[1].tmp", "a1.tmp", "sub/b.tmp", "big/y", "k"):
+        await workspace.write_bytes(f"s/{path}", b"x")
+    await copy_task_files(workspace, "s", "d")
+    root = workspace.root / "d"
+    copied = {p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()}
+    assert copied == {
+        ".agentic_task_ignore",
+        "data/cache/x",
+        "data/keep",
+        "sub/b.tmp",
+        "k",
+    }

@@ -11,6 +11,7 @@ piece.
 
 from __future__ import annotations
 
+import glob
 import logging
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
@@ -22,7 +23,7 @@ from ..core.state import ProgramRef
 from ..evaluation.program_clone import clone_program
 from ..evaluation.program_spec import load_program_spec, resolve_entrypoint
 from ..prompts import PromptRegistry
-from ..workspace.paths import join, parse_ignore_patterns
+from ..workspace.paths import join, parse_ignore_patterns, task_copy_path_is_ignored
 from ..workspace.protocol import Workspace, is_dir, is_file
 from .constants import (
     BASELINE_REFERENCE_ID,
@@ -43,6 +44,7 @@ from .preflight import validate_reference_workspace
 from .rubrics import build_rubric_contract, build_target_rubrics
 from .workspace_ops import (
     copy_tree_replacing,
+    list_children,
     make_dir,
     read_text_or_none,
     variant_copy_patterns,
@@ -115,10 +117,17 @@ async def copy_task_files(workspace: Workspace, src_dir: str, dst_dir: str) -> N
 
     Program directories (``program_*``, ``reference_program``), cache and environment
     directories, files of a previous run, runtime markers and log files are left out, as are
-    entries the task's ``.agentic_task_ignore`` names (upstream ``_copy_task_files``). Links are
+    entries whose top-level name the task's ``.agentic_task_ignore`` matches as written (upstream
+    ``_copy_task_files``; a pattern naming a nested path ignores nothing). Links are
     copied as links.
     """
-    patterns = variant_copy_patterns(await task_ignore_patterns(workspace, src_dir))
+    user_patterns = await task_ignore_patterns(workspace, src_dir)
+    ignored = [
+        glob.escape(name)
+        for name, directory in await list_children(workspace, src_dir)
+        if task_copy_path_is_ignored(name, is_dir=directory, patterns=user_patterns)
+    ]
+    patterns = variant_copy_patterns(ignored)
     await copy_tree_replacing(workspace, src_dir, dst_dir, ignore=patterns)
 
 

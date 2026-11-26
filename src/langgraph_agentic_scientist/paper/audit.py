@@ -4,10 +4,11 @@ Ports ``run_agentic_evidence_audit_gate`` (``paper.sh``), ``run_required_evidenc
 (``paper_edit.sh``) and the helpers of ``paper_evidence_audit.py``. Each contract attempt:
 
 1. ``prepare``: render the audit prompt and keep it as ``paper_evidence_audit_prompt*.md``;
-   check the final-evaluation grounding of ``paper_data.json`` against the verified paper data;
-   copy the paper directory to a disposable workspace beside it (the agents' skill directory
-   excluded), refresh the scientific-evidence verification report there when the verifier is
-   staged, build ``paper_evidence_audit_packet.md`` and record the SHA-256 of the audit inputs;
+   under ``allow_not_qualified`` with a final evaluation, check the final evidence of
+   ``paper_data.json`` against the verified paper data; copy the paper directory to a disposable
+   workspace beside it (the agents' skill directories excluded), refresh the scientific-evidence
+   verification report there with the vendored verifier, build
+   ``paper_evidence_audit_packet.md`` and record the SHA-256 of the audit inputs;
    install the packet and the hash manifest in the paper directory.
 2. ``session``: the evidence auditor reads the copy through a read-only backend and answers with
    :class:`~langgraph_agentic_scientist.paper.models.AuditPayload` (adaptation A5).

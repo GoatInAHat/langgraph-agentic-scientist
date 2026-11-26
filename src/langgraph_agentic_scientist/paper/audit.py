@@ -43,6 +43,7 @@ from ..core.results import PaperData
 from ..core.runconfig import method_config
 from ..core.state import Event, RunConfigRecord, TaskRef, merge_dicts
 from ..core.steps import StepGraph
+from ..evaluation.protocol import FinalEvaluationResult
 from ..models import Role
 from ..workspace.paths import join
 from ..workspace.protocol import FileEntry, Workspace
@@ -648,30 +649,40 @@ async def refresh_evidence_report(ctx: ScientistContext, root: str, script: str)
 
 
 def verify_final_outcome(actual: Any, expected: PaperData | None) -> str | None:
-    """The final-evaluation check of ``prepare_readonly_paper_audit_workspace``.
+    """``verify_paper_final_outcome``: recheck the final evidence before each audit.
 
     ``paper_data.json`` must keep the verified ``final_evaluation`` and every ``final.*`` and
-    ``study.final.*`` grounding source of the paper data the phase built. Returns the error.
+    ``study.final.*`` grounding source of the paper data the phase built, with upstream's
+    allowances for papers that predate the observation locator and the qualification facts.
+    Returns the error.
     """
-    if expected is None:
-        return None
-    reference = expected.model_dump(mode="json", by_alias=True)
+    reference = expected.model_dump(mode="json", by_alias=True) if expected is not None else {}
     if "final_evaluation" not in reference:
-        return None
+        return "Required paper final evidence is missing"
     if not isinstance(actual, Mapping):
         return "Paper final evidence must contain an object"
-    if actual.get("final_evaluation") != reference.get("final_evaluation"):
+    expected_final = dict(reference["final_evaluation"])
+    if actual.get("final_evaluation") != expected_final:
         return "Paper final evidence differs from verified final evaluation"
-
-    def final_sources(data: Mapping[str, Any]) -> dict[str, Any]:
-        sources = data.get("grounding_sources")
-        if not isinstance(sources, Mapping):
-            return {}
-        return {k: v for k, v in sources.items() if k.startswith(("final.", "study.final."))}
-
-    if not isinstance(actual.get("grounding_sources"), Mapping):
+    actual_grounding = actual.get("grounding_sources")
+    if not isinstance(actual_grounding, Mapping):
         return "Paper final evidence grounding is missing"
-    if final_sources(actual) != final_sources(reference):
+    prefixes = ("final.", "study.final.")
+    final_grounding = {k: v for k, v in actual_grounding.items() if k.startswith(prefixes)}
+    expected_grounding = {
+        k: v
+        for k, v in (reference.get("grounding_sources") or {}).items()
+        if k.startswith(prefixes)
+    }
+    if not any(key.startswith("final.evidence.") for key in final_grounding):
+        expected_grounding.pop("final.evidence.episodes", None)
+    if expected_final.get("correct") is True and not any(
+        key.startswith("final.qualification.") for key in final_grounding
+    ):
+        expected_grounding = {
+            k: v for k, v in expected_grounding.items() if not k.startswith("final.qualification.")
+        }
+    if final_grounding != expected_grounding:
         return "Paper final evidence grounding differs from verified final evaluation"
     return None
 
@@ -802,6 +813,7 @@ class AuditInput(TypedDict):
     paper_dir: str
     mode: NotRequired[str]
     paper_data: NotRequired[PaperData | None]
+    final: NotRequired[FinalEvaluationResult | None]
     writer_prompt_key: NotRequired[str]
     writer_skill: NotRequired[str]
     paper_format: NotRequired[str]
@@ -868,9 +880,15 @@ async def _prepare(state: AuditState, runtime: Runtime[ScientistContext]) -> dic
         "operational": None,
         "copy_dir": None,
     }
-    error = verify_final_outcome(
-        await read_json_or_none(ws, join(paper_dir, "paper_data.json")), state.get("paper_data")
-    )
+    error = None
+    if (
+        method_config(state).final_outcome_policy == "allow_not_qualified"
+        and state.get("final") is not None
+    ):
+        error = verify_final_outcome(
+            await read_json_or_none(ws, join(paper_dir, "paper_data.json")),
+            state.get("paper_data"),
+        )
     if error is not None:
         update["operational"] = error
         return update

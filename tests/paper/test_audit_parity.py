@@ -7,10 +7,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from test_data_support import final_result
 from test_loop_support import audit_pass, models, paper_config, paper_data, setup_task
 from testkit import fast_config
 
-from langgraph_agentic_scientist.core.results import ValidationReport
+from langgraph_agentic_scientist.core.results import GroundingSource, ValidationReport
 from langgraph_agentic_scientist.core.runconfig import build_run_config
 from langgraph_agentic_scientist.models import Role
 from langgraph_agentic_scientist.paper.audit import (
@@ -18,6 +19,7 @@ from langgraph_agentic_scientist.paper.audit import (
     build_audit_graph,
     build_audit_packet,
     refresh_evidence_report,
+    verify_final_outcome,
 )
 from langgraph_agentic_scientist.paper.graph import _default_validation
 from langgraph_agentic_scientist.testing import FakePaperToolchain
@@ -290,3 +292,48 @@ async def test_the_audit_refreshes_the_report_with_the_vendored_verifier(
     out = await _run(ctx, task)
     assert out["audit"].outcome == "pass", out["audit"].detail
     assert seen[0]["schema_name"] == "scientific-evidence.verification-report"
+
+
+def _verified() -> Any:
+    verified = paper_data(
+        final_evaluation={"status": "completed", "correct": True, "outcome": "qualified"}
+    )
+    verified.grounding_sources["final.metric.score"] = GroundingSource(
+        type="final_metric", value=2.0
+    )
+    return verified
+
+
+@pytest.mark.parametrize(
+    ("policy", "final", "outcome"),
+    [
+        ("qualified_only", True, "pass"),
+        ("allow_not_qualified", False, "pass"),
+        ("allow_not_qualified", True, "operational_failure"),
+    ],
+)
+async def test_the_final_outcome_is_checked_under_upstreams_conditions(
+    make_context: Any, workspace: Any, policy: str, final: bool, outcome: str
+) -> None:
+    ctx = make_context(
+        models=models({Role.EVIDENCE_AUDITOR: [audit_pass()]}),
+        config=fast_config(paper=paper_config(), final_outcome_policy=policy),
+    )
+    task = await setup_task(workspace)
+    await _paper(workspace)
+    extra = {"final": final_result()} if final else {}
+    out = await _run(ctx, task, paper_data=_verified(), **extra)
+    assert out["audit"].outcome == outcome
+
+
+def test_final_outcome_allowances_for_older_papers() -> None:
+    expected = _verified()
+    actual = expected.model_dump(mode="json", by_alias=True)
+    for name in ("final.evidence.episodes", "final.qualification.correct"):
+        expected.grounding_sources[name] = GroundingSource(type="final_metric", value=1)
+    assert verify_final_outcome(actual, expected) is None
+    actual["grounding_sources"]["final.qualification.status"] = {"type": "x"}
+    assert verify_final_outcome(actual, expected) == (
+        "Paper final evidence grounding differs from verified final evaluation"
+    )
+    assert verify_final_outcome(actual, None) == "Required paper final evidence is missing"

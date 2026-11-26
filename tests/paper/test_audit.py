@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage
+from test_data_support import final_result
 from test_loop_support import (
     audit_fail,
     audit_pass,
@@ -174,10 +175,13 @@ async def test_tampered_final_evidence_fails_before_the_audit(
     verified.grounding_sources["final.metric.score"] = GroundingSource(
         type="final_metric", value=2.0
     )
-    ctx = make_context(models=models({}), config=fast_config(paper=paper_config()))
+    ctx = make_context(
+        models=models({}),
+        config=fast_config(paper=paper_config(), final_outcome_policy="allow_not_qualified"),
+    )
     task = await setup_task(workspace)
     await _paper(workspace)
-    out = await _run(ctx, task, paper_data=verified)
+    out = await _run(ctx, task, paper_data=verified, final=final_result())
     assert out["audit"].outcome == "operational_failure"
     assert out["audit"].detail == "Paper final evidence differs from verified final evaluation"
 
@@ -193,7 +197,7 @@ def test_verify_final_outcome_checks_final_grounding() -> None:
     assert verify_final_outcome(actual, expected) == (
         "Paper final evidence grounding differs from verified final evaluation"
     )
-    assert verify_final_outcome({}, paper_data()) is None
+    assert verify_final_outcome({}, paper_data()) == "Required paper final evidence is missing"
 
 
 async def test_hashes_ignore_generated_artifacts_and_skills(workspace: Any) -> None:

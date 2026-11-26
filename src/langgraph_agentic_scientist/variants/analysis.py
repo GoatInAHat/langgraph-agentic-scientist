@@ -219,7 +219,11 @@ async def validated_timeseries(
         assert output_dir is not None
         parts = PurePosixPath(relative).parts
         scratch_name = "/".join(parts[:-2])
-        text = (await workspace.read_bytes(join(output_dir, relative))).decode("utf-8", "replace")
+        raw = await workspace.read_bytes(join(output_dir, relative))
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeError as exc:
+            raise RuntimeError("cannot read sandbox analysis CSV: timeseries.csv") from exc
         for row in read_csv_rows(text, "timeseries.csv", MAX_ANALYSIS_ROWS):
             row_count += 1
             if row_count > MAX_ANALYSIS_ROWS:

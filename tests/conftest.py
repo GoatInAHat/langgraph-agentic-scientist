@@ -9,6 +9,7 @@ from typing import Any
 
 import pytest
 from testkit import fast_config
+from upstream_modules import upstream_modules as upstream_modules
 
 from langgraph_agentic_scientist import (
     LocalWorkspace,

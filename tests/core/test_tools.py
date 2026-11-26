@@ -22,7 +22,7 @@ from langgraph_agentic_scientist.agents.tools import (
     make_task_gate_tool,
 )
 from langgraph_agentic_scientist.core.interfaces import GateReport
-from langgraph_agentic_scientist.evaluation import EvaluationResult
+from langgraph_agentic_scientist.evaluation import EvaluationEvidence, EvaluationResult
 from langgraph_agentic_scientist.models import Role
 from langgraph_agentic_scientist.prompts import PromptRegistry
 from langgraph_agentic_scientist.testing import (
@@ -175,6 +175,35 @@ async def test_evaluate_program_budget_counts_every_call(
     assert json.loads(await workspace.read_bytes("attempt/program_0/correct.json")) == {
         "correct": True
     }
+
+
+async def test_evaluate_program_publishes_the_summaries_and_not_the_evidence(
+    workspace: LocalWorkspace, make_context: Any
+) -> None:
+    await write_program(workspace, "attempt/program_1", "SCORE = 2.0\n")
+    evidence = EvaluationEvidence.model_validate(
+        {
+            "schema_version": 1,
+            "episodes": [{"seed": 0, "score": 2.0, "correct": True, "duration_seconds": 1.0}],
+        }
+    )
+    completed = EvaluationResult(
+        evaluation_id="run/w0/c001/eval_01",
+        status="completed",
+        metrics={"combined_score": 2.0},
+        correct=True,
+        evidence=evidence,
+    )
+    app, _, _ = _evaluate_session(1, {"run/w0/c001/eval_01": completed})
+    models = ScriptedModels.from_scripts(
+        {Role.SEARCH_AGENT: [tool_call("evaluate_program", {"program_dir": "program_1"}), final()]}
+    )
+    await app.ainvoke(
+        {}, {"configurable": {"thread_id": "evidence"}}, context=make_context(models=models)
+    )
+    assert await workspace.exists("attempt/program_1/metrics.json")
+    assert await workspace.exists("attempt/program_1/correct.json")
+    assert not await workspace.exists("attempt/program_1/evaluation_evidence.json")
 
 
 async def test_evaluate_program_budget_zero_refuses(

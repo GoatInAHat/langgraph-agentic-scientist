@@ -16,6 +16,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from ..core.state import RubricResult, RubricSpec, RubricStatus, utc_now
+from ..evaluation.evidence import EVIDENCE_FILENAME
 from ..evaluation.program_spec import resolve_entrypoint
 from ..evaluation.protocol import EvaluationResult
 from ..prompts import PromptRegistry, render_text
@@ -370,10 +371,11 @@ async def write_evaluation_artifacts(
 ) -> None:
     """Publish an evaluation's summaries into the program directory (upstream's layout).
 
-    A completed evaluation publishes ``metrics.json`` and ``correct.json``; every evaluation
-    publishes ``evaluation_manifest.json`` (producer ``harness_eval``, with the exit code) and the
-    bounded diagnostic as ``harness_evaluate_stderr.log``. Evaluator-owned outputs stay with the
-    evaluator.
+    A completed evaluation publishes ``metrics.json``, ``correct.json`` and, when the evaluator
+    produced one, ``evaluation_evidence.json``, as upstream's harness evaluation leaves the
+    evaluator's results in the program directory; every evaluation publishes
+    ``evaluation_manifest.json`` (producer ``harness_eval``, with the exit code) and the bounded
+    diagnostic as ``harness_evaluate_stderr.log``.
     """
     code = exit_code_of(evaluation)
     if evaluation.status == "completed":
@@ -387,6 +389,13 @@ async def write_evaluation_artifacts(
                 json.dumps({"correct": bool(evaluation.correct)}, indent=2, sort_keys=True) + "\n"
             ).encode("utf-8"),
         )
+        if evaluation.evidence is not None:
+            await workspace.write_bytes(
+                join(program_dir, EVIDENCE_FILENAME),
+                (evaluation.evidence.model_dump_json(by_alias=True, indent=2) + "\n").encode(
+                    "utf-8"
+                ),
+            )
     now = utc_now()
     manifest: dict[str, Any] = {
         "producer": "harness_eval",

@@ -145,9 +145,12 @@ module docstring).
 * Programs come from `InvestigationResult.evaluations` (search plane, completed, a finite
   `combined_score`, an evaluation that is not pending); rows are ordered by idea directory,
   attempt directory and program index, as upstream's directory scan orders them.
-  `evaluation_evidence.json` is read from the program directory by default; a caller replaces
-  the reader. `EvaluationRecord` carries no evidence, so the evaluator or the evaluation tool
-  must publish `evaluation_evidence.json` in the program directory for the episodes to appear.
+  `evaluation_evidence.json` is read from the program directory by default, as upstream reads it;
+  a caller replaces the reader. What reaches that directory is upstream's: a harness-evaluated
+  attempt publishes the evaluator's evidence into `program_1` (upstream's harness evaluation
+  leaves the evaluator's results there), while the `evaluate_program` tool of a self-evaluated
+  attempt publishes only `metrics.json` and `correct.json`, as upstream's evaluation wrapper
+  does, so those rows report the evidence `unavailable`.
 * Paths in the data are the paths that processes of the workspace see
   (`Workspace.host_path`), as upstream's absolute paths are.
 * The ablation bundle is the variants phase's `output_dir`. Upstream lists `variants/` and

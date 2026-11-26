@@ -9,7 +9,10 @@ from typing import Any
 import pytest
 from langchain_core.messages import HumanMessage
 
+from langgraph_agentic_scientist.core.results import InvestigationResult
+from langgraph_agentic_scientist.evaluation import EvaluationEvidence
 from langgraph_agentic_scientist.models import Role
+from langgraph_agentic_scientist.paper.data import build_paper_data
 from langgraph_agentic_scientist.testing import FakeEvaluator, completed_result, final, tool_call
 
 from .helpers import (
@@ -99,6 +102,49 @@ async def test_evaluation_rubric_status_and_memory(make_context: Any, workspace:
     assert result.best is not None and result.best.source_attempt_id == ATTEMPT
     assert result.best.combined_score == 6.0
     assert (await workspace.read_bytes(f"{EXPERIMENT}/program_1/metrics.json")).decode().strip()
+
+
+EVIDENCE = {
+    "schema_version": 1,
+    "episodes": [
+        {"seed": 0, "score": 6.0, "correct": True, "duration_seconds": 1.5},
+        {"seed": 1, "score": 5.5, "correct": True, "duration_seconds": 2.0},
+    ],
+}
+
+
+async def test_the_evaluators_evidence_reaches_the_program_and_the_paper_rows(
+    make_context: Any, workspace: Any
+) -> None:
+    task = await task_with_harness(workspace, harness=True)
+    evidence = EvaluationEvidence.model_validate(EVIDENCE)
+    evaluator = FakeEvaluator(
+        results={
+            "run/w0/c001/program_1": lambda r: completed_result(r, combined_score=6.0).model_copy(
+                update={"evidence": evidence}
+            )
+        }
+    )
+    ctx = make_context(
+        models=_harness_models(author_steps(ATTEMPT)), config=config(), evaluator=evaluator
+    )
+    result = await run_worker(ctx, task)
+    assert result.attempts[0].status == "pass"
+    published = await _status(workspace, f"{EXPERIMENT}/program_1/evaluation_evidence.json")
+    assert EvaluationEvidence.model_validate(published) == evidence
+    investigation = InvestigationResult(
+        status="completed",
+        ideas=result.ideas,
+        attempts=result.attempts,
+        evaluations=result.evaluations,
+        results_dir="run/results",
+    )
+    data = await build_paper_data(workspace, investigation=investigation)
+    (row,) = data.all_programs
+    assert row["program_id"] == "program_1"
+    assert row["evaluation_evidence"]["status"] == "available"
+    assert row["evaluation_evidence"]["episode_count"] == 2
+    assert [episode["seed"] for episode in row["evaluation_evidence"]["episodes"]] == [0, 1]
 
 
 async def test_failed_rubric_and_unacceptable_candidate(make_context: Any, workspace: Any) -> None:

@@ -42,6 +42,8 @@ def test_defaults_are_upstreams() -> None:
     assert config.review.num_reviewers == 5 and config.review.max_completion_tokens == 16384
     assert config.agents.execute_timeout_seconds == 600
     assert config.agents.execute_max_timeout_seconds == 7200
+    assert config.fail_fast is True
+    assert config.final_evaluation.timeout_seconds == 21600
     with pytest.raises(ValidationError):
         ScientistConfig(unknown=1)  # type: ignore[call-arg]
     with pytest.raises(ValidationError):

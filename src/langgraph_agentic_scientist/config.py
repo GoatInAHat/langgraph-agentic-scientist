@@ -123,9 +123,14 @@ class VariantsConfig(_Section):
 
 
 class FinalEvaluationConfig(_Section):
-    """Sealed final evaluation (``src/final_evaluation/runner.py``)."""
+    """Sealed final evaluation (``src/final_evaluation/runner.py``).
 
-    timeout_seconds: int | None = Field(None, ge=1)
+    ``timeout_seconds`` is upstream's ``final.timeout_seconds`` (21600); the evaluator bounds the
+    evaluation by the smaller of it and the contract's final wall clock. ``None`` leaves the bound
+    to the evaluator.
+    """
+
+    timeout_seconds: int | None = Field(21600, ge=1)
 
 
 class PosthocConfig(_Section):

@@ -91,8 +91,12 @@ launch, the three launch attempts with a one and a two second backoff, image re-
 recovery of retained broker containers, GPU leases and quarantine, the reset-transcript check
 against `protocol.final_reset_sequence`, the RPC limit and the wall clock enforced by the broker,
 read-only sealing of the results, `final_launch_failure.json` and `final_cleanup_failure.json`.
-The package therefore has no setting for launch attempts; a `FinalEvaluator` that retries launches
-keeps that setting itself (upstream retries three times).
+Upstream has no setting for the launch attempts either (three is a constant of its runner, applied
+to brokered launches only), so no upstream configuration carries one and the package has none; a
+`FinalEvaluator` that retries launches owns that number itself. The deadline is kept:
+`final_evaluation.timeout_seconds` is upstream's `final.timeout_seconds` (21600), passed in the
+request, and the local evaluator bounds the evaluation by the smaller of it and the contract's final
+wall clock, as upstream's runner does.
 
 The graph does not write `final_manifest.json` or `invocation.json`: the evaluator does (the local
 evaluator writes both), and a caller whose evaluator keeps no manifest still gets the verified

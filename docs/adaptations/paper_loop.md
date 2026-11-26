@@ -138,8 +138,8 @@ staged from the external review with its 16 kept fields (`stage_external_review_
   `paper_prompt_context.py`, the key contexts of `paper.sh` 536-551, the ranking repair suffix
   (`paper.sh` 3077-3078; A3), the editing contract and linkage lines of `paper_edit_context.md`,
   the instruction lines of the audit and review packets, the header of
-  `global_memory_summary.md`. Shell and list texts are re-extracted and compared by
-  `tests/paper/test_loop_provenance.py`; Python string expressions by `tools/derive_prompts.py`.
+  `global_memory_summary.md`. Every one is extracted by `tools/derive_prompts.py`: shell strings, Python heredocs of the
+  scripts and lists of lines included.
 
 ## Adaptations of the flow
 

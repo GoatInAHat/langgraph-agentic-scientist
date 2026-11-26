@@ -17,7 +17,7 @@ disagree. Every change to a prompt text is declared, with its reason, in
 | `src/prompts/posthoc_generate.md` | `prompts/posthoc/posthoc_generate.md` | A3: line 3 asks for the structured response, which the harness writes to `posthoc_bundle.json` |
 | `src/prompts/posthoc_select.md` | `prompts/posthoc/posthoc_select.md` | A3: line 1 asks for the structured response, which the harness writes to `posthoc_selection.json` |
 | `src/posthoc_pipeline/materialize.py` lines 173-211 (the generated analysis `task.md`) | `prompts/workflow/posthoc/analysis_task/*.md` | extracted string by string; the bullet and numbered list items and the joiners stay in code (`posthoc/materialize.py`) |
-| `src/posthoc_pipeline/rubric_contract.py` lines 13-29 | `posthoc/rubric_contract.py` constants | verbatim; see "Where a text could not be extracted" |
+| `src/posthoc_pipeline/rubric_contract.py` lines 13-29 | `posthoc/rubric_contract.py` constants | verbatim; extracted (`dict_value`) and pinned to the constants in code |
 
 The in-code fallback prompts of upstream (`_DEFAULT_BOOTSTRAP_PROMPT`, `_DEFAULT_GENERATION_PROMPT`,
 `_DEFAULT_SELECTION_PROMPT`, `_DEFAULT_POSTHOC_AGENT_PROMPT`) run only when the template file is
@@ -28,14 +28,14 @@ the two structured prompts line by line (one line differs), the rubric ids, desc
 contract and status validation by running upstream's `rubric_contract.py`, and the generated
 `task.md` by running upstream's `_write_analysis_task_md` on the same specifications.
 
-### Where a text could not be extracted
+### Texts kept in code
 
-`tools/derive_prompts.py` extracts one string expression per line range. The rubric descriptions
-are values of a dictionary, each on the line of its key, and the list item formats of the
-generated `task.md` (`` - `{item}` `` and `{index + 1}. {step}`) share a line with a joiner string,
-so neither can be extracted. They are kept as constants and format strings in code and pinned to
-upstream by the tests above. If the tool learns to extract a dictionary value or a named
-expression, they move to `prompts/workflow/posthoc/` without a change of text.
+The rubric descriptions (values of the dictionary `_RUBRIC_DESCRIPTIONS`) and the formats of the
+list items of the generated `task.md` (`` - `{item}` `` and `{index + 1}. {step}`, f-strings inside
+generator expressions) are extracted by `tools/derive_prompts.py` (kinds `dict_value` and
+`fstring`) into `third_party/ai-scientist-v3/extracted/posthoc/`. The port keeps them as constants
+and format strings in code; a `[[pin]]` entry in `posthoc.toml` extracts each one from the package
+source too and `--check` fails when the two differ.
 
 ## Sealed final evaluation
 

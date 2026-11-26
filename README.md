@@ -367,7 +367,9 @@ through `PromptRegistry`. The original files are kept byte for byte under
 (an exact old string, the new one, and the reason). `tools/derive_prompts.py --check` and a test
 fail when a prompt differs from its derivation, so a paraphrase cannot enter and no change goes
 unrecorded. Text that upstream keeps in code (retry suffixes, gate text, generated `task.md`
-bodies) is extracted from the upstream source once, and the extraction is declared too.
+bodies, shell strings, heredocs, dictionary values, packed constants) is extracted from the
+upstream source by the same tool, and each extraction is declared; a package constant that
+mirrors such a text is pinned to its extraction, so `--check` fails when either side drifts.
 
 ## Differences from upstream
 

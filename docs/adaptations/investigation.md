@@ -14,17 +14,18 @@ source disagree. Every change to a prompt or skill text is declared, with its re
 | `src/prompts/general.md` | `prompts/investigation/general.md` | A1, one declared change per site: the clone and the evaluation are the tools `clone_program` and `evaluate_program`; the wrapper command block becomes the tool call; the shell-timeout sentence is removed (the call is blocking and owns its timeout); every budget rule that spoke of "commands that run `evaluate.py`" speaks of `evaluate_program` calls |
 | `src/prompts/harness_edit.md` | `prompts/investigation/harness_edit.md` | none; byte-identical |
 | `src/agents/skills/create-idea/SKILL.md` | `skills/create-idea/SKILL.md` | A3: file writing and the starter-file helper become the structured response; `scripts/create_idea_placeholder.py` is not carried |
-| `src/scripts/idea.sh:840-856` | `prompts/workflow/investigation/harness_rubric_requirements_{on,off}.md` | extracted by hand (see below) |
+| `src/scripts/idea.sh:840-856` | `prompts/workflow/investigation/harness_rubric_requirements_{on,off}.md` | extracted (`expression` of the Python heredoc) |
 | `src/investigation/idea_retry_feedback.py:36-38` | `.../idea_validation_feedback.md` | extracted |
 | `src/investigation/public_task_contract.py:75-79` | `.../public_search_contract.md` | extracted; `{{INDENTED_PAYLOAD}}` |
 | `src/investigation/files.py:39-49` | `.../prune_warning.md` | extracted; the text of the `prune_confirmation` question |
 | context blocks of `idea.sh` and `run.sh`, `harness_feedback.py` | `.../context_blocks.toml` | hand extraction: formats, keys and counts |
 | evidence and feedback strings of `harness_eval.py`, `harness_feedback.py` | `.../harness_feedback.toml` | hand extraction |
 
-`tools/derive_prompts.py` extracts a string from a Python file with `ast`; the formats above live
-in Python heredocs inside shell scripts, or in many f-strings of one function, which it cannot
-extract. They are written by hand into `third_party/ai-scientist-v3/extracted/investigation/` with
-a header naming the upstream file and lines, and derived into the package like every other text.
+`tools/derive_prompts.py` extracts the texts of the first four rows. The context formats and the
+feedback strings live in many f-strings of several functions and heredocs, which the extractor
+does not read as one text. They are written by hand into
+`third_party/ai-scientist-v3/extracted/investigation/` with a header naming the upstream files and
+lines, and derived into the package like every other text.
 `tests/investigation/test_provenance.py` checks that every literal fragment of the two TOML files
 occurs in the upstream source, which is the machine check the extractor would have provided.
 

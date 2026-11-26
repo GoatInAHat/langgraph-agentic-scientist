@@ -26,11 +26,9 @@ contracts of `src/task_drafting/design.py` and `design_cli.py`, and `latent_revi
 
 The five role prompts differ from upstream in exactly the sentences that told an agent to write a
 JSON file or to edit a file in place. Every field list, every example and every rule learned from
-failures is upstream's text. The shell strings cannot be extracted by `tools/derive_prompts.py`,
-which reads Python; they were extracted by hand into
-`third_party/ai-scientist-v3/extracted/drafting_design/`, and
-`tests/drafting/test_design_prompts.py` re-extracts them from the vendored driver and compares
-bytes.
+failures is upstream's text. The shell appends of the driver are extracted by
+`tools/derive_prompts.py` (kind `shell_concat`) into
+`third_party/ai-scientist-v3/extracted/drafting_design/`.
 
 ## Discrepancies between the design document and the upstream source
 

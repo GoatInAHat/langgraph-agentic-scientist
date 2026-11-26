@@ -185,3 +185,147 @@ reason = "The original task context section, added when the bundle held a task.m
 upstream = "extracted/posthoc/analysis_task_original_task_context.md"
 target = "prompts/workflow/posthoc/analysis_task/original_task_context.md"
 reason = "Verbatim value of the upstream string; the original task context section, added when the bundle held a task.md."
+
+# --- texts that upstream keeps in a dictionary and in generator expressions ----------------------
+
+[[extract]]
+upstream = "src/posthoc_pipeline/rubric_contract.py"
+kind = "dict_value"
+name = "_RUBRIC_DESCRIPTIONS"
+key = "analysis_summary_present"
+output = "extracted/posthoc/rubric_description_analysis_summary_present.md"
+reason = "The description of the rubric analysis_summary_present in the rubric contract of every analysis."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/rubric_contract.py"
+kind = "dict_value"
+name = "_RUBRIC_DESCRIPTIONS"
+key = "analysis_manifest_present"
+output = "extracted/posthoc/rubric_description_analysis_manifest_present.md"
+reason = "The description of the rubric analysis_manifest_present in the rubric contract of every analysis."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/rubric_contract.py"
+kind = "dict_value"
+name = "_RUBRIC_DESCRIPTIONS"
+key = "interestingness_rubric_present"
+output = "extracted/posthoc/rubric_description_interestingness_rubric_present.md"
+reason = "The description of the rubric interestingness_rubric_present in the rubric contract of every analysis."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/rubric_contract.py"
+kind = "dict_value"
+name = "_RUBRIC_DESCRIPTIONS"
+key = "required_outputs_present"
+output = "extracted/posthoc/rubric_description_required_outputs_present.md"
+reason = "The description of the rubric required_outputs_present in the rubric contract of every analysis."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/rubric_contract.py"
+kind = "dict_value"
+name = "_RUBRIC_DESCRIPTIONS"
+key = "claim_grounded"
+output = "extracted/posthoc/rubric_description_claim_grounded.md"
+reason = "The description of the rubric claim_grounded in the rubric contract of every analysis."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/rubric_contract.py"
+kind = "dict_value"
+name = "_RUBRIC_DESCRIPTIONS"
+key = "checkpoint_guardrail_respected"
+output = "extracted/posthoc/rubric_description_checkpoint_guardrail_respected.md"
+reason = "The description of the rubric checkpoint_guardrail_respected in the rubric contract of every analysis."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/materialize.py"
+lines = "186"
+kind = "fstring"
+output = "extracted/posthoc/analysis_task_required_artifact_item.md"
+reason = "The format of one list item of the generated analysis task.md; the joiners stay in code."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/materialize.py"
+lines = "192"
+kind = "fstring"
+output = "extracted/posthoc/analysis_task_expected_output_item.md"
+reason = "The format of one list item of the generated analysis task.md; the joiners stay in code."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/materialize.py"
+lines = "198"
+kind = "fstring"
+names = { "index + 1" = "INDEX" }
+output = "extracted/posthoc/analysis_task_implementation_plan_step.md"
+reason = "The format of one list item of the generated analysis task.md; the joiners stay in code."
+
+# --- package constants and format strings pinned to the extracted texts --------------------------
+
+[[pin]]
+package = "posthoc/rubric_contract.py"
+kind = "dict_value"
+name = "RUBRIC_DESCRIPTIONS"
+key = "analysis_summary_present"
+extracted = "extracted/posthoc/rubric_description_analysis_summary_present.md"
+reason = "The port keeps the description as a constant in code."
+
+[[pin]]
+package = "posthoc/rubric_contract.py"
+kind = "dict_value"
+name = "RUBRIC_DESCRIPTIONS"
+key = "analysis_manifest_present"
+extracted = "extracted/posthoc/rubric_description_analysis_manifest_present.md"
+reason = "The port keeps the description as a constant in code."
+
+[[pin]]
+package = "posthoc/rubric_contract.py"
+kind = "dict_value"
+name = "RUBRIC_DESCRIPTIONS"
+key = "interestingness_rubric_present"
+extracted = "extracted/posthoc/rubric_description_interestingness_rubric_present.md"
+reason = "The port keeps the description as a constant in code."
+
+[[pin]]
+package = "posthoc/rubric_contract.py"
+kind = "dict_value"
+name = "RUBRIC_DESCRIPTIONS"
+key = "required_outputs_present"
+extracted = "extracted/posthoc/rubric_description_required_outputs_present.md"
+reason = "The port keeps the description as a constant in code."
+
+[[pin]]
+package = "posthoc/rubric_contract.py"
+kind = "dict_value"
+name = "RUBRIC_DESCRIPTIONS"
+key = "claim_grounded"
+extracted = "extracted/posthoc/rubric_description_claim_grounded.md"
+reason = "The port keeps the description as a constant in code."
+
+[[pin]]
+package = "posthoc/rubric_contract.py"
+kind = "dict_value"
+name = "RUBRIC_DESCRIPTIONS"
+key = "checkpoint_guardrail_respected"
+extracted = "extracted/posthoc/rubric_description_checkpoint_guardrail_respected.md"
+reason = "The port keeps the description as a constant in code."
+
+[[pin]]
+package = "posthoc/materialize.py"
+lines = "64"
+kind = "fstring"
+extracted = "extracted/posthoc/analysis_task_required_artifact_item.md"
+reason = "The port renders the list item with this format string in code."
+
+[[pin]]
+package = "posthoc/materialize.py"
+lines = "70"
+kind = "fstring"
+extracted = "extracted/posthoc/analysis_task_expected_output_item.md"
+reason = "The port renders the list item with this format string in code."
+
+[[pin]]
+package = "posthoc/materialize.py"
+lines = "77"
+kind = "fstring"
+names = { "index + 1" = "INDEX" }
+extracted = "extracted/posthoc/analysis_task_implementation_plan_step.md"
+reason = "The port renders the list item with this format string in code."

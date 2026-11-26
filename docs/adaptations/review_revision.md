@@ -15,7 +15,7 @@ upstream source and the port differ. Every change to a prompt text is declared, 
 | `src/aireview.py` `NEURIPS_FORM` (without the `TEMPLATE_INSTRUCTIONS` it is concatenated with) | `prompts/review/neurips_form.md` | none (its typos and the "Weak Accept" wording are upstream's) |
 | `src/aireview.py` `TEMPLATE_INSTRUCTIONS` | `prompts/review/template_instructions.md` | A6: the answer format (see below) |
 | `src/aireview.py` `META_REVIEWER_SYSTEM_PROMPT` | `prompts/review/area_chair_system.md` | `{reviewer_count}` is the placeholder `{{REVIEWER_COUNT}}` |
-| `src/aireview.py` few-shot paper and review (bz2, Base85) | `prompts/review/fewshot_paper.md`, `fewshot_review.md` | none: the decoded texts; `third_party/ai-scientist-v3/extracted/review/` holds them and a test decodes the upstream constants again and compares |
+| `src/aireview.py` few-shot paper and review (bz2, Base85) | `prompts/review/fewshot_paper.md`, `fewshot_review.md` | none: the decoded texts; `third_party/ai-scientist-v3/extracted/review/` holds them and `tools/derive_prompts.py` decodes the upstream constants (kind `assignment`) and `--check` compares |
 | `src/aireview.py` `_fewshot_prompt()` f-string | `prompts/review/fewshot_wrapper.md` | fields became `{{PAPER_TEXT}}` and `{{REVIEW}}` |
 | `src/aireview.py` `_review_prompt()` f-string | `prompts/review/review_request.md` | field became `{{PAPER_TEXT}}` |
 | `src/aireview.py` `_meta_review_prompt()` f-string (one review block) | `prompts/review/meta_review_request.md` | fields became `{{INDEX}}`, `{{COUNT}}`, `{{REVIEW_JSON}}`; code renders one block per reviewer |

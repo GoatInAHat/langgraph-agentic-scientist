@@ -57,7 +57,8 @@ async def _is_flat_extra_task(workspace: Workspace, task_dir: str) -> bool:
     for name in await list_child_dirs(workspace, task_dir):
         if name.startswith("_"):
             continue
-        if any(f.endswith(".csv") for f in await _child_files(workspace, join(task_dir, name))):
+        children = await list_children(workspace, join(task_dir, name))
+        if any(entry.endswith(".csv") for entry, _ in children):
             return True
     return False
 

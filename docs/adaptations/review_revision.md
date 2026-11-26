@@ -39,12 +39,12 @@ JSON object of `json.dumps`. A second attempt appends the retry correction to th
 `build_review_graph` returns a compiled graph:
 
 ```text
-record_run_config -> extract_text -> reviewer x N (Send) -> join_reviews -> area_chair
-    -> aggregate -> publish
+record_run_config -> extract_text -> fit_window -> reviewer x N (Send) -> join_reviews
+    -> area_chair -> aggregate -> publish
 ```
 
-Hook step names: `review.extract_text`, `review.area_chair`, `review.aggregate`,
-`review.publish`. The reviewer tasks are targets of `Send` and carry no hook nodes.
+Hook step names: `review.extract_text`, `review.fit_window`, `review.area_chair`,
+`review.aggregate`, `review.publish`. The reviewer tasks are targets of `Send` and carry no hook nodes.
 
 **Carried exactly.** The text extraction chain (`pymupdf4llm`, then `pymupdf`, then `pypdf`; the first
 text of at least 100 characters; an extractor that raises counts as empty); the checks of the PDF

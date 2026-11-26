@@ -167,58 +167,43 @@ config:
 ---
 graph TD;
 	__start__([<p>__start__</p>]):::first
-	record_run_config(record_run_config<hr/><small><em>agsci_phase = pipeline
-agsci_step = record_run_config</em></small>)
-	snapshot_task(snapshot_task<hr/><small><em>agsci_phase = pipeline
-agsci_step = snapshot_task</em></small>)
+	record_run_config(record_run_config)
+	snapshot_task(snapshot_task)
 	pipeline\2esnapshot_task\2ebefore(pipeline.snapshot_task.before)
 	pipeline\2esnapshot_task\2eafter(pipeline.snapshot_task.after)
-	check_dependencies(check_dependencies<hr/><small><em>agsci_phase = pipeline
-agsci_step = check_dependencies</em></small>)
+	check_dependencies(check_dependencies)
 	pipeline\2echeck_dependencies\2ebefore(pipeline.check_dependencies.before)
 	pipeline\2echeck_dependencies\2eafter(pipeline.check_dependencies.after)
-	finish(finish<hr/><small><em>agsci_phase = pipeline
-agsci_step = finish</em></small>)
+	finish(finish)
 	pipeline\2efinish\2ebefore(pipeline.finish.before)
 	pipeline\2efinish\2eafter(pipeline.finish.after)
-	route_task_drafting(route_task_drafting<hr/><small><em>agsci_phase = pipeline
-agsci_step = route_task_drafting</em></small>)
+	route_task_drafting(route_task_drafting)
 	pipeline\2etask_drafting\2ebefore(pipeline.task_drafting.before)
 	pipeline\2etask_drafting\2eafter(pipeline.task_drafting.after)
-	route_investigation(route_investigation<hr/><small><em>agsci_phase = pipeline
-agsci_step = route_investigation</em></small>)
-	investigation(investigation<hr/><small><em>agsci_phase = pipeline
-agsci_step = investigation</em></small>)
+	route_investigation(route_investigation)
+	investigation(investigation)
 	pipeline\2einvestigation\2ebefore(pipeline.investigation.before)
 	pipeline\2einvestigation\2eafter(pipeline.investigation.after)
-	route_downstream_selection(route_downstream_selection<hr/><small><em>agsci_phase = pipeline
-agsci_step = route_downstream_selection</em></small>)
+	route_downstream_selection(route_downstream_selection)
 	pipeline\2edownstream_selection\2ebefore(pipeline.downstream_selection.before)
 	pipeline\2edownstream_selection\2eafter(pipeline.downstream_selection.after)
-	route_ablations(route_ablations<hr/><small><em>agsci_phase = pipeline
-agsci_step = route_ablations</em></small>)
+	route_ablations(route_ablations)
 	pipeline\2eablations\2ebefore(pipeline.ablations.before)
 	pipeline\2eablations\2eafter(pipeline.ablations.after)
-	route_final_evaluation(route_final_evaluation<hr/><small><em>agsci_phase = pipeline
-agsci_step = route_final_evaluation</em></small>)
+	route_final_evaluation(route_final_evaluation)
 	pipeline\2efinal_evaluation\2ebefore(pipeline.final_evaluation.before)
 	pipeline\2efinal_evaluation\2eafter(pipeline.final_evaluation.after)
-	route_posthoc(route_posthoc<hr/><small><em>agsci_phase = pipeline
-agsci_step = route_posthoc</em></small>)
+	route_posthoc(route_posthoc)
 	pipeline\2eposthoc\2ebefore(pipeline.posthoc.before)
 	pipeline\2eposthoc\2eafter(pipeline.posthoc.after)
-	route_paper(route_paper<hr/><small><em>agsci_phase = pipeline
-agsci_step = route_paper</em></small>)
+	route_paper(route_paper)
 	pipeline\2epaper\2ebefore(pipeline.paper.before)
 	pipeline\2epaper\2eafter(pipeline.paper.after)
-	route_review(route_review<hr/><small><em>agsci_phase = pipeline
-agsci_step = route_review</em></small>)
-	review(review<hr/><small><em>agsci_phase = pipeline
-agsci_step = review</em></small>)
+	route_review(route_review)
+	review(review)
 	pipeline\2ereview\2ebefore(pipeline.review.before)
 	pipeline\2ereview\2eafter(pipeline.review.after)
-	route_revision(route_revision<hr/><small><em>agsci_phase = pipeline
-agsci_step = route_revision</em></small>)
+	route_revision(route_revision)
 	pipeline\2erevision\2ebefore(pipeline.revision.before)
 	pipeline\2erevision\2eafter(pipeline.revision.after)
 	__end__([<p>__end__</p>]):::last
@@ -287,18 +272,14 @@ agsci_step = route_revision</em></small>)
 	task_drafting\3a__end__ --> pipeline\2etask_drafting\2eafter;
 	pipeline\2efinish\2eafter --> __end__;
 	subgraph task_drafting
-	task_drafting\3arecord_run_config(record_run_config<hr/><small><em>agsci_phase = drafting
-agsci_step = record_run_config</em></small>)
-	task_drafting\3adesign(design<hr/><small><em>agsci_phase = drafting
-agsci_step = design</em></small>)
+	task_drafting\3arecord_run_config(record_run_config)
+	task_drafting\3adesign(design)
 	task_drafting\3adrafting\2edesign\2ebefore(drafting.design.before)
 	task_drafting\3adrafting\2edesign\2eafter(drafting.design.after)
-	task_drafting\3ascaffold(scaffold<hr/><small><em>agsci_phase = drafting
-agsci_step = scaffold</em></small>)
+	task_drafting\3ascaffold(scaffold)
 	task_drafting\3adrafting\2escaffold\2ebefore(drafting.scaffold.before)
 	task_drafting\3adrafting\2escaffold\2eafter(drafting.scaffold.after)
-	task_drafting\3adesign_failed(design_failed<hr/><small><em>agsci_phase = drafting
-agsci_step = design_failed</em></small>)
+	task_drafting\3adesign_failed(design_failed)
 	task_drafting\3a__end__(<p>__end__</p>)
 	task_drafting\3adesign --> task_drafting\3adrafting\2edesign\2eafter;
 	task_drafting\3adrafting\2edesign\2eafter -.-> task_drafting\3adesign_failed;
@@ -312,14 +293,11 @@ agsci_step = design_failed</em></small>)
 	task_drafting\3adrafting\2escaffold\2eafter --> task_drafting\3a__end__;
 	end
 	subgraph downstream_selection
-	downstream_selection\3arecord_run_config(record_run_config<hr/><small><em>agsci_phase = downstream
-agsci_step = record_run_config</em></small>)
-	downstream_selection\3aselect_fallback(select_fallback<hr/><small><em>agsci_phase = downstream
-agsci_step = select_fallback</em></small>)
+	downstream_selection\3arecord_run_config(record_run_config)
+	downstream_selection\3aselect_fallback(select_fallback)
 	downstream_selection\3adownstream\2eselect_fallback\2ebefore(downstream.select_fallback.before)
 	downstream_selection\3adownstream\2eselect_fallback\2eafter(downstream.select_fallback.after)
-	downstream_selection\3afreeze_program(freeze_program<hr/><small><em>agsci_phase = downstream
-agsci_step = freeze_program</em></small>)
+	downstream_selection\3afreeze_program(freeze_program)
 	downstream_selection\3adownstream\2efreeze_program\2ebefore(downstream.freeze_program.before)
 	downstream_selection\3adownstream\2efreeze_program\2eafter(downstream.freeze_program.after)
 	downstream_selection\3adownstream\2efreeze_program\2ebefore --> downstream_selection\3afreeze_program;
@@ -330,72 +308,53 @@ agsci_step = freeze_program</em></small>)
 	downstream_selection\3aselect_fallback --> downstream_selection\3adownstream\2eselect_fallback\2eafter;
 	end
 	subgraph ablations
-	ablations\3arecord_run_config(record_run_config<hr/><small><em>agsci_phase = variants
-agsci_step = record_run_config</em></small>)
-	ablations\3aprepare(prepare<hr/><small><em>agsci_phase = variants
-agsci_step = prepare</em></small>)
+	ablations\3arecord_run_config(record_run_config)
+	ablations\3aprepare(prepare)
 	ablations\3avariants\2eprepare\2ebefore(variants.prepare.before)
 	ablations\3avariants\2eprepare\2eafter(variants.prepare.after)
-	ablations\3aextract(extract<hr/><small><em>agsci_phase = variants
-agsci_step = extract</em></small>)
+	ablations\3aextract(extract)
 	ablations\3avariants\2eextract\2ebefore(variants.extract.before)
 	ablations\3avariants\2eextract\2eafter(variants.extract.after)
-	ablations\3aretrofit_prepare(retrofit_prepare<hr/><small><em>agsci_phase = variants
-agsci_step = retrofit_prepare</em></small>)
+	ablations\3aretrofit_prepare(retrofit_prepare)
 	ablations\3avariants\2eretrofit_prepare\2ebefore(variants.retrofit_prepare.before)
 	ablations\3avariants\2eretrofit_prepare\2eafter(variants.retrofit_prepare.after)
-	ablations\3aretrofit_agent(retrofit_agent<hr/><small><em>agsci_phase = variants
-agsci_step = retrofit_agent</em></small>)
+	ablations\3aretrofit_agent(retrofit_agent)
 	ablations\3avariants\2eretrofit_agent\2ebefore(variants.retrofit_agent.before)
 	ablations\3avariants\2eretrofit_agent\2eafter(variants.retrofit_agent.after)
-	ablations\3aretrofit_finish(retrofit_finish<hr/><small><em>agsci_phase = variants
-agsci_step = retrofit_finish</em></small>)
+	ablations\3aretrofit_finish(retrofit_finish)
 	ablations\3avariants\2eretrofit_finish\2ebefore(variants.retrofit_finish.before)
 	ablations\3avariants\2eretrofit_finish\2eafter(variants.retrofit_finish.after)
-	ablations\3agenerate(generate<hr/><small><em>agsci_phase = variants
-agsci_step = generate</em></small>)
+	ablations\3agenerate(generate)
 	ablations\3avariants\2egenerate\2ebefore(variants.generate.before)
 	ablations\3avariants\2egenerate\2eafter(variants.generate.after)
-	ablations\3aselect(select<hr/><small><em>agsci_phase = variants
-agsci_step = select</em></small>)
+	ablations\3aselect(select)
 	ablations\3avariants\2eselect\2ebefore(variants.select.before)
 	ablations\3avariants\2eselect\2eafter(variants.select.after)
-	ablations\3acustom_baselines(custom_baselines<hr/><small><em>agsci_phase = variants
-agsci_step = custom_baselines</em></small>)
+	ablations\3acustom_baselines(custom_baselines)
 	ablations\3avariants\2ecustom_baselines\2ebefore(variants.custom_baselines.before)
 	ablations\3avariants\2ecustom_baselines\2eafter(variants.custom_baselines.after)
-	ablations\3amaterialize(materialize<hr/><small><em>agsci_phase = variants
-agsci_step = materialize</em></small>)
+	ablations\3amaterialize(materialize)
 	ablations\3avariants\2ematerialize\2ebefore(variants.materialize.before)
 	ablations\3avariants\2ematerialize\2eafter(variants.materialize.after)
-	ablations\3arun_control(run_control<hr/><small><em>agsci_phase = variants
-agsci_step = run_control</em></small>)
-	ablations\3aafter_control(after_control<hr/><small><em>agsci_phase = variants
-agsci_step = after_control</em></small>)
+	ablations\3arun_control(run_control)
+	ablations\3aafter_control(after_control)
 	ablations\3avariants\2eafter_control\2ebefore(variants.after_control.before)
 	ablations\3avariants\2eafter_control\2eafter(variants.after_control.after)
-	ablations\3arun_variant(run_variant<hr/><small><em>agsci_phase = variants
-agsci_step = run_variant</em></small>)
-	ablations\3ajoin_variants(join_variants<hr/><small><em>agsci_phase = variants
-agsci_step = join_variants</em></small>)
+	ablations\3arun_variant(run_variant)
+	ablations\3ajoin_variants(join_variants)
 	ablations\3avariants\2ejoin_variants\2ebefore(variants.join_variants.before)
 	ablations\3avariants\2ejoin_variants\2eafter(variants.join_variants.after)
-	ablations\3across_task(cross_task<hr/><small><em>agsci_phase = variants
-agsci_step = cross_task</em></small>)
+	ablations\3across_task(cross_task)
 	ablations\3avariants\2ecross_task\2ebefore(variants.cross_task.before)
 	ablations\3avariants\2ecross_task\2eafter(variants.cross_task.after)
-	ablations\3across_result(cross_result<hr/><small><em>agsci_phase = variants
-agsci_step = cross_result</em></small>)
-	ablations\3aaggregate(aggregate<hr/><small><em>agsci_phase = variants
-agsci_step = aggregate</em></small>)
+	ablations\3across_result(cross_result)
+	ablations\3aaggregate(aggregate)
 	ablations\3avariants\2eaggregate\2ebefore(variants.aggregate.before)
 	ablations\3avariants\2eaggregate\2eafter(variants.aggregate.after)
-	ablations\3areadme(readme<hr/><small><em>agsci_phase = variants
-agsci_step = readme</em></small>)
+	ablations\3areadme(readme)
 	ablations\3avariants\2ereadme\2ebefore(variants.readme.before)
 	ablations\3avariants\2ereadme\2eafter(variants.readme.after)
-	ablations\3afinish(finish<hr/><small><em>agsci_phase = variants
-agsci_step = finish</em></small>)
+	ablations\3afinish(finish)
 	ablations\3avariants\2efinish\2ebefore(variants.finish.before)
 	ablations\3avariants\2efinish\2eafter(variants.finish.after)
 	ablations\3aafter_control --> ablations\3avariants\2eafter_control\2eafter;
@@ -462,28 +421,21 @@ agsci_step = finish</em></small>)
 	ablations\3avariants\2eselect\2ebefore --> ablations\3aselect;
 	end
 	subgraph final_evaluation
-	final_evaluation\3arecord_run_config(record_run_config<hr/><small><em>agsci_phase = final_evaluation
-agsci_step = record_run_config</em></small>)
-	final_evaluation\3aresolve_incumbent(resolve_incumbent<hr/><small><em>agsci_phase = final_evaluation
-agsci_step = resolve_incumbent</em></small>)
+	final_evaluation\3arecord_run_config(record_run_config)
+	final_evaluation\3aresolve_incumbent(resolve_incumbent)
 	final_evaluation\3afinal_evaluation\2eresolve_incumbent\2ebefore(final_evaluation.resolve_incumbent.before)
 	final_evaluation\3afinal_evaluation\2eresolve_incumbent\2eafter(final_evaluation.resolve_incumbent.after)
-	final_evaluation\3afreeze(freeze<hr/><small><em>agsci_phase = final_evaluation
-agsci_step = freeze</em></small>)
+	final_evaluation\3afreeze(freeze)
 	final_evaluation\3afinal_evaluation\2efreeze\2ebefore(final_evaluation.freeze.before)
 	final_evaluation\3afinal_evaluation\2efreeze\2eafter(final_evaluation.freeze.after)
-	final_evaluation\3adraw_inputs(draw_inputs<hr/><small><em>agsci_phase = final_evaluation
-agsci_step = draw_inputs</em></small>)
+	final_evaluation\3adraw_inputs(draw_inputs)
 	final_evaluation\3afinal_evaluation\2edraw_inputs\2ebefore(final_evaluation.draw_inputs.before)
 	final_evaluation\3afinal_evaluation\2edraw_inputs\2eafter(final_evaluation.draw_inputs.after)
-	final_evaluation\3aattach_inputs(attach_inputs<hr/><small><em>agsci_phase = final_evaluation
-agsci_step = attach_inputs</em></small>)
-	final_evaluation\3aevaluate_sealed(evaluate_sealed<hr/><small><em>agsci_phase = final_evaluation
-agsci_step = evaluate_sealed</em></small>)
+	final_evaluation\3aattach_inputs(attach_inputs)
+	final_evaluation\3aevaluate_sealed(evaluate_sealed)
 	final_evaluation\3afinal_evaluation\2eevaluate_sealed\2ebefore(final_evaluation.evaluate_sealed.before)
 	final_evaluation\3afinal_evaluation\2eevaluate_sealed\2eafter(final_evaluation.evaluate_sealed.after)
-	final_evaluation\3averify_manifest(verify_manifest<hr/><small><em>agsci_phase = final_evaluation
-agsci_step = verify_manifest</em></small>)
+	final_evaluation\3averify_manifest(verify_manifest)
 	final_evaluation\3afinal_evaluation\2everify_manifest\2ebefore(final_evaluation.verify_manifest.before)
 	final_evaluation\3afinal_evaluation\2everify_manifest\2eafter(final_evaluation.verify_manifest.after)
 	final_evaluation\3a__end__(<p>__end__</p>)
@@ -509,60 +461,45 @@ agsci_step = verify_manifest</em></small>)
 	final_evaluation\3afinal_evaluation\2everify_manifest\2eafter --> final_evaluation\3a__end__;
 	end
 	subgraph posthoc
-	posthoc\3arecord_run_config(record_run_config<hr/><small><em>agsci_phase = posthoc
-agsci_step = record_run_config</em></small>)
-	posthoc\3aextract(extract<hr/><small><em>agsci_phase = posthoc
-agsci_step = extract</em></small>)
+	posthoc\3arecord_run_config(record_run_config)
+	posthoc\3aextract(extract)
 	posthoc\3aposthoc\2eextract\2ebefore(posthoc.extract.before)
 	posthoc\3aposthoc\2eextract\2eafter(posthoc.extract.after)
-	posthoc\3abootstrap_prepare(bootstrap_prepare<hr/><small><em>agsci_phase = posthoc
-agsci_step = bootstrap_prepare</em></small>)
+	posthoc\3abootstrap_prepare(bootstrap_prepare)
 	posthoc\3aposthoc\2ebootstrap_prepare\2ebefore(posthoc.bootstrap_prepare.before)
 	posthoc\3aposthoc\2ebootstrap_prepare\2eafter(posthoc.bootstrap_prepare.after)
-	posthoc\3abootstrap_reset(bootstrap_reset<hr/><small><em>agsci_phase = posthoc
-agsci_step = bootstrap_reset</em></small>)
+	posthoc\3abootstrap_reset(bootstrap_reset)
 	posthoc\3aposthoc\2ebootstrap_reset\2ebefore(posthoc.bootstrap_reset.before)
 	posthoc\3aposthoc\2ebootstrap_reset\2eafter(posthoc.bootstrap_reset.after)
-	posthoc\3abootstrap_agent(bootstrap_agent<hr/><small><em>agsci_phase = posthoc
-agsci_step = bootstrap_agent</em></small>)
+	posthoc\3abootstrap_agent(bootstrap_agent)
 	posthoc\3aposthoc\2ebootstrap_agent\2ebefore(posthoc.bootstrap_agent.before)
 	posthoc\3aposthoc\2ebootstrap_agent\2eafter(posthoc.bootstrap_agent.after)
-	posthoc\3abootstrap_evaluate(bootstrap_evaluate<hr/><small><em>agsci_phase = posthoc
-agsci_step = bootstrap_evaluate</em></small>)
+	posthoc\3abootstrap_evaluate(bootstrap_evaluate)
 	posthoc\3aposthoc\2ebootstrap_evaluate\2ebefore(posthoc.bootstrap_evaluate.before)
 	posthoc\3aposthoc\2ebootstrap_evaluate\2eafter(posthoc.bootstrap_evaluate.after)
-	posthoc\3abootstrap_record(bootstrap_record<hr/><small><em>agsci_phase = posthoc
-agsci_step = bootstrap_record</em></small>)
+	posthoc\3abootstrap_record(bootstrap_record)
 	posthoc\3aposthoc\2ebootstrap_record\2ebefore(posthoc.bootstrap_record.before)
 	posthoc\3aposthoc\2ebootstrap_record\2eafter(posthoc.bootstrap_record.after)
-	posthoc\3abootstrap_finish(bootstrap_finish<hr/><small><em>agsci_phase = posthoc
-agsci_step = bootstrap_finish</em></small>)
+	posthoc\3abootstrap_finish(bootstrap_finish)
 	posthoc\3aposthoc\2ebootstrap_finish\2ebefore(posthoc.bootstrap_finish.before)
 	posthoc\3aposthoc\2ebootstrap_finish\2eafter(posthoc.bootstrap_finish.after)
-	posthoc\3arestore_evidence(restore_evidence<hr/><small><em>agsci_phase = posthoc
-agsci_step = restore_evidence</em></small>)
+	posthoc\3arestore_evidence(restore_evidence)
 	posthoc\3aposthoc\2erestore_evidence\2ebefore(posthoc.restore_evidence.before)
 	posthoc\3aposthoc\2erestore_evidence\2eafter(posthoc.restore_evidence.after)
-	posthoc\3agenerate(generate<hr/><small><em>agsci_phase = posthoc
-agsci_step = generate</em></small>)
+	posthoc\3agenerate(generate)
 	posthoc\3aposthoc\2egenerate\2ebefore(posthoc.generate.before)
 	posthoc\3aposthoc\2egenerate\2eafter(posthoc.generate.after)
-	posthoc\3aselect(select<hr/><small><em>agsci_phase = posthoc
-agsci_step = select</em></small>)
+	posthoc\3aselect(select)
 	posthoc\3aposthoc\2eselect\2ebefore(posthoc.select.before)
 	posthoc\3aposthoc\2eselect\2eafter(posthoc.select.after)
-	posthoc\3aapply_constraints(apply_constraints<hr/><small><em>agsci_phase = posthoc
-agsci_step = apply_constraints</em></small>)
+	posthoc\3aapply_constraints(apply_constraints)
 	posthoc\3aposthoc\2eapply_constraints\2ebefore(posthoc.apply_constraints.before)
 	posthoc\3aposthoc\2eapply_constraints\2eafter(posthoc.apply_constraints.after)
-	posthoc\3amaterialize(materialize<hr/><small><em>agsci_phase = posthoc
-agsci_step = materialize</em></small>)
+	posthoc\3amaterialize(materialize)
 	posthoc\3aposthoc\2ematerialize\2ebefore(posthoc.materialize.before)
 	posthoc\3aposthoc\2ematerialize\2eafter(posthoc.materialize.after)
-	posthoc\3arun_analysis(run_analysis<hr/><small><em>agsci_phase = posthoc
-agsci_step = run_analysis</em></small>)
-	posthoc\3apublish(publish<hr/><small><em>agsci_phase = posthoc
-agsci_step = publish</em></small>)
+	posthoc\3arun_analysis(run_analysis)
+	posthoc\3apublish(publish)
 	posthoc\3aposthoc\2epublish\2ebefore(posthoc.publish.before)
 	posthoc\3aposthoc\2epublish\2eafter(posthoc.publish.after)
 	posthoc\3aapply_constraints --> posthoc\3aposthoc\2eapply_constraints\2eafter;
@@ -615,124 +552,89 @@ agsci_step = publish</em></small>)
 	posthoc\3aselect --> posthoc\3aposthoc\2eselect\2eafter;
 	end
 	subgraph paper
-	paper\3arecord_run_config(record_run_config<hr/><small><em>agsci_phase = paper
-agsci_step = record_run_config</em></small>)
-	paper\3aprepare(prepare<hr/><small><em>agsci_phase = paper
-agsci_step = prepare</em></small>)
+	paper\3arecord_run_config(record_run_config)
+	paper\3aprepare(prepare)
 	paper\3apaper\2eprepare\2ebefore(paper.prepare.before)
 	paper\3apaper\2eprepare\2eafter(paper.prepare.after)
-	paper\3apaper_data(paper_data<hr/><small><em>agsci_phase = paper
-agsci_step = paper_data</em></small>)
+	paper\3apaper_data(paper_data)
 	paper\3apaper\2epaper_data\2ebefore(paper.paper_data.before)
 	paper\3apaper\2epaper_data\2eafter(paper.paper_data.after)
-	paper\3acheck_final_outcome(check_final_outcome<hr/><small><em>agsci_phase = paper
-agsci_step = check_final_outcome</em></small>)
+	paper\3acheck_final_outcome(check_final_outcome)
 	paper\3apaper\2echeck_final_outcome\2ebefore(paper.check_final_outcome.before)
 	paper\3apaper\2echeck_final_outcome\2eafter(paper.check_final_outcome.after)
-	paper\3aseed_edit(seed_edit<hr/><small><em>agsci_phase = paper
-agsci_step = seed_edit</em></small>)
+	paper\3aseed_edit(seed_edit)
 	paper\3apaper\2eseed_edit\2ebefore(paper.seed_edit.before)
 	paper\3apaper\2eseed_edit\2eafter(paper.seed_edit.after)
-	paper\3astage_inputs(stage_inputs<hr/><small><em>agsci_phase = paper
-agsci_step = stage_inputs</em></small>)
+	paper\3astage_inputs(stage_inputs)
 	paper\3apaper\2estage_inputs\2ebefore(paper.stage_inputs.before)
 	paper\3apaper\2estage_inputs\2eafter(paper.stage_inputs.after)
-	paper\3areferences(references<hr/><small><em>agsci_phase = paper
-agsci_step = references</em></small>)
+	paper\3areferences(references)
 	paper\3apaper\2ereferences\2ebefore(paper.references.before)
 	paper\3apaper\2ereferences\2eafter(paper.references.after)
-	paper\3areferences_failed(references_failed<hr/><small><em>agsci_phase = paper
-agsci_step = references_failed</em></small>)
-	paper\3astrategy(strategy<hr/><small><em>agsci_phase = paper
-agsci_step = strategy</em></small>)
+	paper\3areferences_failed(references_failed)
+	paper\3astrategy(strategy)
 	paper\3apaper\2estrategy\2ebefore(paper.strategy.before)
 	paper\3apaper\2estrategy\2eafter(paper.strategy.after)
-	paper\3astrategy_repair(strategy_repair<hr/><small><em>agsci_phase = paper
-agsci_step = strategy_repair</em></small>)
-	paper\3astrategy_exhausted(strategy_exhausted<hr/><small><em>agsci_phase = paper
-agsci_step = strategy_exhausted</em></small>)
-	paper\3aresolve_family(resolve_family<hr/><small><em>agsci_phase = paper
-agsci_step = resolve_family</em></small>)
+	paper\3astrategy_repair(strategy_repair)
+	paper\3astrategy_exhausted(strategy_exhausted)
+	paper\3aresolve_family(resolve_family)
 	paper\3apaper\2eresolve_family\2ebefore(paper.resolve_family.before)
 	paper\3apaper\2eresolve_family\2eafter(paper.resolve_family.after)
-	paper\3arank_posthoc(rank_posthoc<hr/><small><em>agsci_phase = paper
-agsci_step = rank_posthoc</em></small>)
+	paper\3arank_posthoc(rank_posthoc)
 	paper\3apaper\2erank_posthoc\2ebefore(paper.rank_posthoc.before)
 	paper\3apaper\2erank_posthoc\2eafter(paper.rank_posthoc.after)
-	paper\3aranking_repair(ranking_repair<hr/><small><em>agsci_phase = paper
-agsci_step = ranking_repair</em></small>)
-	paper\3aranking_exhausted(ranking_exhausted<hr/><small><em>agsci_phase = paper
-agsci_step = ranking_exhausted</em></small>)
-	paper\3aaugment_paper_data(augment_paper_data<hr/><small><em>agsci_phase = paper
-agsci_step = augment_paper_data</em></small>)
+	paper\3aranking_repair(ranking_repair)
+	paper\3aranking_exhausted(ranking_exhausted)
+	paper\3aaugment_paper_data(augment_paper_data)
 	paper\3apaper\2eaugment_paper_data\2ebefore(paper.augment_paper_data.before)
 	paper\3apaper\2eaugment_paper_data\2eafter(paper.augment_paper_data.after)
-	paper\3ainit_concept_figure(init_concept_figure<hr/><small><em>agsci_phase = paper
-agsci_step = init_concept_figure</em></small>)
+	paper\3ainit_concept_figure(init_concept_figure)
 	paper\3apaper\2einit_concept_figure\2ebefore(paper.init_concept_figure.before)
 	paper\3apaper\2einit_concept_figure\2eafter(paper.init_concept_figure.after)
-	paper\3aselect_stage(select_stage<hr/><small><em>agsci_phase = paper
-agsci_step = select_stage</em></small>)
+	paper\3aselect_stage(select_stage)
 	paper\3apaper\2eselect_stage\2ebefore(paper.select_stage.before)
 	paper\3apaper\2eselect_stage\2eafter(paper.select_stage.after)
-	paper\3awrite(write<hr/><small><em>agsci_phase = paper
-agsci_step = write</em></small>)
+	paper\3awrite(write)
 	paper\3apaper\2ewrite\2ebefore(paper.write.before)
 	paper\3apaper\2ewrite\2eafter(paper.write.after)
-	paper\3aafter_write(after_write<hr/><small><em>agsci_phase = paper
-agsci_step = after_write</em></small>)
+	paper\3aafter_write(after_write)
 	paper\3apaper\2eafter_write\2ebefore(paper.after_write.before)
 	paper\3apaper\2eafter_write\2eafter(paper.after_write.after)
-	paper\3apostdraft_gate(postdraft_gate<hr/><small><em>agsci_phase = paper
-agsci_step = postdraft_gate</em></small>)
-	paper\3apostdraft(postdraft<hr/><small><em>agsci_phase = paper
-agsci_step = postdraft</em></small>)
+	paper\3apostdraft_gate(postdraft_gate)
+	paper\3apostdraft(postdraft)
 	paper\3apaper\2epostdraft\2ebefore(paper.postdraft.before)
 	paper\3apaper\2epostdraft\2eafter(paper.postdraft.after)
-	paper\3aafter_postdraft(after_postdraft<hr/><small><em>agsci_phase = paper
-agsci_step = after_postdraft</em></small>)
-	paper\3afigures(figures<hr/><small><em>agsci_phase = paper
-agsci_step = figures</em></small>)
+	paper\3aafter_postdraft(after_postdraft)
+	paper\3afigures(figures)
 	paper\3apaper\2efigures\2ebefore(paper.figures.before)
 	paper\3apaper\2efigures\2eafter(paper.figures.after)
-	paper\3avalidate(validate<hr/><small><em>agsci_phase = paper
-agsci_step = validate</em></small>)
+	paper\3avalidate(validate)
 	paper\3apaper\2evalidate\2ebefore(paper.validate.before)
 	paper\3apaper\2evalidate\2eafter(paper.validate.after)
-	paper\3aafter_validate(after_validate<hr/><small><em>agsci_phase = paper
-agsci_step = after_validate</em></small>)
+	paper\3aafter_validate(after_validate)
 	paper\3apaper\2eafter_validate\2ebefore(paper.after_validate.before)
 	paper\3apaper\2eafter_validate\2eafter(paper.after_validate.after)
-	paper\3aaudit(audit<hr/><small><em>agsci_phase = paper
-agsci_step = audit</em></small>)
+	paper\3aaudit(audit)
 	paper\3apaper\2eaudit\2ebefore(paper.audit.before)
 	paper\3apaper\2eaudit\2eafter(paper.audit.after)
-	paper\3aafter_audit(after_audit<hr/><small><em>agsci_phase = paper
-agsci_step = after_audit</em></small>)
+	paper\3aafter_audit(after_audit)
 	paper\3apaper\2eafter_audit\2ebefore(paper.after_audit.before)
 	paper\3apaper\2eafter_audit\2eafter(paper.after_audit.after)
-	paper\3areview_check(review_check<hr/><small><em>agsci_phase = paper
-agsci_step = review_check</em></small>)
-	paper\3areview_gate(review_gate<hr/><small><em>agsci_phase = paper
-agsci_step = review_gate</em></small>)
+	paper\3areview_check(review_check)
+	paper\3areview_gate(review_gate)
 	paper\3apaper\2ereview_gate\2ebefore(paper.review_gate.before)
 	paper\3apaper\2ereview_gate\2eafter(paper.review_gate.after)
-	paper\3aafter_review(after_review<hr/><small><em>agsci_phase = paper
-agsci_step = after_review</em></small>)
+	paper\3aafter_review(after_review)
 	paper\3apaper\2eafter_review\2ebefore(paper.after_review.before)
 	paper\3apaper\2eafter_review\2eafter(paper.after_review.after)
-	paper\3afigure_quality_gate(figure_quality_gate<hr/><small><em>agsci_phase = paper
-agsci_step = figure_quality_gate</em></small>)
+	paper\3afigure_quality_gate(figure_quality_gate)
 	paper\3apaper\2efigure_quality_gate\2ebefore(paper.figure_quality_gate.before)
 	paper\3apaper\2efigure_quality_gate\2eafter(paper.figure_quality_gate.after)
-	paper\3aloop_decision(loop_decision<hr/><small><em>agsci_phase = paper
-agsci_step = loop_decision</em></small>)
-	paper\3afinalize(finalize<hr/><small><em>agsci_phase = paper
-agsci_step = finalize</em></small>)
+	paper\3aloop_decision(loop_decision)
+	paper\3afinalize(finalize)
 	paper\3apaper\2efinalize\2ebefore(paper.finalize.before)
 	paper\3apaper\2efinalize\2eafter(paper.finalize.after)
-	paper\3aoutcome(outcome<hr/><small><em>agsci_phase = paper
-agsci_step = outcome</em></small>)
+	paper\3aoutcome(outcome)
 	paper\3a__end__(<p>__end__</p>)
 	paper\3aafter_audit --> paper\3apaper\2eafter_audit\2eafter;
 	paper\3aafter_postdraft -.-> paper\3aoutcome;
@@ -845,38 +747,29 @@ agsci_step = outcome</em></small>)
 	paper\3apaper\2efinalize\2eafter --> paper\3a__end__;
 	end
 	subgraph revision
-	revision\3arecord_run_config(record_run_config<hr/><small><em>agsci_phase = revision
-agsci_step = record_run_config</em></small>)
-	revision\3acheck_preconditions(check_preconditions<hr/><small><em>agsci_phase = revision
-agsci_step = check_preconditions</em></small>)
+	revision\3arecord_run_config(record_run_config)
+	revision\3acheck_preconditions(check_preconditions)
 	revision\3arevision\2echeck_preconditions\2ebefore(revision.check_preconditions.before)
 	revision\3arevision\2echeck_preconditions\2eafter(revision.check_preconditions.after)
-	revision\3astage_revision(stage_revision<hr/><small><em>agsci_phase = revision
-agsci_step = stage_revision</em></small>)
+	revision\3astage_revision(stage_revision)
 	revision\3arevision\2estage_revision\2ebefore(revision.stage_revision.before)
 	revision\3arevision\2estage_revision\2eafter(revision.stage_revision.after)
-	revision\3apaper(paper<hr/><small><em>agsci_phase = revision
-agsci_step = paper</em></small>)
+	revision\3apaper(paper)
 	revision\3arevision\2epaper\2ebefore(revision.paper.before)
 	revision\3arevision\2epaper\2eafter(revision.paper.after)
-	revision\3aretention_check(retention_check<hr/><small><em>agsci_phase = revision
-agsci_step = retention_check</em></small>)
+	revision\3aretention_check(retention_check)
 	revision\3arevision\2eretention_check\2ebefore(revision.retention_check.before)
 	revision\3arevision\2eretention_check\2eafter(revision.retention_check.after)
-	revision\3asnapshot_original(snapshot_original<hr/><small><em>agsci_phase = revision
-agsci_step = snapshot_original</em></small>)
+	revision\3asnapshot_original(snapshot_original)
 	revision\3arevision\2esnapshot_original\2ebefore(revision.snapshot_original.before)
 	revision\3arevision\2esnapshot_original\2eafter(revision.snapshot_original.after)
-	revision\3apromote(promote<hr/><small><em>agsci_phase = revision
-agsci_step = promote</em></small>)
+	revision\3apromote(promote)
 	revision\3arevision\2epromote\2ebefore(revision.promote.before)
 	revision\3arevision\2epromote\2eafter(revision.promote.after)
-	revision\3asecond_review(second_review<hr/><small><em>agsci_phase = revision
-agsci_step = second_review</em></small>)
+	revision\3asecond_review(second_review)
 	revision\3arevision\2esecond_review\2ebefore(revision.second_review.before)
 	revision\3arevision\2esecond_review\2eafter(revision.second_review.after)
-	revision\3afinalize(finalize<hr/><small><em>agsci_phase = revision
-agsci_step = finalize</em></small>)
+	revision\3afinalize(finalize)
 	revision\3arevision\2efinalize\2ebefore(revision.finalize.before)
 	revision\3arevision\2efinalize\2eafter(revision.finalize.after)
 	revision\3acheck_preconditions --> revision\3arevision\2echeck_preconditions\2eafter;
@@ -926,16 +819,13 @@ config:
 ---
 graph TD;
 	__start__([<p>__start__</p>]):::first
-	record_run_config(record_run_config<hr/><small><em>agsci_phase = drafting
-agsci_step = record_run_config</em></small>)
-	design(design<hr/><small><em>agsci_phase = drafting
-agsci_step = design</em></small>)
+	record_run_config(record_run_config)
+	design(design)
 	drafting\2edesign\2ebefore(drafting.design.before)
 	drafting\2edesign\2eafter(drafting.design.after)
 	drafting\2escaffold\2ebefore(drafting.scaffold.before)
 	drafting\2escaffold\2eafter(drafting.scaffold.after)
-	design_failed(design_failed<hr/><small><em>agsci_phase = drafting
-agsci_step = design_failed</em></small>)
+	design_failed(design_failed)
 	__end__([<p>__end__</p>]):::last
 	__start__ --> record_run_config;
 	design --> drafting\2edesign\2eafter;
@@ -949,120 +839,80 @@ agsci_step = design_failed</em></small>)
 	design_failed --> __end__;
 	drafting\2escaffold\2eafter --> __end__;
 	subgraph scaffold
-	scaffold\3arecord_run_config(record_run_config<hr/><small><em>agsci_phase = drafting
-agsci_step = record_run_config</em></small>)
-	scaffold\3aprepare(prepare<hr/><small><em>agsci_phase = drafting
-agsci_step = prepare</em></small>)
+	scaffold\3arecord_run_config(record_run_config)
+	scaffold\3aprepare(prepare)
 	scaffold\3adrafting\2eprepare\2ebefore(drafting.prepare.before)
 	scaffold\3adrafting\2eprepare\2eafter(drafting.prepare.after)
-	scaffold\3adraft(draft<hr/><small><em>agsci_phase = drafting
-agsci_step = draft</em></small>)
+	scaffold\3adraft(draft)
 	scaffold\3adrafting\2edraft\2ebefore(drafting.draft.before)
 	scaffold\3adrafting\2edraft\2eafter(drafting.draft.after)
-	scaffold\3ainspect_scaffold(inspect_scaffold<hr/><small><em>agsci_phase = drafting
-agsci_step = inspect_scaffold</em></small>)
+	scaffold\3ainspect_scaffold(inspect_scaffold)
 	scaffold\3adrafting\2einspect_scaffold\2ebefore(drafting.inspect_scaffold.before)
 	scaffold\3adrafting\2einspect_scaffold\2eafter(drafting.inspect_scaffold.after)
-	scaffold\3acanonicalize(canonicalize<hr/><small><em>agsci_phase = drafting
-agsci_step = canonicalize</em></small>)
+	scaffold\3acanonicalize(canonicalize)
 	scaffold\3adrafting\2ecanonicalize\2ebefore(drafting.canonicalize.before)
 	scaffold\3adrafting\2ecanonicalize\2eafter(drafting.canonicalize.after)
-	scaffold\3aalignment_boundary_retry(alignment_boundary_retry<hr/><small><em>agsci_phase = drafting
-agsci_step = alignment_boundary_retry</em></small>)
-	scaffold\3apreflight(preflight<hr/><small><em>agsci_phase = drafting
-agsci_step = preflight</em></small>)
+	scaffold\3aalignment_boundary_retry(alignment_boundary_retry)
+	scaffold\3apreflight(preflight)
 	scaffold\3adrafting\2epreflight\2ebefore(drafting.preflight.before)
 	scaffold\3adrafting\2epreflight\2eafter(drafting.preflight.after)
-	scaffold\3apreflight_failed(preflight_failed<hr/><small><em>agsci_phase = drafting
-agsci_step = preflight_failed</em></small>)
-	scaffold\3apreflight_repair(preflight_repair<hr/><small><em>agsci_phase = drafting
-agsci_step = preflight_repair</em></small>)
+	scaffold\3apreflight_failed(preflight_failed)
+	scaffold\3apreflight_repair(preflight_repair)
 	scaffold\3adrafting\2epreflight_repair\2ebefore(drafting.preflight_repair.before)
 	scaffold\3adrafting\2epreflight_repair\2eafter(drafting.preflight_repair.after)
-	scaffold\3aclose_preflight_repair(close_preflight_repair<hr/><small><em>agsci_phase = drafting
-agsci_step = close_preflight_repair</em></small>)
-	scaffold\3asmoke(smoke<hr/><small><em>agsci_phase = drafting
-agsci_step = smoke</em></small>)
+	scaffold\3aclose_preflight_repair(close_preflight_repair)
+	scaffold\3asmoke(smoke)
 	scaffold\3adrafting\2esmoke\2ebefore(drafting.smoke.before)
 	scaffold\3adrafting\2esmoke\2eafter(drafting.smoke.after)
-	scaffold\3asmoke_failed(smoke_failed<hr/><small><em>agsci_phase = drafting
-agsci_step = smoke_failed</em></small>)
-	scaffold\3asmoke_accepted(smoke_accepted<hr/><small><em>agsci_phase = drafting
-agsci_step = smoke_accepted</em></small>)
-	scaffold\3aopen_smoke_transaction(open_smoke_transaction<hr/><small><em>agsci_phase = drafting
-agsci_step = open_smoke_transaction</em></small>)
-	scaffold\3asmoke_repair(smoke_repair<hr/><small><em>agsci_phase = drafting
-agsci_step = smoke_repair</em></small>)
+	scaffold\3asmoke_failed(smoke_failed)
+	scaffold\3asmoke_accepted(smoke_accepted)
+	scaffold\3aopen_smoke_transaction(open_smoke_transaction)
+	scaffold\3asmoke_repair(smoke_repair)
 	scaffold\3adrafting\2esmoke_repair\2ebefore(drafting.smoke_repair.before)
 	scaffold\3adrafting\2esmoke_repair\2eafter(drafting.smoke_repair.after)
-	scaffold\3aclose_smoke_repair(close_smoke_repair<hr/><small><em>agsci_phase = drafting
-agsci_step = close_smoke_repair</em></small>)
-	scaffold\3aalignment_view(alignment_view<hr/><small><em>agsci_phase = drafting
-agsci_step = alignment_view</em></small>)
+	scaffold\3aclose_smoke_repair(close_smoke_repair)
+	scaffold\3aalignment_view(alignment_view)
 	scaffold\3adrafting\2ealignment_view\2ebefore(drafting.alignment_view.before)
 	scaffold\3adrafting\2ealignment_view\2eafter(drafting.alignment_view.after)
-	scaffold\3aalignment_judge(alignment_judge<hr/><small><em>agsci_phase = drafting
-agsci_step = alignment_judge</em></small>)
+	scaffold\3aalignment_judge(alignment_judge)
 	scaffold\3adrafting\2ealignment_judge\2ebefore(drafting.alignment_judge.before)
 	scaffold\3adrafting\2ealignment_judge\2eafter(drafting.alignment_judge.after)
-	scaffold\3acheck_alignment(check_alignment<hr/><small><em>agsci_phase = drafting
-agsci_step = check_alignment</em></small>)
+	scaffold\3acheck_alignment(check_alignment)
 	scaffold\3adrafting\2echeck_alignment\2ebefore(drafting.check_alignment.before)
 	scaffold\3adrafting\2echeck_alignment\2eafter(drafting.check_alignment.after)
-	scaffold\3aalignment_passed(alignment_passed<hr/><small><em>agsci_phase = drafting
-agsci_step = alignment_passed</em></small>)
-	scaffold\3aalignment_failed(alignment_failed<hr/><small><em>agsci_phase = drafting
-agsci_step = alignment_failed</em></small>)
-	scaffold\3aopen_alignment_transaction(open_alignment_transaction<hr/><small><em>agsci_phase = drafting
-agsci_step = open_alignment_transaction</em></small>)
-	scaffold\3aalignment_repair(alignment_repair<hr/><small><em>agsci_phase = drafting
-agsci_step = alignment_repair</em></small>)
+	scaffold\3aalignment_passed(alignment_passed)
+	scaffold\3aalignment_failed(alignment_failed)
+	scaffold\3aopen_alignment_transaction(open_alignment_transaction)
+	scaffold\3aalignment_repair(alignment_repair)
 	scaffold\3adrafting\2ealignment_repair\2ebefore(drafting.alignment_repair.before)
 	scaffold\3adrafting\2ealignment_repair\2eafter(drafting.alignment_repair.after)
-	scaffold\3aclose_alignment_repair(close_alignment_repair<hr/><small><em>agsci_phase = drafting
-agsci_step = close_alignment_repair</em></small>)
-	scaffold\3aalignment_validation_failed(alignment_validation_failed<hr/><small><em>agsci_phase = drafting
-agsci_step = alignment_validation_failed</em></small>)
-	scaffold\3aqualify(qualify<hr/><small><em>agsci_phase = drafting
-agsci_step = qualify</em></small>)
+	scaffold\3aclose_alignment_repair(close_alignment_repair)
+	scaffold\3aalignment_validation_failed(alignment_validation_failed)
+	scaffold\3aqualify(qualify)
 	scaffold\3adrafting\2equalify\2ebefore(drafting.qualify.before)
 	scaffold\3adrafting\2equalify\2eafter(drafting.qualify.after)
-	scaffold\3aqualification_infrastructure_failed(qualification_infrastructure_failed<hr/><small><em>agsci_phase = drafting
-agsci_step = qualification_infrastructure_failed</em></small>)
-	scaffold\3aqualification_passed(qualification_passed<hr/><small><em>agsci_phase = drafting
-agsci_step = qualification_passed</em></small>)
-	scaffold\3aqualification_failed(qualification_failed<hr/><small><em>agsci_phase = drafting
-agsci_step = qualification_failed</em></small>)
-	scaffold\3aqualification_exhausted(qualification_exhausted<hr/><small><em>agsci_phase = drafting
-agsci_step = qualification_exhausted</em></small>)
-	scaffold\3avalidate_qualification(validate_qualification<hr/><small><em>agsci_phase = drafting
-agsci_step = validate_qualification</em></small>)
-	scaffold\3acommit_qualification_repair(commit_qualification_repair<hr/><small><em>agsci_phase = drafting
-agsci_step = commit_qualification_repair</em></small>)
+	scaffold\3aqualification_infrastructure_failed(qualification_infrastructure_failed)
+	scaffold\3aqualification_passed(qualification_passed)
+	scaffold\3aqualification_failed(qualification_failed)
+	scaffold\3aqualification_exhausted(qualification_exhausted)
+	scaffold\3avalidate_qualification(validate_qualification)
+	scaffold\3acommit_qualification_repair(commit_qualification_repair)
 	scaffold\3adrafting\2ecommit_qualification_repair\2ebefore(drafting.commit_qualification_repair.before)
 	scaffold\3adrafting\2ecommit_qualification_repair\2eafter(drafting.commit_qualification_repair.after)
-	scaffold\3aopen_qualification_transaction(open_qualification_transaction<hr/><small><em>agsci_phase = drafting
-agsci_step = open_qualification_transaction</em></small>)
-	scaffold\3aqualification_repair(qualification_repair<hr/><small><em>agsci_phase = drafting
-agsci_step = qualification_repair</em></small>)
+	scaffold\3aopen_qualification_transaction(open_qualification_transaction)
+	scaffold\3aqualification_repair(qualification_repair)
 	scaffold\3adrafting\2equalification_repair\2ebefore(drafting.qualification_repair.before)
 	scaffold\3adrafting\2equalification_repair\2eafter(drafting.qualification_repair.after)
-	scaffold\3aclose_qualification_repair(close_qualification_repair<hr/><small><em>agsci_phase = drafting
-agsci_step = close_qualification_repair</em></small>)
-	scaffold\3aqualification_validation_failed(qualification_validation_failed<hr/><small><em>agsci_phase = drafting
-agsci_step = qualification_validation_failed</em></small>)
-	scaffold\3acheck_qualification_candidate(check_qualification_candidate<hr/><small><em>agsci_phase = drafting
-agsci_step = check_qualification_candidate</em></small>)
+	scaffold\3aclose_qualification_repair(close_qualification_repair)
+	scaffold\3aqualification_validation_failed(qualification_validation_failed)
+	scaffold\3acheck_qualification_candidate(check_qualification_candidate)
 	scaffold\3adrafting\2echeck_qualification_candidate\2ebefore(drafting.check_qualification_candidate.before)
 	scaffold\3adrafting\2echeck_qualification_candidate\2eafter(drafting.check_qualification_candidate.after)
-	scaffold\3apublish(publish<hr/><small><em>agsci_phase = drafting
-agsci_step = publish</em></small>)
+	scaffold\3apublish(publish)
 	scaffold\3adrafting\2epublish\2ebefore(drafting.publish.before)
 	scaffold\3adrafting\2epublish\2eafter(drafting.publish.after)
-	scaffold\3afail(fail<hr/><small><em>agsci_phase = drafting
-agsci_step = fail</em></small>)
-	scaffold\3aqualification_budget(qualification_budget<hr/><small><em>agsci_phase = drafting
-agsci_step = qualification_budget</em></small>)
+	scaffold\3afail(fail)
+	scaffold\3aqualification_budget(qualification_budget)
 	scaffold\3a__end__(<p>__end__</p>)
 	scaffold\3aalignment_boundary_retry -. &nbsp;alignment_repair&nbsp; .-> scaffold\3adrafting\2ealignment_repair\2ebefore;
 	scaffold\3aalignment_boundary_retry -.-> scaffold\3afail;
@@ -1204,54 +1054,36 @@ config:
 ---
 graph TD;
 	__start__([<p>__start__</p>]):::first
-	record_run_config(record_run_config<hr/><small><em>agsci_phase = drafting
-agsci_step = record_run_config</em></small>)
-	design_generate(design_generate<hr/><small><em>agsci_phase = drafting
-agsci_step = design_generate</em></small>)
+	record_run_config(record_run_config)
+	design_generate(design_generate)
 	drafting\2edesign_generate\2ebefore(drafting.design_generate.before)
 	drafting\2edesign_generate\2eafter(drafting.design_generate.after)
-	validate_design(validate_design<hr/><small><em>agsci_phase = drafting
-agsci_step = validate_design</em></small>)
-	design_structure_repair(design_structure_repair<hr/><small><em>agsci_phase = drafting
-agsci_step = design_structure_repair</em></small>)
+	validate_design(validate_design)
+	design_structure_repair(design_structure_repair)
 	drafting\2edesign_structure_repair\2ebefore(drafting.design_structure_repair.before)
 	drafting\2edesign_structure_repair\2eafter(drafting.design_structure_repair.after)
-	begin_initial_review(begin_initial_review<hr/><small><em>agsci_phase = drafting
-agsci_step = begin_initial_review</em></small>)
-	design_review(design_review<hr/><small><em>agsci_phase = drafting
-agsci_step = design_review</em></small>)
+	begin_initial_review(begin_initial_review)
+	design_review(design_review)
 	drafting\2edesign_review\2ebefore(drafting.design_review.before)
 	drafting\2edesign_review\2eafter(drafting.design_review.after)
-	check_review(check_review<hr/><small><em>agsci_phase = drafting
-agsci_step = check_review</em></small>)
-	decide(decide<hr/><small><em>agsci_phase = drafting
-agsci_step = decide</em></small>)
-	design_patch_repair(design_patch_repair<hr/><small><em>agsci_phase = drafting
-agsci_step = design_patch_repair</em></small>)
+	check_review(check_review)
+	decide(decide)
+	design_patch_repair(design_patch_repair)
 	drafting\2edesign_patch_repair\2ebefore(drafting.design_patch_repair.before)
 	drafting\2edesign_patch_repair\2eafter(drafting.design_patch_repair.after)
-	check_patch(check_patch<hr/><small><em>agsci_phase = drafting
-agsci_step = check_patch</em></small>)
-	begin_focused_review(begin_focused_review<hr/><small><em>agsci_phase = drafting
-agsci_step = begin_focused_review</em></small>)
-	begin_full_review(begin_full_review<hr/><small><em>agsci_phase = drafting
-agsci_step = begin_full_review</em></small>)
-	compare_reviews(compare_reviews<hr/><small><em>agsci_phase = drafting
-agsci_step = compare_reviews</em></small>)
-	design_delta_audit(design_delta_audit<hr/><small><em>agsci_phase = drafting
-agsci_step = design_delta_audit</em></small>)
+	check_patch(check_patch)
+	begin_focused_review(begin_focused_review)
+	begin_full_review(begin_full_review)
+	compare_reviews(compare_reviews)
+	design_delta_audit(design_delta_audit)
 	drafting\2edesign_delta_audit\2ebefore(drafting.design_delta_audit.before)
 	drafting\2edesign_delta_audit\2eafter(drafting.design_delta_audit.after)
-	check_delta(check_delta<hr/><small><em>agsci_phase = drafting
-agsci_step = check_delta</em></small>)
-	promote_or_reject(promote_or_reject<hr/><small><em>agsci_phase = drafting
-agsci_step = promote_or_reject</em></small>)
-	design_publish(design_publish<hr/><small><em>agsci_phase = drafting
-agsci_step = design_publish</em></small>)
+	check_delta(check_delta)
+	promote_or_reject(promote_or_reject)
+	design_publish(design_publish)
 	drafting\2edesign_publish\2ebefore(drafting.design_publish.before)
 	drafting\2edesign_publish\2eafter(drafting.design_publish.after)
-	fail_design(fail_design<hr/><small><em>agsci_phase = drafting
-agsci_step = fail_design</em></small>)
+	fail_design(fail_design)
 	__end__([<p>__end__</p>]):::last
 	__start__ --> record_run_config;
 	begin_focused_review --> drafting\2edesign_review\2ebefore;
@@ -1314,30 +1146,23 @@ config:
 ---
 graph TD;
 	__start__(<p>__start__</p>)
-	record_run_config(record_run_config<hr/><small><em>agsci_phase = investigation
-agsci_step = record_run_config</em></small>)
-	confirm_prune(confirm_prune<hr/><small><em>agsci_phase = investigation
-agsci_step = confirm_prune</em></small>)
+	record_run_config(record_run_config)
+	confirm_prune(confirm_prune)
 	investigation\2econfirm_prune\2ebefore(investigation.confirm_prune.before)
 	investigation\2econfirm_prune\2eafter(investigation.confirm_prune.after)
-	establish_incumbent(establish_incumbent<hr/><small><em>agsci_phase = investigation
-agsci_step = establish_incumbent</em></small>)
+	establish_incumbent(establish_incumbent)
 	investigation\2eestablish_incumbent\2ebefore(investigation.establish_incumbent.before)
 	investigation\2eestablish_incumbent\2eafter(investigation.establish_incumbent.after)
-	plan_round(plan_round<hr/><small><em>agsci_phase = investigation
-agsci_step = plan_round</em></small>)
+	plan_round(plan_round)
 	investigation\2eplan_round\2ebefore(investigation.plan_round.before)
 	investigation\2eplan_round\2eafter(investigation.plan_round.after)
-	join_round(join_round<hr/><small><em>agsci_phase = investigation
-agsci_step = join_round</em></small>)
+	join_round(join_round)
 	investigation\2ejoin_round\2ebefore(investigation.join_round.before)
 	investigation\2ejoin_round\2eafter(investigation.join_round.after)
-	prune_round(prune_round<hr/><small><em>agsci_phase = investigation
-agsci_step = prune_round</em></small>)
+	prune_round(prune_round)
 	investigation\2eprune_round\2ebefore(investigation.prune_round.before)
 	investigation\2eprune_round\2eafter(investigation.prune_round.after)
-	finalize(finalize<hr/><small><em>agsci_phase = investigation
-agsci_step = finalize</em></small>)
+	finalize(finalize)
 	investigation\2efinalize\2ebefore(investigation.finalize.before)
 	investigation\2efinalize\2eafter(investigation.finalize.after)
 	__end__(<p>__end__</p>)
@@ -1358,46 +1183,35 @@ agsci_step = finalize</em></small>)
 	investigation\2efinalize\2eafter --> __end__;
 	investigation\2eplan_round\2eafter --> __end__;
 	subgraph worker
-	worker\3arecord_run_config(record_run_config<hr/><small><em>agsci_phase = worker
-agsci_step = record_run_config</em></small>)
-	worker\3ainit_campaign(init_campaign<hr/><small><em>agsci_phase = worker
-agsci_step = init_campaign</em></small>)
+	worker\3arecord_run_config(record_run_config)
+	worker\3ainit_campaign(init_campaign)
 	worker\3aworker\2einit_campaign\2ebefore(worker.init_campaign.before)
 	worker\3aworker\2einit_campaign\2eafter(worker.init_campaign.after)
-	worker\3aconfirm_prune(confirm_prune<hr/><small><em>agsci_phase = worker
-agsci_step = confirm_prune</em></small>)
+	worker\3aconfirm_prune(confirm_prune)
 	worker\3aworker\2econfirm_prune\2ebefore(worker.confirm_prune.before)
 	worker\3aworker\2econfirm_prune\2eafter(worker.confirm_prune.after)
-	worker\3acycle_start(cycle_start<hr/><small><em>agsci_phase = worker
-agsci_step = cycle_start</em></small>)
+	worker\3acycle_start(cycle_start)
 	worker\3aworker\2ecycle_start\2ebefore(worker.cycle_start.before)
 	worker\3aworker\2ecycle_start\2eafter(worker.cycle_start.after)
-	worker\3aideation(ideation<hr/><small><em>agsci_phase = worker
-agsci_step = ideation</em></small>)
+	worker\3aideation(ideation)
 	worker\3aworker\2eideation\2ebefore(worker.ideation.before)
 	worker\3aworker\2eideation\2eafter(worker.ideation.after)
-	worker\3aaccept_idea(accept_idea<hr/><small><em>agsci_phase = worker
-agsci_step = accept_idea</em></small>)
+	worker\3aaccept_idea(accept_idea)
 	worker\3aworker\2eaccept_idea\2ebefore(worker.accept_idea.before)
 	worker\3aworker\2eaccept_idea\2eafter(worker.accept_idea.after)
-	worker\3aattempt(attempt<hr/><small><em>agsci_phase = worker
-agsci_step = attempt</em></small>)
+	worker\3aattempt(attempt)
 	worker\3aworker\2eattempt\2ebefore(worker.attempt.before)
 	worker\3aworker\2eattempt\2eafter(worker.attempt.after)
-	worker\3arecord_attempt(record_attempt<hr/><small><em>agsci_phase = worker
-agsci_step = record_attempt</em></small>)
+	worker\3arecord_attempt(record_attempt)
 	worker\3aworker\2erecord_attempt\2ebefore(worker.record_attempt.before)
 	worker\3aworker\2erecord_attempt\2eafter(worker.record_attempt.after)
-	worker\3apush_memory(push_memory<hr/><small><em>agsci_phase = worker
-agsci_step = push_memory</em></small>)
+	worker\3apush_memory(push_memory)
 	worker\3aworker\2epush_memory\2ebefore(worker.push_memory.before)
 	worker\3aworker\2epush_memory\2eafter(worker.push_memory.after)
-	worker\3acampaign_failed(campaign_failed<hr/><small><em>agsci_phase = worker
-agsci_step = campaign_failed</em></small>)
+	worker\3acampaign_failed(campaign_failed)
 	worker\3aworker\2ecampaign_failed\2ebefore(worker.campaign_failed.before)
 	worker\3aworker\2ecampaign_failed\2eafter(worker.campaign_failed.after)
-	worker\3afinish(finish<hr/><small><em>agsci_phase = worker
-agsci_step = finish</em></small>)
+	worker\3afinish(finish)
 	worker\3aworker\2efinish\2ebefore(worker.finish.before)
 	worker\3aworker\2efinish\2eafter(worker.finish.after)
 	worker\3aaccept_idea --> worker\3aworker\2eaccept_idea\2eafter;
@@ -1451,42 +1265,33 @@ config:
 ---
 graph TD;
 	__start__([<p>__start__</p>]):::first
-	record_run_config(record_run_config<hr/><small><em>agsci_phase = worker
-agsci_step = record_run_config</em></small>)
-	init_campaign(init_campaign<hr/><small><em>agsci_phase = worker
-agsci_step = init_campaign</em></small>)
+	record_run_config(record_run_config)
+	init_campaign(init_campaign)
 	worker\2einit_campaign\2ebefore(worker.init_campaign.before)
 	worker\2einit_campaign\2eafter(worker.init_campaign.after)
-	confirm_prune(confirm_prune<hr/><small><em>agsci_phase = worker
-agsci_step = confirm_prune</em></small>)
+	confirm_prune(confirm_prune)
 	worker\2econfirm_prune\2ebefore(worker.confirm_prune.before)
 	worker\2econfirm_prune\2eafter(worker.confirm_prune.after)
-	cycle_start(cycle_start<hr/><small><em>agsci_phase = worker
-agsci_step = cycle_start</em></small>)
+	cycle_start(cycle_start)
 	worker\2ecycle_start\2ebefore(worker.cycle_start.before)
 	worker\2ecycle_start\2eafter(worker.cycle_start.after)
 	worker\2eideation\2ebefore(worker.ideation.before)
 	worker\2eideation\2eafter(worker.ideation.after)
-	accept_idea(accept_idea<hr/><small><em>agsci_phase = worker
-agsci_step = accept_idea</em></small>)
+	accept_idea(accept_idea)
 	worker\2eaccept_idea\2ebefore(worker.accept_idea.before)
 	worker\2eaccept_idea\2eafter(worker.accept_idea.after)
 	worker\2eattempt\2ebefore(worker.attempt.before)
 	worker\2eattempt\2eafter(worker.attempt.after)
-	record_attempt(record_attempt<hr/><small><em>agsci_phase = worker
-agsci_step = record_attempt</em></small>)
+	record_attempt(record_attempt)
 	worker\2erecord_attempt\2ebefore(worker.record_attempt.before)
 	worker\2erecord_attempt\2eafter(worker.record_attempt.after)
-	push_memory(push_memory<hr/><small><em>agsci_phase = worker
-agsci_step = push_memory</em></small>)
+	push_memory(push_memory)
 	worker\2epush_memory\2ebefore(worker.push_memory.before)
 	worker\2epush_memory\2eafter(worker.push_memory.after)
-	campaign_failed(campaign_failed<hr/><small><em>agsci_phase = worker
-agsci_step = campaign_failed</em></small>)
+	campaign_failed(campaign_failed)
 	worker\2ecampaign_failed\2ebefore(worker.campaign_failed.before)
 	worker\2ecampaign_failed\2eafter(worker.campaign_failed.after)
-	finish(finish<hr/><small><em>agsci_phase = worker
-agsci_step = finish</em></small>)
+	finish(finish)
 	worker\2efinish\2ebefore(worker.finish.before)
 	worker\2efinish\2eafter(worker.finish.after)
 	__end__([<p>__end__</p>]):::last
@@ -1528,18 +1333,14 @@ agsci_step = finish</em></small>)
 	worker\2erecord_attempt\2ebefore --> record_attempt;
 	worker\2efinish\2eafter --> __end__;
 	subgraph ideation
-	ideation\3arecord_run_config(record_run_config<hr/><small><em>agsci_phase = ideation
-agsci_step = record_run_config</em></small>)
-	ideation\3astage(stage<hr/><small><em>agsci_phase = ideation
-agsci_step = stage</em></small>)
+	ideation\3arecord_run_config(record_run_config)
+	ideation\3astage(stage)
 	ideation\3aideation\2estage\2ebefore(ideation.stage.before)
 	ideation\3aideation\2estage\2eafter(ideation.stage.after)
-	ideation\3aideate(ideate<hr/><small><em>agsci_phase = ideation
-agsci_step = ideate</em></small>)
+	ideation\3aideate(ideate)
 	ideation\3aideation\2eideate\2ebefore(ideation.ideate.before)
 	ideation\3aideation\2eideate\2eafter(ideation.ideate.after)
-	ideation\3avalidate(validate<hr/><small><em>agsci_phase = ideation
-agsci_step = validate</em></small>)
+	ideation\3avalidate(validate)
 	ideation\3aideation\2evalidate\2ebefore(ideation.validate.before)
 	ideation\3aideation\2evalidate\2eafter(ideation.validate.after)
 	ideation\3a__end__(<p>__end__</p>)
@@ -1556,42 +1357,32 @@ agsci_step = validate</em></small>)
 	ideation\3avalidate --> ideation\3aideation\2evalidate\2eafter;
 	end
 	subgraph attempt
-	attempt\3arecord_run_config(record_run_config<hr/><small><em>agsci_phase = attempt
-agsci_step = record_run_config</em></small>)
-	attempt\3aprepare(prepare<hr/><small><em>agsci_phase = attempt
-agsci_step = prepare</em></small>)
+	attempt\3arecord_run_config(record_run_config)
+	attempt\3aprepare(prepare)
 	attempt\3aattempt\2eprepare\2ebefore(attempt.prepare.before)
 	attempt\3aattempt\2eprepare\2eafter(attempt.prepare.after)
-	attempt\3aauthor_candidate(author_candidate<hr/><small><em>agsci_phase = attempt
-agsci_step = author_candidate</em></small>)
+	attempt\3aauthor_candidate(author_candidate)
 	attempt\3aattempt\2eauthor_candidate\2ebefore(attempt.author_candidate.before)
 	attempt\3aattempt\2eauthor_candidate\2eafter(attempt.author_candidate.after)
-	attempt\3asearch(search<hr/><small><em>agsci_phase = attempt
-agsci_step = search</em></small>)
+	attempt\3asearch(search)
 	attempt\3aattempt\2esearch\2ebefore(attempt.search.before)
 	attempt\3aattempt\2esearch\2eafter(attempt.search.after)
-	attempt\3acollect_memory(collect_memory<hr/><small><em>agsci_phase = attempt
-agsci_step = collect_memory</em></small>)
+	attempt\3acollect_memory(collect_memory)
 	attempt\3aattempt\2ecollect_memory\2ebefore(attempt.collect_memory.before)
 	attempt\3aattempt\2ecollect_memory\2eafter(attempt.collect_memory.after)
-	attempt\3acheck_outputs(check_outputs<hr/><small><em>agsci_phase = attempt
-agsci_step = check_outputs</em></small>)
+	attempt\3acheck_outputs(check_outputs)
 	attempt\3aattempt\2echeck_outputs\2ebefore(attempt.check_outputs.before)
 	attempt\3aattempt\2echeck_outputs\2eafter(attempt.check_outputs.after)
-	attempt\3aevaluate_candidate(evaluate_candidate<hr/><small><em>agsci_phase = attempt
-agsci_step = evaluate_candidate</em></small>)
+	attempt\3aevaluate_candidate(evaluate_candidate)
 	attempt\3aattempt\2eevaluate_candidate\2ebefore(attempt.evaluate_candidate.before)
 	attempt\3aattempt\2eevaluate_candidate\2eafter(attempt.evaluate_candidate.after)
-	attempt\3averify_rubrics(verify_rubrics<hr/><small><em>agsci_phase = attempt
-agsci_step = verify_rubrics</em></small>)
+	attempt\3averify_rubrics(verify_rubrics)
 	attempt\3aattempt\2everify_rubrics\2ebefore(attempt.verify_rubrics.before)
 	attempt\3aattempt\2everify_rubrics\2eafter(attempt.verify_rubrics.after)
-	attempt\3arecord_memory(record_memory<hr/><small><em>agsci_phase = attempt
-agsci_step = record_memory</em></small>)
+	attempt\3arecord_memory(record_memory)
 	attempt\3aattempt\2erecord_memory\2ebefore(attempt.record_memory.before)
 	attempt\3aattempt\2erecord_memory\2eafter(attempt.record_memory.after)
-	attempt\3afinish(finish<hr/><small><em>agsci_phase = attempt
-agsci_step = finish</em></small>)
+	attempt\3afinish(finish)
 	attempt\3aattempt\2efinish\2ebefore(attempt.finish.before)
 	attempt\3aattempt\2efinish\2eafter(attempt.finish.after)
 	attempt\3aattempt\2eauthor_candidate\2eafter --> attempt\3aattempt\2echeck_outputs\2ebefore;
@@ -1641,18 +1432,14 @@ config:
 ---
 graph TD;
 	__start__([<p>__start__</p>]):::first
-	record_run_config(record_run_config<hr/><small><em>agsci_phase = ideation
-agsci_step = record_run_config</em></small>)
-	stage(stage<hr/><small><em>agsci_phase = ideation
-agsci_step = stage</em></small>)
+	record_run_config(record_run_config)
+	stage(stage)
 	ideation\2estage\2ebefore(ideation.stage.before)
 	ideation\2estage\2eafter(ideation.stage.after)
-	ideate(ideate<hr/><small><em>agsci_phase = ideation
-agsci_step = ideate</em></small>)
+	ideate(ideate)
 	ideation\2eideate\2ebefore(ideation.ideate.before)
 	ideation\2eideate\2eafter(ideation.ideate.after)
-	validate(validate<hr/><small><em>agsci_phase = ideation
-agsci_step = validate</em></small>)
+	validate(validate)
 	ideation\2evalidate\2ebefore(ideation.validate.before)
 	ideation\2evalidate\2eafter(ideation.validate.after)
 	__end__([<p>__end__</p>]):::last
@@ -1683,42 +1470,32 @@ config:
 ---
 graph TD;
 	__start__([<p>__start__</p>]):::first
-	record_run_config(record_run_config<hr/><small><em>agsci_phase = attempt
-agsci_step = record_run_config</em></small>)
-	prepare(prepare<hr/><small><em>agsci_phase = attempt
-agsci_step = prepare</em></small>)
+	record_run_config(record_run_config)
+	prepare(prepare)
 	attempt\2eprepare\2ebefore(attempt.prepare.before)
 	attempt\2eprepare\2eafter(attempt.prepare.after)
-	author_candidate(author_candidate<hr/><small><em>agsci_phase = attempt
-agsci_step = author_candidate</em></small>)
+	author_candidate(author_candidate)
 	attempt\2eauthor_candidate\2ebefore(attempt.author_candidate.before)
 	attempt\2eauthor_candidate\2eafter(attempt.author_candidate.after)
-	search(search<hr/><small><em>agsci_phase = attempt
-agsci_step = search</em></small>)
+	search(search)
 	attempt\2esearch\2ebefore(attempt.search.before)
 	attempt\2esearch\2eafter(attempt.search.after)
-	collect_memory(collect_memory<hr/><small><em>agsci_phase = attempt
-agsci_step = collect_memory</em></small>)
+	collect_memory(collect_memory)
 	attempt\2ecollect_memory\2ebefore(attempt.collect_memory.before)
 	attempt\2ecollect_memory\2eafter(attempt.collect_memory.after)
-	check_outputs(check_outputs<hr/><small><em>agsci_phase = attempt
-agsci_step = check_outputs</em></small>)
+	check_outputs(check_outputs)
 	attempt\2echeck_outputs\2ebefore(attempt.check_outputs.before)
 	attempt\2echeck_outputs\2eafter(attempt.check_outputs.after)
-	evaluate_candidate(evaluate_candidate<hr/><small><em>agsci_phase = attempt
-agsci_step = evaluate_candidate</em></small>)
+	evaluate_candidate(evaluate_candidate)
 	attempt\2eevaluate_candidate\2ebefore(attempt.evaluate_candidate.before)
 	attempt\2eevaluate_candidate\2eafter(attempt.evaluate_candidate.after)
-	verify_rubrics(verify_rubrics<hr/><small><em>agsci_phase = attempt
-agsci_step = verify_rubrics</em></small>)
+	verify_rubrics(verify_rubrics)
 	attempt\2everify_rubrics\2ebefore(attempt.verify_rubrics.before)
 	attempt\2everify_rubrics\2eafter(attempt.verify_rubrics.after)
-	record_memory(record_memory<hr/><small><em>agsci_phase = attempt
-agsci_step = record_memory</em></small>)
+	record_memory(record_memory)
 	attempt\2erecord_memory\2ebefore(attempt.record_memory.before)
 	attempt\2erecord_memory\2eafter(attempt.record_memory.after)
-	finish(finish<hr/><small><em>agsci_phase = attempt
-agsci_step = finish</em></small>)
+	finish(finish)
 	attempt\2efinish\2ebefore(attempt.finish.before)
 	attempt\2efinish\2eafter(attempt.finish.after)
 	__end__([<p>__end__</p>]):::last
@@ -1770,14 +1547,11 @@ config:
 ---
 graph TD;
 	__start__([<p>__start__</p>]):::first
-	record_run_config(record_run_config<hr/><small><em>agsci_phase = downstream
-agsci_step = record_run_config</em></small>)
-	select_fallback(select_fallback<hr/><small><em>agsci_phase = downstream
-agsci_step = select_fallback</em></small>)
+	record_run_config(record_run_config)
+	select_fallback(select_fallback)
 	downstream\2eselect_fallback\2ebefore(downstream.select_fallback.before)
 	downstream\2eselect_fallback\2eafter(downstream.select_fallback.after)
-	freeze_program(freeze_program<hr/><small><em>agsci_phase = downstream
-agsci_step = freeze_program</em></small>)
+	freeze_program(freeze_program)
 	downstream\2efreeze_program\2ebefore(downstream.freeze_program.before)
 	downstream\2efreeze_program\2eafter(downstream.freeze_program.after)
 	__end__([<p>__end__</p>]):::last
@@ -1804,66 +1578,50 @@ config:
 ---
 graph TD;
 	__start__([<p>__start__</p>]):::first
-	record_run_config(record_run_config<hr/><small><em>agsci_phase = variants
-agsci_step = record_run_config</em></small>)
-	prepare(prepare<hr/><small><em>agsci_phase = variants
-agsci_step = prepare</em></small>)
+	record_run_config(record_run_config)
+	prepare(prepare)
 	variants\2eprepare\2ebefore(variants.prepare.before)
 	variants\2eprepare\2eafter(variants.prepare.after)
-	extract(extract<hr/><small><em>agsci_phase = variants
-agsci_step = extract</em></small>)
+	extract(extract)
 	variants\2eextract\2ebefore(variants.extract.before)
 	variants\2eextract\2eafter(variants.extract.after)
-	retrofit_prepare(retrofit_prepare<hr/><small><em>agsci_phase = variants
-agsci_step = retrofit_prepare</em></small>)
+	retrofit_prepare(retrofit_prepare)
 	variants\2eretrofit_prepare\2ebefore(variants.retrofit_prepare.before)
 	variants\2eretrofit_prepare\2eafter(variants.retrofit_prepare.after)
-	retrofit_agent(retrofit_agent<hr/><small><em>agsci_phase = variants
-agsci_step = retrofit_agent</em></small>)
+	retrofit_agent(retrofit_agent)
 	variants\2eretrofit_agent\2ebefore(variants.retrofit_agent.before)
 	variants\2eretrofit_agent\2eafter(variants.retrofit_agent.after)
-	retrofit_finish(retrofit_finish<hr/><small><em>agsci_phase = variants
-agsci_step = retrofit_finish</em></small>)
+	retrofit_finish(retrofit_finish)
 	variants\2eretrofit_finish\2ebefore(variants.retrofit_finish.before)
 	variants\2eretrofit_finish\2eafter(variants.retrofit_finish.after)
-	generate(generate<hr/><small><em>agsci_phase = variants
-agsci_step = generate</em></small>)
+	generate(generate)
 	variants\2egenerate\2ebefore(variants.generate.before)
 	variants\2egenerate\2eafter(variants.generate.after)
-	select(select<hr/><small><em>agsci_phase = variants
-agsci_step = select</em></small>)
+	select(select)
 	variants\2eselect\2ebefore(variants.select.before)
 	variants\2eselect\2eafter(variants.select.after)
-	custom_baselines(custom_baselines<hr/><small><em>agsci_phase = variants
-agsci_step = custom_baselines</em></small>)
+	custom_baselines(custom_baselines)
 	variants\2ecustom_baselines\2ebefore(variants.custom_baselines.before)
 	variants\2ecustom_baselines\2eafter(variants.custom_baselines.after)
-	materialize(materialize<hr/><small><em>agsci_phase = variants
-agsci_step = materialize</em></small>)
+	materialize(materialize)
 	variants\2ematerialize\2ebefore(variants.materialize.before)
 	variants\2ematerialize\2eafter(variants.materialize.after)
-	after_control(after_control<hr/><small><em>agsci_phase = variants
-agsci_step = after_control</em></small>)
+	after_control(after_control)
 	variants\2eafter_control\2ebefore(variants.after_control.before)
 	variants\2eafter_control\2eafter(variants.after_control.after)
-	join_variants(join_variants<hr/><small><em>agsci_phase = variants
-agsci_step = join_variants</em></small>)
+	join_variants(join_variants)
 	variants\2ejoin_variants\2ebefore(variants.join_variants.before)
 	variants\2ejoin_variants\2eafter(variants.join_variants.after)
 	variants\2ecross_task\2ebefore(variants.cross_task.before)
 	variants\2ecross_task\2eafter(variants.cross_task.after)
-	cross_result(cross_result<hr/><small><em>agsci_phase = variants
-agsci_step = cross_result</em></small>)
-	aggregate(aggregate<hr/><small><em>agsci_phase = variants
-agsci_step = aggregate</em></small>)
+	cross_result(cross_result)
+	aggregate(aggregate)
 	variants\2eaggregate\2ebefore(variants.aggregate.before)
 	variants\2eaggregate\2eafter(variants.aggregate.after)
-	readme(readme<hr/><small><em>agsci_phase = variants
-agsci_step = readme</em></small>)
+	readme(readme)
 	variants\2ereadme\2ebefore(variants.readme.before)
 	variants\2ereadme\2eafter(variants.readme.after)
-	finish(finish<hr/><small><em>agsci_phase = variants
-agsci_step = finish</em></small>)
+	finish(finish)
 	variants\2efinish\2ebefore(variants.finish.before)
 	variants\2efinish\2eafter(variants.finish.after)
 	__end__([<p>__end__</p>]):::last
@@ -1932,36 +1690,27 @@ agsci_step = finish</em></small>)
 	variants\2eselect\2ebefore --> select;
 	variants\2efinish\2eafter --> __end__;
 	subgraph run_control
-	run_control\3ainit_variant(init_variant<hr/><small><em>agsci_phase = variants
-agsci_step = init_variant</em></small>)
+	run_control\3ainit_variant(init_variant)
 	run_control\3avariants\2einit_variant\2ebefore(variants.init_variant.before)
 	run_control\3avariants\2einit_variant\2eafter(variants.init_variant.after)
-	run_control\3aedit(edit<hr/><small><em>agsci_phase = variants
-agsci_step = edit</em></small>)
+	run_control\3aedit(edit)
 	run_control\3avariants\2eedit\2ebefore(variants.edit.before)
 	run_control\3avariants\2eedit\2eafter(variants.edit.after)
-	run_control\3aafter_edit(after_edit<hr/><small><em>agsci_phase = variants
-agsci_step = after_edit</em></small>)
-	run_control\3aevaluate(evaluate<hr/><small><em>agsci_phase = variants
-agsci_step = evaluate</em></small>)
+	run_control\3aafter_edit(after_edit)
+	run_control\3aevaluate(evaluate)
 	run_control\3avariants\2eevaluate\2ebefore(variants.evaluate.before)
 	run_control\3avariants\2eevaluate\2eafter(variants.evaluate.after)
-	run_control\3ascaffold_status(scaffold_status<hr/><small><em>agsci_phase = variants
-agsci_step = scaffold_status</em></small>)
+	run_control\3ascaffold_status(scaffold_status)
 	run_control\3avariants\2escaffold_status\2ebefore(variants.scaffold_status.before)
 	run_control\3avariants\2escaffold_status\2eafter(variants.scaffold_status.after)
-	run_control\3averify(verify<hr/><small><em>agsci_phase = variants
-agsci_step = verify</em></small>)
+	run_control\3averify(verify)
 	run_control\3avariants\2everify\2ebefore(variants.verify.before)
 	run_control\3avariants\2everify\2eafter(variants.verify.after)
-	run_control\3aafter_verify(after_verify<hr/><small><em>agsci_phase = variants
-agsci_step = after_verify</em></small>)
+	run_control\3aafter_verify(after_verify)
 	run_control\3avariants\2eafter_verify\2ebefore(variants.after_verify.before)
 	run_control\3avariants\2eafter_verify\2eafter(variants.after_verify.after)
-	run_control\3anext_program(next_program<hr/><small><em>agsci_phase = variants
-agsci_step = next_program</em></small>)
-	run_control\3afinish_variant(finish_variant<hr/><small><em>agsci_phase = variants
-agsci_step = finish_variant</em></small>)
+	run_control\3anext_program(next_program)
+	run_control\3afinish_variant(finish_variant)
 	run_control\3avariants\2efinish_variant\2ebefore(variants.finish_variant.before)
 	run_control\3avariants\2efinish_variant\2eafter(variants.finish_variant.after)
 	run_control\3aafter_edit -. &nbsp;edit&nbsp; .-> run_control\3avariants\2eedit\2ebefore;
@@ -1995,36 +1744,27 @@ agsci_step = finish_variant</em></small>)
 	run_control\3averify --> run_control\3avariants\2everify\2eafter;
 	end
 	subgraph run_variant
-	run_variant\3ainit_variant(init_variant<hr/><small><em>agsci_phase = variants
-agsci_step = init_variant</em></small>)
+	run_variant\3ainit_variant(init_variant)
 	run_variant\3avariants\2einit_variant\2ebefore(variants.init_variant.before)
 	run_variant\3avariants\2einit_variant\2eafter(variants.init_variant.after)
-	run_variant\3aedit(edit<hr/><small><em>agsci_phase = variants
-agsci_step = edit</em></small>)
+	run_variant\3aedit(edit)
 	run_variant\3avariants\2eedit\2ebefore(variants.edit.before)
 	run_variant\3avariants\2eedit\2eafter(variants.edit.after)
-	run_variant\3aafter_edit(after_edit<hr/><small><em>agsci_phase = variants
-agsci_step = after_edit</em></small>)
-	run_variant\3aevaluate(evaluate<hr/><small><em>agsci_phase = variants
-agsci_step = evaluate</em></small>)
+	run_variant\3aafter_edit(after_edit)
+	run_variant\3aevaluate(evaluate)
 	run_variant\3avariants\2eevaluate\2ebefore(variants.evaluate.before)
 	run_variant\3avariants\2eevaluate\2eafter(variants.evaluate.after)
-	run_variant\3ascaffold_status(scaffold_status<hr/><small><em>agsci_phase = variants
-agsci_step = scaffold_status</em></small>)
+	run_variant\3ascaffold_status(scaffold_status)
 	run_variant\3avariants\2escaffold_status\2ebefore(variants.scaffold_status.before)
 	run_variant\3avariants\2escaffold_status\2eafter(variants.scaffold_status.after)
-	run_variant\3averify(verify<hr/><small><em>agsci_phase = variants
-agsci_step = verify</em></small>)
+	run_variant\3averify(verify)
 	run_variant\3avariants\2everify\2ebefore(variants.verify.before)
 	run_variant\3avariants\2everify\2eafter(variants.verify.after)
-	run_variant\3aafter_verify(after_verify<hr/><small><em>agsci_phase = variants
-agsci_step = after_verify</em></small>)
+	run_variant\3aafter_verify(after_verify)
 	run_variant\3avariants\2eafter_verify\2ebefore(variants.after_verify.before)
 	run_variant\3avariants\2eafter_verify\2eafter(variants.after_verify.after)
-	run_variant\3anext_program(next_program<hr/><small><em>agsci_phase = variants
-agsci_step = next_program</em></small>)
-	run_variant\3afinish_variant(finish_variant<hr/><small><em>agsci_phase = variants
-agsci_step = finish_variant</em></small>)
+	run_variant\3anext_program(next_program)
+	run_variant\3afinish_variant(finish_variant)
 	run_variant\3avariants\2efinish_variant\2ebefore(variants.finish_variant.before)
 	run_variant\3avariants\2efinish_variant\2eafter(variants.finish_variant.after)
 	run_variant\3aafter_edit -. &nbsp;edit&nbsp; .-> run_variant\3avariants\2eedit\2ebefore;
@@ -2058,48 +1798,36 @@ agsci_step = finish_variant</em></small>)
 	run_variant\3averify --> run_variant\3avariants\2everify\2eafter;
 	end
 	subgraph cross_task
-	cross_task\3aprepare(prepare<hr/><small><em>agsci_phase = cross_task
-agsci_step = prepare</em></small>)
+	cross_task\3aprepare(prepare)
 	cross_task\3across_task\2eprepare\2ebefore(cross_task.prepare.before)
 	cross_task\3across_task\2eprepare\2eafter(cross_task.prepare.after)
-	cross_task\3astart_task(start_task<hr/><small><em>agsci_phase = cross_task
-agsci_step = start_task</em></small>)
+	cross_task\3astart_task(start_task)
 	cross_task\3across_task\2estart_task\2ebefore(cross_task.start_task.before)
 	cross_task\3across_task\2estart_task\2eafter(cross_task.start_task.after)
-	cross_task\3aretrofit_prepare(retrofit_prepare<hr/><small><em>agsci_phase = cross_task
-agsci_step = retrofit_prepare</em></small>)
+	cross_task\3aretrofit_prepare(retrofit_prepare)
 	cross_task\3across_task\2eretrofit_prepare\2ebefore(cross_task.retrofit_prepare.before)
 	cross_task\3across_task\2eretrofit_prepare\2eafter(cross_task.retrofit_prepare.after)
-	cross_task\3aretrofit_agent(retrofit_agent<hr/><small><em>agsci_phase = cross_task
-agsci_step = retrofit_agent</em></small>)
+	cross_task\3aretrofit_agent(retrofit_agent)
 	cross_task\3across_task\2eretrofit_agent\2ebefore(cross_task.retrofit_agent.before)
 	cross_task\3across_task\2eretrofit_agent\2eafter(cross_task.retrofit_agent.after)
-	cross_task\3aretrofit_finish(retrofit_finish<hr/><small><em>agsci_phase = cross_task
-agsci_step = retrofit_finish</em></small>)
+	cross_task\3aretrofit_finish(retrofit_finish)
 	cross_task\3across_task\2eretrofit_finish\2ebefore(cross_task.retrofit_finish.before)
 	cross_task\3across_task\2eretrofit_finish\2eafter(cross_task.retrofit_finish.after)
-	cross_task\3aprepare_control(prepare_control<hr/><small><em>agsci_phase = cross_task
-agsci_step = prepare_control</em></small>)
+	cross_task\3aprepare_control(prepare_control)
 	cross_task\3across_task\2eprepare_control\2ebefore(cross_task.prepare_control.before)
 	cross_task\3across_task\2eprepare_control\2eafter(cross_task.prepare_control.after)
-	cross_task\3arun_control(run_control<hr/><small><em>agsci_phase = cross_task
-agsci_step = run_control</em></small>)
-	cross_task\3aafter_control(after_control<hr/><small><em>agsci_phase = cross_task
-agsci_step = after_control</em></small>)
+	cross_task\3arun_control(run_control)
+	cross_task\3aafter_control(after_control)
 	cross_task\3across_task\2eafter_control\2ebefore(cross_task.after_control.before)
 	cross_task\3across_task\2eafter_control\2eafter(cross_task.after_control.after)
-	cross_task\3aprepare_variants(prepare_variants<hr/><small><em>agsci_phase = cross_task
-agsci_step = prepare_variants</em></small>)
+	cross_task\3aprepare_variants(prepare_variants)
 	cross_task\3across_task\2eprepare_variants\2ebefore(cross_task.prepare_variants.before)
 	cross_task\3across_task\2eprepare_variants\2eafter(cross_task.prepare_variants.after)
-	cross_task\3arun_adapt_variant(run_adapt_variant<hr/><small><em>agsci_phase = cross_task
-agsci_step = run_adapt_variant</em></small>)
-	cross_task\3ajoin_task(join_task<hr/><small><em>agsci_phase = cross_task
-agsci_step = join_task</em></small>)
+	cross_task\3arun_adapt_variant(run_adapt_variant)
+	cross_task\3ajoin_task(join_task)
 	cross_task\3across_task\2ejoin_task\2ebefore(cross_task.join_task.before)
 	cross_task\3across_task\2ejoin_task\2eafter(cross_task.join_task.after)
-	cross_task\3afinish(finish<hr/><small><em>agsci_phase = cross_task
-agsci_step = finish</em></small>)
+	cross_task\3afinish(finish)
 	cross_task\3across_task\2efinish\2ebefore(cross_task.finish.before)
 	cross_task\3across_task\2efinish\2eafter(cross_task.finish.after)
 	cross_task\3aafter_control --> cross_task\3across_task\2eafter_control\2eafter;
@@ -2160,28 +1888,21 @@ config:
 ---
 graph TD;
 	__start__([<p>__start__</p>]):::first
-	record_run_config(record_run_config<hr/><small><em>agsci_phase = final_evaluation
-agsci_step = record_run_config</em></small>)
-	resolve_incumbent(resolve_incumbent<hr/><small><em>agsci_phase = final_evaluation
-agsci_step = resolve_incumbent</em></small>)
+	record_run_config(record_run_config)
+	resolve_incumbent(resolve_incumbent)
 	final_evaluation\2eresolve_incumbent\2ebefore(final_evaluation.resolve_incumbent.before)
 	final_evaluation\2eresolve_incumbent\2eafter(final_evaluation.resolve_incumbent.after)
-	freeze(freeze<hr/><small><em>agsci_phase = final_evaluation
-agsci_step = freeze</em></small>)
+	freeze(freeze)
 	final_evaluation\2efreeze\2ebefore(final_evaluation.freeze.before)
 	final_evaluation\2efreeze\2eafter(final_evaluation.freeze.after)
-	draw_inputs(draw_inputs<hr/><small><em>agsci_phase = final_evaluation
-agsci_step = draw_inputs</em></small>)
+	draw_inputs(draw_inputs)
 	final_evaluation\2edraw_inputs\2ebefore(final_evaluation.draw_inputs.before)
 	final_evaluation\2edraw_inputs\2eafter(final_evaluation.draw_inputs.after)
-	attach_inputs(attach_inputs<hr/><small><em>agsci_phase = final_evaluation
-agsci_step = attach_inputs</em></small>)
-	evaluate_sealed(evaluate_sealed<hr/><small><em>agsci_phase = final_evaluation
-agsci_step = evaluate_sealed</em></small>)
+	attach_inputs(attach_inputs)
+	evaluate_sealed(evaluate_sealed)
 	final_evaluation\2eevaluate_sealed\2ebefore(final_evaluation.evaluate_sealed.before)
 	final_evaluation\2eevaluate_sealed\2eafter(final_evaluation.evaluate_sealed.after)
-	verify_manifest(verify_manifest<hr/><small><em>agsci_phase = final_evaluation
-agsci_step = verify_manifest</em></small>)
+	verify_manifest(verify_manifest)
 	final_evaluation\2everify_manifest\2ebefore(final_evaluation.verify_manifest.before)
 	final_evaluation\2everify_manifest\2eafter(final_evaluation.verify_manifest.after)
 	__end__([<p>__end__</p>]):::last
@@ -2221,58 +1942,44 @@ config:
 ---
 graph TD;
 	__start__([<p>__start__</p>]):::first
-	record_run_config(record_run_config<hr/><small><em>agsci_phase = posthoc
-agsci_step = record_run_config</em></small>)
-	extract(extract<hr/><small><em>agsci_phase = posthoc
-agsci_step = extract</em></small>)
+	record_run_config(record_run_config)
+	extract(extract)
 	posthoc\2eextract\2ebefore(posthoc.extract.before)
 	posthoc\2eextract\2eafter(posthoc.extract.after)
-	bootstrap_prepare(bootstrap_prepare<hr/><small><em>agsci_phase = posthoc
-agsci_step = bootstrap_prepare</em></small>)
+	bootstrap_prepare(bootstrap_prepare)
 	posthoc\2ebootstrap_prepare\2ebefore(posthoc.bootstrap_prepare.before)
 	posthoc\2ebootstrap_prepare\2eafter(posthoc.bootstrap_prepare.after)
-	bootstrap_reset(bootstrap_reset<hr/><small><em>agsci_phase = posthoc
-agsci_step = bootstrap_reset</em></small>)
+	bootstrap_reset(bootstrap_reset)
 	posthoc\2ebootstrap_reset\2ebefore(posthoc.bootstrap_reset.before)
 	posthoc\2ebootstrap_reset\2eafter(posthoc.bootstrap_reset.after)
-	bootstrap_agent(bootstrap_agent<hr/><small><em>agsci_phase = posthoc
-agsci_step = bootstrap_agent</em></small>)
+	bootstrap_agent(bootstrap_agent)
 	posthoc\2ebootstrap_agent\2ebefore(posthoc.bootstrap_agent.before)
 	posthoc\2ebootstrap_agent\2eafter(posthoc.bootstrap_agent.after)
-	bootstrap_evaluate(bootstrap_evaluate<hr/><small><em>agsci_phase = posthoc
-agsci_step = bootstrap_evaluate</em></small>)
+	bootstrap_evaluate(bootstrap_evaluate)
 	posthoc\2ebootstrap_evaluate\2ebefore(posthoc.bootstrap_evaluate.before)
 	posthoc\2ebootstrap_evaluate\2eafter(posthoc.bootstrap_evaluate.after)
-	bootstrap_record(bootstrap_record<hr/><small><em>agsci_phase = posthoc
-agsci_step = bootstrap_record</em></small>)
+	bootstrap_record(bootstrap_record)
 	posthoc\2ebootstrap_record\2ebefore(posthoc.bootstrap_record.before)
 	posthoc\2ebootstrap_record\2eafter(posthoc.bootstrap_record.after)
-	bootstrap_finish(bootstrap_finish<hr/><small><em>agsci_phase = posthoc
-agsci_step = bootstrap_finish</em></small>)
+	bootstrap_finish(bootstrap_finish)
 	posthoc\2ebootstrap_finish\2ebefore(posthoc.bootstrap_finish.before)
 	posthoc\2ebootstrap_finish\2eafter(posthoc.bootstrap_finish.after)
-	restore_evidence(restore_evidence<hr/><small><em>agsci_phase = posthoc
-agsci_step = restore_evidence</em></small>)
+	restore_evidence(restore_evidence)
 	posthoc\2erestore_evidence\2ebefore(posthoc.restore_evidence.before)
 	posthoc\2erestore_evidence\2eafter(posthoc.restore_evidence.after)
-	generate(generate<hr/><small><em>agsci_phase = posthoc
-agsci_step = generate</em></small>)
+	generate(generate)
 	posthoc\2egenerate\2ebefore(posthoc.generate.before)
 	posthoc\2egenerate\2eafter(posthoc.generate.after)
-	select(select<hr/><small><em>agsci_phase = posthoc
-agsci_step = select</em></small>)
+	select(select)
 	posthoc\2eselect\2ebefore(posthoc.select.before)
 	posthoc\2eselect\2eafter(posthoc.select.after)
-	apply_constraints(apply_constraints<hr/><small><em>agsci_phase = posthoc
-agsci_step = apply_constraints</em></small>)
+	apply_constraints(apply_constraints)
 	posthoc\2eapply_constraints\2ebefore(posthoc.apply_constraints.before)
 	posthoc\2eapply_constraints\2eafter(posthoc.apply_constraints.after)
-	materialize(materialize<hr/><small><em>agsci_phase = posthoc
-agsci_step = materialize</em></small>)
+	materialize(materialize)
 	posthoc\2ematerialize\2ebefore(posthoc.materialize.before)
 	posthoc\2ematerialize\2eafter(posthoc.materialize.after)
-	publish(publish<hr/><small><em>agsci_phase = posthoc
-agsci_step = publish</em></small>)
+	publish(publish)
 	posthoc\2epublish\2ebefore(posthoc.publish.before)
 	posthoc\2epublish\2eafter(posthoc.publish.after)
 	__end__([<p>__end__</p>]):::last
@@ -2327,26 +2034,20 @@ agsci_step = publish</em></small>)
 	select --> posthoc\2eselect\2eafter;
 	posthoc\2epublish\2eafter --> __end__;
 	subgraph run_analysis
-	run_analysis\3arecord_run_config(record_run_config<hr/><small><em>agsci_phase = posthoc.analysis
-agsci_step = record_run_config</em></small>)
-	run_analysis\3aanalysis_begin(analysis_begin<hr/><small><em>agsci_phase = posthoc.analysis
-agsci_step = analysis_begin</em></small>)
+	run_analysis\3arecord_run_config(record_run_config)
+	run_analysis\3aanalysis_begin(analysis_begin)
 	run_analysis\3aposthoc\2eanalysis\2eanalysis_begin\2ebefore(posthoc.analysis.analysis_begin.before)
 	run_analysis\3aposthoc\2eanalysis\2eanalysis_begin\2eafter(posthoc.analysis.analysis_begin.after)
-	run_analysis\3aattempt_prepare(attempt_prepare<hr/><small><em>agsci_phase = posthoc.analysis
-agsci_step = attempt_prepare</em></small>)
+	run_analysis\3aattempt_prepare(attempt_prepare)
 	run_analysis\3aposthoc\2eanalysis\2eattempt_prepare\2ebefore(posthoc.analysis.attempt_prepare.before)
 	run_analysis\3aposthoc\2eanalysis\2eattempt_prepare\2eafter(posthoc.analysis.attempt_prepare.after)
-	run_analysis\3aattempt_execute(attempt_execute<hr/><small><em>agsci_phase = posthoc.analysis
-agsci_step = attempt_execute</em></small>)
+	run_analysis\3aattempt_execute(attempt_execute)
 	run_analysis\3aposthoc\2eanalysis\2eattempt_execute\2ebefore(posthoc.analysis.attempt_execute.before)
 	run_analysis\3aposthoc\2eanalysis\2eattempt_execute\2eafter(posthoc.analysis.attempt_execute.after)
-	run_analysis\3aattempt_inspect(attempt_inspect<hr/><small><em>agsci_phase = posthoc.analysis
-agsci_step = attempt_inspect</em></small>)
+	run_analysis\3aattempt_inspect(attempt_inspect)
 	run_analysis\3aposthoc\2eanalysis\2eattempt_inspect\2ebefore(posthoc.analysis.attempt_inspect.before)
 	run_analysis\3aposthoc\2eanalysis\2eattempt_inspect\2eafter(posthoc.analysis.attempt_inspect.after)
-	run_analysis\3aanalysis_finish(analysis_finish<hr/><small><em>agsci_phase = posthoc.analysis
-agsci_step = analysis_finish</em></small>)
+	run_analysis\3aanalysis_finish(analysis_finish)
 	run_analysis\3aposthoc\2eanalysis\2eanalysis_finish\2ebefore(posthoc.analysis.analysis_finish.before)
 	run_analysis\3aposthoc\2eanalysis\2eanalysis_finish\2eafter(posthoc.analysis.analysis_finish.after)
 	run_analysis\3aanalysis_begin --> run_analysis\3aposthoc\2eanalysis\2eanalysis_begin\2eafter;
@@ -2382,118 +2083,86 @@ config:
 ---
 graph TD;
 	__start__([<p>__start__</p>]):::first
-	record_run_config(record_run_config<hr/><small><em>agsci_phase = paper
-agsci_step = record_run_config</em></small>)
-	prepare(prepare<hr/><small><em>agsci_phase = paper
-agsci_step = prepare</em></small>)
+	record_run_config(record_run_config)
+	prepare(prepare)
 	paper\2eprepare\2ebefore(paper.prepare.before)
 	paper\2eprepare\2eafter(paper.prepare.after)
-	paper_data(paper_data<hr/><small><em>agsci_phase = paper
-agsci_step = paper_data</em></small>)
+	paper_data(paper_data)
 	paper\2epaper_data\2ebefore(paper.paper_data.before)
 	paper\2epaper_data\2eafter(paper.paper_data.after)
-	check_final_outcome(check_final_outcome<hr/><small><em>agsci_phase = paper
-agsci_step = check_final_outcome</em></small>)
+	check_final_outcome(check_final_outcome)
 	paper\2echeck_final_outcome\2ebefore(paper.check_final_outcome.before)
 	paper\2echeck_final_outcome\2eafter(paper.check_final_outcome.after)
-	seed_edit(seed_edit<hr/><small><em>agsci_phase = paper
-agsci_step = seed_edit</em></small>)
+	seed_edit(seed_edit)
 	paper\2eseed_edit\2ebefore(paper.seed_edit.before)
 	paper\2eseed_edit\2eafter(paper.seed_edit.after)
-	stage_inputs(stage_inputs<hr/><small><em>agsci_phase = paper
-agsci_step = stage_inputs</em></small>)
+	stage_inputs(stage_inputs)
 	paper\2estage_inputs\2ebefore(paper.stage_inputs.before)
 	paper\2estage_inputs\2eafter(paper.stage_inputs.after)
-	references(references<hr/><small><em>agsci_phase = paper
-agsci_step = references</em></small>)
+	references(references)
 	paper\2ereferences\2ebefore(paper.references.before)
 	paper\2ereferences\2eafter(paper.references.after)
-	references_failed(references_failed<hr/><small><em>agsci_phase = paper
-agsci_step = references_failed</em></small>)
-	strategy(strategy<hr/><small><em>agsci_phase = paper
-agsci_step = strategy</em></small>)
+	references_failed(references_failed)
+	strategy(strategy)
 	paper\2estrategy\2ebefore(paper.strategy.before)
 	paper\2estrategy\2eafter(paper.strategy.after)
-	strategy_repair(strategy_repair<hr/><small><em>agsci_phase = paper
-agsci_step = strategy_repair</em></small>)
-	strategy_exhausted(strategy_exhausted<hr/><small><em>agsci_phase = paper
-agsci_step = strategy_exhausted</em></small>)
-	resolve_family(resolve_family<hr/><small><em>agsci_phase = paper
-agsci_step = resolve_family</em></small>)
+	strategy_repair(strategy_repair)
+	strategy_exhausted(strategy_exhausted)
+	resolve_family(resolve_family)
 	paper\2eresolve_family\2ebefore(paper.resolve_family.before)
 	paper\2eresolve_family\2eafter(paper.resolve_family.after)
-	rank_posthoc(rank_posthoc<hr/><small><em>agsci_phase = paper
-agsci_step = rank_posthoc</em></small>)
+	rank_posthoc(rank_posthoc)
 	paper\2erank_posthoc\2ebefore(paper.rank_posthoc.before)
 	paper\2erank_posthoc\2eafter(paper.rank_posthoc.after)
-	ranking_repair(ranking_repair<hr/><small><em>agsci_phase = paper
-agsci_step = ranking_repair</em></small>)
-	ranking_exhausted(ranking_exhausted<hr/><small><em>agsci_phase = paper
-agsci_step = ranking_exhausted</em></small>)
-	augment_paper_data(augment_paper_data<hr/><small><em>agsci_phase = paper
-agsci_step = augment_paper_data</em></small>)
+	ranking_repair(ranking_repair)
+	ranking_exhausted(ranking_exhausted)
+	augment_paper_data(augment_paper_data)
 	paper\2eaugment_paper_data\2ebefore(paper.augment_paper_data.before)
 	paper\2eaugment_paper_data\2eafter(paper.augment_paper_data.after)
-	init_concept_figure(init_concept_figure<hr/><small><em>agsci_phase = paper
-agsci_step = init_concept_figure</em></small>)
+	init_concept_figure(init_concept_figure)
 	paper\2einit_concept_figure\2ebefore(paper.init_concept_figure.before)
 	paper\2einit_concept_figure\2eafter(paper.init_concept_figure.after)
-	select_stage(select_stage<hr/><small><em>agsci_phase = paper
-agsci_step = select_stage</em></small>)
+	select_stage(select_stage)
 	paper\2eselect_stage\2ebefore(paper.select_stage.before)
 	paper\2eselect_stage\2eafter(paper.select_stage.after)
-	write(write<hr/><small><em>agsci_phase = paper
-agsci_step = write</em></small>)
+	write(write)
 	paper\2ewrite\2ebefore(paper.write.before)
 	paper\2ewrite\2eafter(paper.write.after)
-	after_write(after_write<hr/><small><em>agsci_phase = paper
-agsci_step = after_write</em></small>)
+	after_write(after_write)
 	paper\2eafter_write\2ebefore(paper.after_write.before)
 	paper\2eafter_write\2eafter(paper.after_write.after)
-	postdraft_gate(postdraft_gate<hr/><small><em>agsci_phase = paper
-agsci_step = postdraft_gate</em></small>)
+	postdraft_gate(postdraft_gate)
 	paper\2epostdraft\2ebefore(paper.postdraft.before)
 	paper\2epostdraft\2eafter(paper.postdraft.after)
-	after_postdraft(after_postdraft<hr/><small><em>agsci_phase = paper
-agsci_step = after_postdraft</em></small>)
-	figures(figures<hr/><small><em>agsci_phase = paper
-agsci_step = figures</em></small>)
+	after_postdraft(after_postdraft)
+	figures(figures)
 	paper\2efigures\2ebefore(paper.figures.before)
 	paper\2efigures\2eafter(paper.figures.after)
-	validate(validate<hr/><small><em>agsci_phase = paper
-agsci_step = validate</em></small>)
+	validate(validate)
 	paper\2evalidate\2ebefore(paper.validate.before)
 	paper\2evalidate\2eafter(paper.validate.after)
-	after_validate(after_validate<hr/><small><em>agsci_phase = paper
-agsci_step = after_validate</em></small>)
+	after_validate(after_validate)
 	paper\2eafter_validate\2ebefore(paper.after_validate.before)
 	paper\2eafter_validate\2eafter(paper.after_validate.after)
 	paper\2eaudit\2ebefore(paper.audit.before)
 	paper\2eaudit\2eafter(paper.audit.after)
-	after_audit(after_audit<hr/><small><em>agsci_phase = paper
-agsci_step = after_audit</em></small>)
+	after_audit(after_audit)
 	paper\2eafter_audit\2ebefore(paper.after_audit.before)
 	paper\2eafter_audit\2eafter(paper.after_audit.after)
-	review_check(review_check<hr/><small><em>agsci_phase = paper
-agsci_step = review_check</em></small>)
+	review_check(review_check)
 	paper\2ereview_gate\2ebefore(paper.review_gate.before)
 	paper\2ereview_gate\2eafter(paper.review_gate.after)
-	after_review(after_review<hr/><small><em>agsci_phase = paper
-agsci_step = after_review</em></small>)
+	after_review(after_review)
 	paper\2eafter_review\2ebefore(paper.after_review.before)
 	paper\2eafter_review\2eafter(paper.after_review.after)
-	figure_quality_gate(figure_quality_gate<hr/><small><em>agsci_phase = paper
-agsci_step = figure_quality_gate</em></small>)
+	figure_quality_gate(figure_quality_gate)
 	paper\2efigure_quality_gate\2ebefore(paper.figure_quality_gate.before)
 	paper\2efigure_quality_gate\2eafter(paper.figure_quality_gate.after)
-	loop_decision(loop_decision<hr/><small><em>agsci_phase = paper
-agsci_step = loop_decision</em></small>)
-	finalize(finalize<hr/><small><em>agsci_phase = paper
-agsci_step = finalize</em></small>)
+	loop_decision(loop_decision)
+	finalize(finalize)
 	paper\2efinalize\2ebefore(paper.finalize.before)
 	paper\2efinalize\2eafter(paper.finalize.after)
-	outcome(outcome<hr/><small><em>agsci_phase = paper
-agsci_step = outcome</em></small>)
+	outcome(outcome)
 	__end__([<p>__end__</p>]):::last
 	__start__ --> record_run_config;
 	after_audit --> paper\2eafter_audit\2eafter;
@@ -2607,36 +2276,26 @@ agsci_step = outcome</em></small>)
 	paper\2efinalize\2eafter --> __end__;
 	subgraph postdraft
 	postdraft\3a__start__(<p>__start__</p>)
-	postdraft\3agaps(gaps<hr/><small><em>agsci_phase = paper.postdraft_enrichment
-agsci_step = gaps</em></small>)
+	postdraft\3agaps(gaps)
 	postdraft\3apaper\2epostdraft_enrichment\2egaps\2ebefore(paper.postdraft_enrichment.gaps.before)
 	postdraft\3apaper\2epostdraft_enrichment\2egaps\2eafter(paper.postdraft_enrichment.gaps.after)
-	postdraft\3arepair_gaps(repair_gaps<hr/><small><em>agsci_phase = paper.postdraft_enrichment
-agsci_step = repair_gaps</em></small>)
-	postdraft\3ano_gaps(no_gaps<hr/><small><em>agsci_phase = paper.postdraft_enrichment
-agsci_step = no_gaps</em></small>)
+	postdraft\3arepair_gaps(repair_gaps)
+	postdraft\3ano_gaps(no_gaps)
 	postdraft\3apaper\2epostdraft_enrichment\2eno_gaps\2ebefore(paper.postdraft_enrichment.no_gaps.before)
 	postdraft\3apaper\2epostdraft_enrichment\2eno_gaps\2eafter(paper.postdraft_enrichment.no_gaps.after)
-	postdraft\3afailed_gaps(failed_gaps<hr/><small><em>agsci_phase = paper.postdraft_enrichment
-agsci_step = failed_gaps</em></small>)
-	postdraft\3aplan(plan<hr/><small><em>agsci_phase = paper.postdraft_enrichment
-agsci_step = plan</em></small>)
+	postdraft\3afailed_gaps(failed_gaps)
+	postdraft\3aplan(plan)
 	postdraft\3apaper\2epostdraft_enrichment\2eplan\2ebefore(paper.postdraft_enrichment.plan.before)
 	postdraft\3apaper\2epostdraft_enrichment\2eplan\2eafter(paper.postdraft_enrichment.plan.after)
-	postdraft\3acheck_plan(check_plan<hr/><small><em>agsci_phase = paper.postdraft_enrichment
-agsci_step = check_plan</em></small>)
+	postdraft\3acheck_plan(check_plan)
 	postdraft\3apaper\2epostdraft_enrichment\2echeck_plan\2ebefore(paper.postdraft_enrichment.check_plan.before)
 	postdraft\3apaper\2epostdraft_enrichment\2echeck_plan\2eafter(paper.postdraft_enrichment.check_plan.after)
-	postdraft\3arepair_plan(repair_plan<hr/><small><em>agsci_phase = paper.postdraft_enrichment
-agsci_step = repair_plan</em></small>)
-	postdraft\3afailed_plan(failed_plan<hr/><small><em>agsci_phase = paper.postdraft_enrichment
-agsci_step = failed_plan</em></small>)
-	postdraft\3aretrieve(retrieve<hr/><small><em>agsci_phase = paper.postdraft_enrichment
-agsci_step = retrieve</em></small>)
+	postdraft\3arepair_plan(repair_plan)
+	postdraft\3afailed_plan(failed_plan)
+	postdraft\3aretrieve(retrieve)
 	postdraft\3apaper\2epostdraft_enrichment\2eretrieve\2ebefore(paper.postdraft_enrichment.retrieve.before)
 	postdraft\3apaper\2epostdraft_enrichment\2eretrieve\2eafter(paper.postdraft_enrichment.retrieve.after)
-	postdraft\3aweave(weave<hr/><small><em>agsci_phase = paper.postdraft_enrichment
-agsci_step = weave</em></small>)
+	postdraft\3aweave(weave)
 	postdraft\3apaper\2epostdraft_enrichment\2eweave\2ebefore(paper.postdraft_enrichment.weave.before)
 	postdraft\3apaper\2epostdraft_enrichment\2eweave\2eafter(paper.postdraft_enrichment.weave.after)
 	postdraft\3a__end__(<p>__end__</p>)
@@ -2673,16 +2332,13 @@ agsci_step = weave</em></small>)
 	end
 	subgraph audit
 	audit\3a__start__(<p>__start__</p>)
-	audit\3aprepare(prepare<hr/><small><em>agsci_phase = paper.audit
-agsci_step = prepare</em></small>)
+	audit\3aprepare(prepare)
 	audit\3apaper\2eaudit\2eprepare\2ebefore(paper.audit.prepare.before)
 	audit\3apaper\2eaudit\2eprepare\2eafter(paper.audit.prepare.after)
-	audit\3asession(session<hr/><small><em>agsci_phase = paper.audit
-agsci_step = session</em></small>)
+	audit\3asession(session)
 	audit\3apaper\2eaudit\2esession\2ebefore(paper.audit.session.before)
 	audit\3apaper\2eaudit\2esession\2eafter(paper.audit.session.after)
-	audit\3afinalize(finalize<hr/><small><em>agsci_phase = paper.audit
-agsci_step = finalize</em></small>)
+	audit\3afinalize(finalize)
 	audit\3apaper\2eaudit\2efinalize\2ebefore(paper.audit.finalize.before)
 	audit\3apaper\2eaudit\2efinalize\2eafter(paper.audit.finalize.after)
 	audit\3a__end__(<p>__end__</p>)
@@ -2700,16 +2356,13 @@ agsci_step = finalize</em></small>)
 	end
 	subgraph review_gate
 	review_gate\3a__start__(<p>__start__</p>)
-	review_gate\3aprepare(prepare<hr/><small><em>agsci_phase = paper.review_gate
-agsci_step = prepare</em></small>)
+	review_gate\3aprepare(prepare)
 	review_gate\3apaper\2ereview_gate\2eprepare\2ebefore(paper.review_gate.prepare.before)
 	review_gate\3apaper\2ereview_gate\2eprepare\2eafter(paper.review_gate.prepare.after)
-	review_gate\3asession(session<hr/><small><em>agsci_phase = paper.review_gate
-agsci_step = session</em></small>)
+	review_gate\3asession(session)
 	review_gate\3apaper\2ereview_gate\2esession\2ebefore(paper.review_gate.session.before)
 	review_gate\3apaper\2ereview_gate\2esession\2eafter(paper.review_gate.session.after)
-	review_gate\3afinalize(finalize<hr/><small><em>agsci_phase = paper.review_gate
-agsci_step = finalize</em></small>)
+	review_gate\3afinalize(finalize)
 	review_gate\3apaper\2ereview_gate\2efinalize\2ebefore(paper.review_gate.finalize.before)
 	review_gate\3apaper\2ereview_gate\2efinalize\2eafter(paper.review_gate.finalize.after)
 	review_gate\3a__end__(<p>__end__</p>)
@@ -2740,31 +2393,23 @@ config:
 ---
 graph TD;
 	__start__(<p>__start__</p>)
-	record_run_config(record_run_config<hr/><small><em>agsci_phase = references
-agsci_step = record_run_config</em></small>)
-	preserve(preserve<hr/><small><em>agsci_phase = references
-agsci_step = preserve</em></small>)
-	plan(plan<hr/><small><em>agsci_phase = references
-agsci_step = plan</em></small>)
+	record_run_config(record_run_config)
+	preserve(preserve)
+	plan(plan)
 	references\2eplan\2ebefore(references.plan.before)
 	references\2eplan\2eafter(references.plan.after)
-	check_plan(check_plan<hr/><small><em>agsci_phase = references
-agsci_step = check_plan</em></small>)
+	check_plan(check_plan)
 	references\2echeck_plan\2ebefore(references.check_plan.before)
 	references\2echeck_plan\2eafter(references.check_plan.after)
 	__error_handler__retrieve(__error_handler__retrieve)
-	retrieve(retrieve<hr/><small><em>agsci_phase = references
-agsci_step = retrieve</em></small>)
+	retrieve(retrieve)
 	references\2eretrieve\2ebefore(references.retrieve.before)
 	references\2eretrieve\2eafter(references.retrieve.after)
-	after_query(after_query<hr/><small><em>agsci_phase = references
-agsci_step = after_query</em></small>)
-	fallback(fallback<hr/><small><em>agsci_phase = references
-agsci_step = fallback</em></small>)
+	after_query(after_query)
+	fallback(fallback)
 	references\2efallback\2ebefore(references.fallback.before)
 	references\2efallback\2eafter(references.fallback.after)
-	write_bibliography(write_bibliography<hr/><small><em>agsci_phase = references
-agsci_step = write_bibliography</em></small>)
+	write_bibliography(write_bibliography)
 	references\2ewrite_bibliography\2ebefore(references.write_bibliography.before)
 	references\2ewrite_bibliography\2eafter(references.write_bibliography.after)
 	__end__(<p>__end__</p>)
@@ -2807,31 +2452,23 @@ config:
 ---
 graph TD;
 	__start__(<p>__start__</p>)
-	record_run_config(record_run_config<hr/><small><em>agsci_phase = review
-agsci_step = record_run_config</em></small>)
-	extract_text(extract_text<hr/><small><em>agsci_phase = review
-agsci_step = extract_text</em></small>)
+	record_run_config(record_run_config)
+	extract_text(extract_text)
 	review\2eextract_text\2ebefore(review.extract_text.before)
 	review\2eextract_text\2eafter(review.extract_text.after)
-	fit_window(fit_window<hr/><small><em>agsci_phase = review
-agsci_step = fit_window</em></small>)
+	fit_window(fit_window)
 	review\2efit_window\2ebefore(review.fit_window.before)
 	review\2efit_window\2eafter(review.fit_window.after)
 	__error_handler__reviewer(__error_handler__reviewer)
-	reviewer(reviewer<hr/><small><em>agsci_phase = review
-agsci_step = reviewer</em></small>)
-	join_reviews(join_reviews<hr/><small><em>agsci_phase = review
-agsci_step = join_reviews
-defer = True</em></small>)
-	publish(publish<hr/><small><em>agsci_phase = review
-agsci_step = publish</em></small>)
+	reviewer(reviewer)
+	join_reviews(join_reviews<hr/><small><em>defer = True</em></small>)
+	publish(publish)
 	review\2epublish\2ebefore(review.publish.before)
 	review\2epublish\2eafter(review.publish.after)
 	__error_handler__area_chair(__error_handler__area_chair)
 	review\2earea_chair\2ebefore(review.area_chair.before)
 	review\2earea_chair\2eafter(review.area_chair.after)
-	aggregate(aggregate<hr/><small><em>agsci_phase = review
-agsci_step = aggregate</em></small>)
+	aggregate(aggregate)
 	review\2eaggregate\2ebefore(review.aggregate.before)
 	review\2eaggregate\2eafter(review.aggregate.after)
 	__end__(<p>__end__</p>)
@@ -2873,36 +2510,28 @@ config:
 ---
 graph TD;
 	__start__([<p>__start__</p>]):::first
-	record_run_config(record_run_config<hr/><small><em>agsci_phase = revision
-agsci_step = record_run_config</em></small>)
-	check_preconditions(check_preconditions<hr/><small><em>agsci_phase = revision
-agsci_step = check_preconditions</em></small>)
+	record_run_config(record_run_config)
+	check_preconditions(check_preconditions)
 	revision\2echeck_preconditions\2ebefore(revision.check_preconditions.before)
 	revision\2echeck_preconditions\2eafter(revision.check_preconditions.after)
-	stage_revision(stage_revision<hr/><small><em>agsci_phase = revision
-agsci_step = stage_revision</em></small>)
+	stage_revision(stage_revision)
 	revision\2estage_revision\2ebefore(revision.stage_revision.before)
 	revision\2estage_revision\2eafter(revision.stage_revision.after)
 	revision\2epaper\2ebefore(revision.paper.before)
 	revision\2epaper\2eafter(revision.paper.after)
-	retention_check(retention_check<hr/><small><em>agsci_phase = revision
-agsci_step = retention_check</em></small>)
+	retention_check(retention_check)
 	revision\2eretention_check\2ebefore(revision.retention_check.before)
 	revision\2eretention_check\2eafter(revision.retention_check.after)
-	snapshot_original(snapshot_original<hr/><small><em>agsci_phase = revision
-agsci_step = snapshot_original</em></small>)
+	snapshot_original(snapshot_original)
 	revision\2esnapshot_original\2ebefore(revision.snapshot_original.before)
 	revision\2esnapshot_original\2eafter(revision.snapshot_original.after)
-	promote(promote<hr/><small><em>agsci_phase = revision
-agsci_step = promote</em></small>)
+	promote(promote)
 	revision\2epromote\2ebefore(revision.promote.before)
 	revision\2epromote\2eafter(revision.promote.after)
-	second_review(second_review<hr/><small><em>agsci_phase = revision
-agsci_step = second_review</em></small>)
+	second_review(second_review)
 	revision\2esecond_review\2ebefore(revision.second_review.before)
 	revision\2esecond_review\2eafter(revision.second_review.after)
-	finalize(finalize<hr/><small><em>agsci_phase = revision
-agsci_step = finalize</em></small>)
+	finalize(finalize)
 	revision\2efinalize\2ebefore(revision.finalize.before)
 	revision\2efinalize\2eafter(revision.finalize.after)
 	__end__([<p>__end__</p>]):::last
@@ -2940,124 +2569,89 @@ agsci_step = finalize</em></small>)
 	stage_revision --> revision\2estage_revision\2eafter;
 	revision\2efinalize\2eafter --> __end__;
 	subgraph paper
-	paper\3arecord_run_config(record_run_config<hr/><small><em>agsci_phase = paper
-agsci_step = record_run_config</em></small>)
-	paper\3aprepare(prepare<hr/><small><em>agsci_phase = paper
-agsci_step = prepare</em></small>)
+	paper\3arecord_run_config(record_run_config)
+	paper\3aprepare(prepare)
 	paper\3apaper\2eprepare\2ebefore(paper.prepare.before)
 	paper\3apaper\2eprepare\2eafter(paper.prepare.after)
-	paper\3apaper_data(paper_data<hr/><small><em>agsci_phase = paper
-agsci_step = paper_data</em></small>)
+	paper\3apaper_data(paper_data)
 	paper\3apaper\2epaper_data\2ebefore(paper.paper_data.before)
 	paper\3apaper\2epaper_data\2eafter(paper.paper_data.after)
-	paper\3acheck_final_outcome(check_final_outcome<hr/><small><em>agsci_phase = paper
-agsci_step = check_final_outcome</em></small>)
+	paper\3acheck_final_outcome(check_final_outcome)
 	paper\3apaper\2echeck_final_outcome\2ebefore(paper.check_final_outcome.before)
 	paper\3apaper\2echeck_final_outcome\2eafter(paper.check_final_outcome.after)
-	paper\3aseed_edit(seed_edit<hr/><small><em>agsci_phase = paper
-agsci_step = seed_edit</em></small>)
+	paper\3aseed_edit(seed_edit)
 	paper\3apaper\2eseed_edit\2ebefore(paper.seed_edit.before)
 	paper\3apaper\2eseed_edit\2eafter(paper.seed_edit.after)
-	paper\3astage_inputs(stage_inputs<hr/><small><em>agsci_phase = paper
-agsci_step = stage_inputs</em></small>)
+	paper\3astage_inputs(stage_inputs)
 	paper\3apaper\2estage_inputs\2ebefore(paper.stage_inputs.before)
 	paper\3apaper\2estage_inputs\2eafter(paper.stage_inputs.after)
-	paper\3areferences(references<hr/><small><em>agsci_phase = paper
-agsci_step = references</em></small>)
+	paper\3areferences(references)
 	paper\3apaper\2ereferences\2ebefore(paper.references.before)
 	paper\3apaper\2ereferences\2eafter(paper.references.after)
-	paper\3areferences_failed(references_failed<hr/><small><em>agsci_phase = paper
-agsci_step = references_failed</em></small>)
-	paper\3astrategy(strategy<hr/><small><em>agsci_phase = paper
-agsci_step = strategy</em></small>)
+	paper\3areferences_failed(references_failed)
+	paper\3astrategy(strategy)
 	paper\3apaper\2estrategy\2ebefore(paper.strategy.before)
 	paper\3apaper\2estrategy\2eafter(paper.strategy.after)
-	paper\3astrategy_repair(strategy_repair<hr/><small><em>agsci_phase = paper
-agsci_step = strategy_repair</em></small>)
-	paper\3astrategy_exhausted(strategy_exhausted<hr/><small><em>agsci_phase = paper
-agsci_step = strategy_exhausted</em></small>)
-	paper\3aresolve_family(resolve_family<hr/><small><em>agsci_phase = paper
-agsci_step = resolve_family</em></small>)
+	paper\3astrategy_repair(strategy_repair)
+	paper\3astrategy_exhausted(strategy_exhausted)
+	paper\3aresolve_family(resolve_family)
 	paper\3apaper\2eresolve_family\2ebefore(paper.resolve_family.before)
 	paper\3apaper\2eresolve_family\2eafter(paper.resolve_family.after)
-	paper\3arank_posthoc(rank_posthoc<hr/><small><em>agsci_phase = paper
-agsci_step = rank_posthoc</em></small>)
+	paper\3arank_posthoc(rank_posthoc)
 	paper\3apaper\2erank_posthoc\2ebefore(paper.rank_posthoc.before)
 	paper\3apaper\2erank_posthoc\2eafter(paper.rank_posthoc.after)
-	paper\3aranking_repair(ranking_repair<hr/><small><em>agsci_phase = paper
-agsci_step = ranking_repair</em></small>)
-	paper\3aranking_exhausted(ranking_exhausted<hr/><small><em>agsci_phase = paper
-agsci_step = ranking_exhausted</em></small>)
-	paper\3aaugment_paper_data(augment_paper_data<hr/><small><em>agsci_phase = paper
-agsci_step = augment_paper_data</em></small>)
+	paper\3aranking_repair(ranking_repair)
+	paper\3aranking_exhausted(ranking_exhausted)
+	paper\3aaugment_paper_data(augment_paper_data)
 	paper\3apaper\2eaugment_paper_data\2ebefore(paper.augment_paper_data.before)
 	paper\3apaper\2eaugment_paper_data\2eafter(paper.augment_paper_data.after)
-	paper\3ainit_concept_figure(init_concept_figure<hr/><small><em>agsci_phase = paper
-agsci_step = init_concept_figure</em></small>)
+	paper\3ainit_concept_figure(init_concept_figure)
 	paper\3apaper\2einit_concept_figure\2ebefore(paper.init_concept_figure.before)
 	paper\3apaper\2einit_concept_figure\2eafter(paper.init_concept_figure.after)
-	paper\3aselect_stage(select_stage<hr/><small><em>agsci_phase = paper
-agsci_step = select_stage</em></small>)
+	paper\3aselect_stage(select_stage)
 	paper\3apaper\2eselect_stage\2ebefore(paper.select_stage.before)
 	paper\3apaper\2eselect_stage\2eafter(paper.select_stage.after)
-	paper\3awrite(write<hr/><small><em>agsci_phase = paper
-agsci_step = write</em></small>)
+	paper\3awrite(write)
 	paper\3apaper\2ewrite\2ebefore(paper.write.before)
 	paper\3apaper\2ewrite\2eafter(paper.write.after)
-	paper\3aafter_write(after_write<hr/><small><em>agsci_phase = paper
-agsci_step = after_write</em></small>)
+	paper\3aafter_write(after_write)
 	paper\3apaper\2eafter_write\2ebefore(paper.after_write.before)
 	paper\3apaper\2eafter_write\2eafter(paper.after_write.after)
-	paper\3apostdraft_gate(postdraft_gate<hr/><small><em>agsci_phase = paper
-agsci_step = postdraft_gate</em></small>)
-	paper\3apostdraft(postdraft<hr/><small><em>agsci_phase = paper
-agsci_step = postdraft</em></small>)
+	paper\3apostdraft_gate(postdraft_gate)
+	paper\3apostdraft(postdraft)
 	paper\3apaper\2epostdraft\2ebefore(paper.postdraft.before)
 	paper\3apaper\2epostdraft\2eafter(paper.postdraft.after)
-	paper\3aafter_postdraft(after_postdraft<hr/><small><em>agsci_phase = paper
-agsci_step = after_postdraft</em></small>)
-	paper\3afigures(figures<hr/><small><em>agsci_phase = paper
-agsci_step = figures</em></small>)
+	paper\3aafter_postdraft(after_postdraft)
+	paper\3afigures(figures)
 	paper\3apaper\2efigures\2ebefore(paper.figures.before)
 	paper\3apaper\2efigures\2eafter(paper.figures.after)
-	paper\3avalidate(validate<hr/><small><em>agsci_phase = paper
-agsci_step = validate</em></small>)
+	paper\3avalidate(validate)
 	paper\3apaper\2evalidate\2ebefore(paper.validate.before)
 	paper\3apaper\2evalidate\2eafter(paper.validate.after)
-	paper\3aafter_validate(after_validate<hr/><small><em>agsci_phase = paper
-agsci_step = after_validate</em></small>)
+	paper\3aafter_validate(after_validate)
 	paper\3apaper\2eafter_validate\2ebefore(paper.after_validate.before)
 	paper\3apaper\2eafter_validate\2eafter(paper.after_validate.after)
-	paper\3aaudit(audit<hr/><small><em>agsci_phase = paper
-agsci_step = audit</em></small>)
+	paper\3aaudit(audit)
 	paper\3apaper\2eaudit\2ebefore(paper.audit.before)
 	paper\3apaper\2eaudit\2eafter(paper.audit.after)
-	paper\3aafter_audit(after_audit<hr/><small><em>agsci_phase = paper
-agsci_step = after_audit</em></small>)
+	paper\3aafter_audit(after_audit)
 	paper\3apaper\2eafter_audit\2ebefore(paper.after_audit.before)
 	paper\3apaper\2eafter_audit\2eafter(paper.after_audit.after)
-	paper\3areview_check(review_check<hr/><small><em>agsci_phase = paper
-agsci_step = review_check</em></small>)
-	paper\3areview_gate(review_gate<hr/><small><em>agsci_phase = paper
-agsci_step = review_gate</em></small>)
+	paper\3areview_check(review_check)
+	paper\3areview_gate(review_gate)
 	paper\3apaper\2ereview_gate\2ebefore(paper.review_gate.before)
 	paper\3apaper\2ereview_gate\2eafter(paper.review_gate.after)
-	paper\3aafter_review(after_review<hr/><small><em>agsci_phase = paper
-agsci_step = after_review</em></small>)
+	paper\3aafter_review(after_review)
 	paper\3apaper\2eafter_review\2ebefore(paper.after_review.before)
 	paper\3apaper\2eafter_review\2eafter(paper.after_review.after)
-	paper\3afigure_quality_gate(figure_quality_gate<hr/><small><em>agsci_phase = paper
-agsci_step = figure_quality_gate</em></small>)
+	paper\3afigure_quality_gate(figure_quality_gate)
 	paper\3apaper\2efigure_quality_gate\2ebefore(paper.figure_quality_gate.before)
 	paper\3apaper\2efigure_quality_gate\2eafter(paper.figure_quality_gate.after)
-	paper\3aloop_decision(loop_decision<hr/><small><em>agsci_phase = paper
-agsci_step = loop_decision</em></small>)
-	paper\3afinalize(finalize<hr/><small><em>agsci_phase = paper
-agsci_step = finalize</em></small>)
+	paper\3aloop_decision(loop_decision)
+	paper\3afinalize(finalize)
 	paper\3apaper\2efinalize\2ebefore(paper.finalize.before)
 	paper\3apaper\2efinalize\2eafter(paper.finalize.after)
-	paper\3aoutcome(outcome<hr/><small><em>agsci_phase = paper
-agsci_step = outcome</em></small>)
+	paper\3aoutcome(outcome)
 	paper\3a__end__(<p>__end__</p>)
 	paper\3aafter_audit --> paper\3apaper\2eafter_audit\2eafter;
 	paper\3aafter_postdraft -.-> paper\3aoutcome;

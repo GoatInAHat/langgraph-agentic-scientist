@@ -193,6 +193,21 @@ def render_steps(built: Sequence[tuple[GraphEntry, Any | None]]) -> str:
     return "\n".join(lines)
 
 
+def _diagram(graph: Any) -> str:
+    """Draw ``graph`` without the step metadata that every node of a ``StepGraph`` carries."""
+    from langgraph_agentic_scientist.core.steps import PHASE_METADATA_KEY, STEP_METADATA_KEY
+
+    drawn = graph.get_graph(xray=1)
+    for key, node in list(drawn.nodes.items()):
+        metadata = {
+            name: value
+            for name, value in (node.metadata or {}).items()
+            if name not in (PHASE_METADATA_KEY, STEP_METADATA_KEY)
+        }
+        drawn.nodes[key] = node._replace(metadata=metadata or None)
+    return str(drawn.draw_mermaid()).rstrip()
+
+
 def render_diagrams(built: Sequence[tuple[GraphEntry, Any | None]]) -> str:
     """Render the generated part of ``docs/ARCHITECTURE.md``: one Mermaid diagram per graph."""
     lines = [BEGIN, ""]
@@ -201,7 +216,7 @@ def render_diagrams(built: Sequence[tuple[GraphEntry, Any | None]]) -> str:
         if graph is None:
             lines += ["Not available in this build.", ""]
             continue
-        lines += ["```mermaid", graph.get_graph(xray=1).draw_mermaid().rstrip(), "```", ""]
+        lines += ["```mermaid", _diagram(graph), "```", ""]
     lines.append(END)
     return "\n".join(lines)
 

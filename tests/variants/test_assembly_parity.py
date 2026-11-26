@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from langgraph_agentic_scientist.variants.cross_task import find_best_program_dir
 from langgraph_agentic_scientist.variants.execute import check_analysis_files
 from langgraph_agentic_scientist.workspace import LocalWorkspace
@@ -60,3 +62,37 @@ async def test_a_bare_carriage_return_summary_is_unknown(workspace: LocalWorkspa
     path.write_bytes(path.read_bytes().replace(b"\r\n", b"\r"))
     result = await summary_qualification(workspace, program, prompts=PromptRegistry.default())
     assert result == {"overall_pass": ""}
+
+
+async def _cross_task_with(
+    workspace: LocalWorkspace, study: Any, phase_context: Any, broken: str
+) -> Any:
+    from langgraph_agentic_scientist.evaluation.protocol import EvaluationResult
+    from langgraph_agentic_scientist.testing import FakeEvaluator, write_minimal_task
+
+    from .test_cross_task import _run, _scripts
+
+    task, best = study
+    await write_minimal_task(workspace, "extra1")
+    down = EvaluationResult(evaluation_id="x", status="infrastructure_error", summary="no docker")
+    evaluator = FakeEvaluator(results={f"r1/extra/extra1/{broken}/program_1": down})
+    ctx = phase_context(_scripts(), evaluator=evaluator, extra_tasks=("extra1",))
+    return await _run(ctx, task, best)
+
+
+async def test_an_infrastructure_failure_of_the_adapted_control_fails_the_phase(
+    workspace: LocalWorkspace, study: Any, phase_context: Any
+) -> None:
+    result = await _cross_task_with(workspace, study, phase_context, "control_best")
+    assert result.status == "failed" and result.failure is not None
+    assert result.failure.scope == "infrastructure"
+    assert "no docker" in result.failure.detail
+
+
+async def test_an_infrastructure_failure_of_an_adapted_variant_fails_the_phase(
+    workspace: LocalWorkspace, study: Any, phase_context: Any
+) -> None:
+    result = await _cross_task_with(workspace, study, phase_context, "ablation_no_reheat")
+    assert result.status == "failed" and result.failure is not None
+    assert result.failure.scope == "infrastructure"
+    assert result.readme_path is None

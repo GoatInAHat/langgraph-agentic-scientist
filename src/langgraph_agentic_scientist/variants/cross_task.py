@@ -556,6 +556,9 @@ async def after_control(
     runs = [
         run for run in state.get("variant_runs", []) if run.spec.variant_dir == spec.variant_dir
     ]
+    infrastructure = next((run.infrastructure_failure for run in runs if run.infrastructure_failure), None)
+    if infrastructure is not None:
+        return {"cross_failure": infrastructure}
     if len(runs) != 1 or not runs[0].rubric_passed:
         return _fail(
             "cross_task_failed",
@@ -639,7 +642,17 @@ def route_variants(state: Mapping[str, Any]) -> list[Send] | str:
 
 
 async def join_task(state: CrossTaskState, runtime: Runtime[ScientistContext]) -> dict[str, Any]:
-    """End one extra task: go to the next one or finish."""
+    """End one extra task: fail on an evaluator infrastructure failure, else go to the next."""
+    infrastructure = next(
+        (
+            run.infrastructure_failure
+            for run in state.get("variant_runs", [])
+            if run.infrastructure_failure is not None
+        ),
+        None,
+    )
+    if infrastructure is not None:
+        return {"cross_failure": infrastructure, "route": "finish"}
     index = state["index"] + 1
     return {"index": index, "route": "next" if index < len(state["extra_tasks"]) else "finish"}
 

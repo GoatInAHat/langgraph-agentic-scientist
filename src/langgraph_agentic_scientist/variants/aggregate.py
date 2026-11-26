@@ -48,10 +48,6 @@ REP_DIR_RE = re.compile(r"^rep_(.+)$")
 CsvEntry = tuple[str, dict[str, str]]
 
 
-async def _child_files(workspace: Workspace, path: str) -> list[str]:
-    return [name for name, directory in await list_children(workspace, path) if not directory]
-
-
 async def _is_flat_extra_task(workspace: Workspace, task_dir: str) -> bool:
     """A flat extra task has variant subdirectories that hold CSV files directly."""
     for name in await list_child_dirs(workspace, task_dir):

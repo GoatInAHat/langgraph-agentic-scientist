@@ -1,0 +1,2 @@
+<!-- Extracted from src/investigation/paper_prompt_context.py lines 40-40 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
+No post-draft reference gaps have been identified for this run.

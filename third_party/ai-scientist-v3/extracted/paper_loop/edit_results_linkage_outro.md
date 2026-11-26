@@ -1,0 +1,3 @@
+<!-- Extracted from src/scripts/paper_edit.sh lines 1422-1423 of AI-Scientist-v3 df8313889a00 by tests/paper/test_loop_provenance.py; deriving a package file drops this line. -->
+- Interpret these task/variant directories as the grounded map from results to settings.
+- When a staged input appears to implement the same evaluated method family, say so explicitly and distinguish direct file provenance from indirect family-level linkage.

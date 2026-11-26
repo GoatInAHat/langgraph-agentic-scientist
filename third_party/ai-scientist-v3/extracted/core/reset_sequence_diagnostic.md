@@ -1,0 +1,2 @@
+<!-- Extracted from src/investigation/reset_sequence.py lines 47-51 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
+{{CONTEXT}} expected primary {{EXPECTED}}; observed {{OBSERVED}} (count={{COUNT}}). The primary sequence must run exactly once; one trailing deterministic replay of seed {{REPLAY_SEED}} is allowed.

@@ -1,0 +1,2 @@
+<!-- Extracted from src/investigation/paper_prompt_context.py lines 120-123 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
+No venue-specific brief is provided for this run. Rely on the selected paper format, grounded artifacts, and references only.

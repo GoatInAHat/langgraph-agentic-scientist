@@ -1,0 +1,2 @@
+<!-- Extracted from src/variants_pipeline/rubric_contract.py lines 116-120 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
+Compare the adapted program's performance against the expected performance documented in program_0/ (e.g. README). If there is a large degradation, investigate which adaptation changes caused it and revert any that are not strictly required for evaluate.py to run.

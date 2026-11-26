@@ -1,0 +1,2 @@
+<!-- Extracted from src/scripts/paper.sh lines 1404-1404 of AI-Scientist-v3 df8313889a00 by tests/paper/test_loop_provenance.py; deriving a package file drops this line. -->
+No prior validation feedback is present. Produce a fresh grounded draft, run validation, and fix any hard errors before finishing.

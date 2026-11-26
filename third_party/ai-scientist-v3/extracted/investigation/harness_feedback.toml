@@ -1,0 +1,32 @@
+<!-- Extracted from src/investigation/harness_eval.py lines 83-201 and src/investigation/harness_feedback.py lines 84-96 of AI-Scientist-v3 df8313889a04 by hand (many f-strings in one function, which tools/derive_prompts.py extracts one expression at a time): the evidence and feedback strings written into rubric_status.json and the memory entries; deriving a package file drops this line. -->
+# Evidence and feedback strings of the harness-owned evaluation. {{NAME}} fields are filled by investigation/harness_eval.py.
+
+[rubric_evidence]
+# harness_eval._rubric_status
+base = "harness_evaluated_once exit={{EXIT_CODE}}; correct={{CORRECT}}; combined_score={{COMBINED_SCORE}}"
+evaluation_failed = "{{BASE}}; criterion not assessed because evaluation failed"
+acceptance_failed = "{{BASE}}; criterion not assessed because scientific acceptance failed"
+missing_pattern = "{{BASE}}; missing source pattern {{PATTERN}}"
+source_contains = "{{BASE}}; source_contains={{COUNT}} patterns"
+no_threshold = "no metric threshold found"
+cannot_verify = "harness cannot verify {{RUBRIC_TYPE}} rubric"
+no_threshold_evidence = "{{BASE}}; {{REASON}}"
+missing_metric = "{{BASE}}; missing numeric metric {{METRIC_KEY}}"
+metric_compared = "{{BASE}}; {{METRIC_KEY}}={{ACTUAL}} {{COMPARATOR}} {{THRESHOLD}}"
+
+[memory_event]
+# harness_eval._append_memory
+step = "evaluate"
+scope = "attempt"
+summary = "harness evaluated program_1 exactly once"
+evidence = "combined_score={{SCORE}}, correct={{CORRECT}}; {{FEEDBACK}}"
+next_action = "generate next idea"
+program_id = "program_1"
+
+[evaluation_feedback]
+# harness_feedback.evaluation_feedback
+timeout = "evaluation failed: timeout"
+failed = "evaluation failed: exit={{EXIT_CODE}}; cause unavailable"
+acceptance_failed = "scientific acceptance failed; cause unavailable; correct=false alone does not establish a protocol or implementation defect"
+passed = "scientific acceptance passed"
+line = "{{OUTCOME}}; search metrics (data): {{METRICS}}"

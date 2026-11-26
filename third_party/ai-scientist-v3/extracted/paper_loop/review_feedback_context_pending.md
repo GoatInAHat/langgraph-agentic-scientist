@@ -1,0 +1,2 @@
+<!-- Extracted from src/scripts/paper.sh lines 1421-1421 of AI-Scientist-v3 df8313889a00 by tests/paper/test_loop_provenance.py; deriving a package file drops this line. -->
+No reviewer feedback is present yet. A separate reviewer gate may write major and minor comments before validation is fully cleared or after it passes, and the manuscript will re-enter a text-only repair pass.

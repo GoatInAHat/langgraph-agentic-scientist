@@ -1,0 +1,2 @@
+<!-- Extracted from src/variants_pipeline/rubric_contract.py lines 35-36 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
+combined_score and primary metric in run_summary.csv agree with the values in metrics.json produced by the evaluator.

@@ -1,0 +1,25 @@
+langgraph-agentic-scientist
+Copyright 2026 the langgraph-agentic-scientist contributors
+
+This product is a port of The Agentic Scientist (AI-Scientist-v3) by Sakana AI,
+https://github.com/SakanaAI/AI-Scientist-v3, commit df8313889a004f8a44a472e19a833cd547bb828a,
+licensed under the Apache License, Version 2.0.
+
+The prompts, agent skill definitions, workflow texts, venue briefs, LaTeX templates, validation and evidence
+scripts, and the circle-packing examples in this distribution are taken or adapted from that project. Every
+modification to a prompt or skill is declared in src/langgraph_agentic_scientist/prompts/changes/ and summarised in
+docs/ADAPTATIONS.md. The unmodified upstream files are included under third_party/ai-scientist-v3/.
+
+The upstream project ships no NOTICE file. It redistributes third-party LaTeX style and bibliography-style files,
+which this distribution carries unchanged and which keep their own notices:
+
+- third_party/ai-scientist-v3/src/agents/skills/write-paper/templates/iclr/paper.sty (and the copy staged with the
+  write-paper skill): ICLR macros adapted by Hugo Larochelle from the NIPS style file.
+- third_party/ai-scientist-v3/src/agents/skills/write-paper/templates/iclr/paper.bst (and the copy staged with the
+  write-paper skill): a modification of icml2010.bst and plainnl.bst for natbib; Copyright 2010 Hal Daumé III,
+  modified by J. Fürnkranz; Copyright 1993-2007 Patrick W Daly; distributed under the LaTeX Project Public
+  License, version 1 or later.
+- third_party/ai-scientist-v3/src/agents/skills/write-paper/templates/alife/alifeconf.sty (and the copy staged
+  with the write-paper skill): conference style for ALIFE prepared by Peter F. Patel-Schneider; it may be modified
+  and reused for other conferences as long as credit to the authors and supporting agencies is retained and its
+  notice is not changed.

@@ -1,0 +1,2 @@
+<!-- Extracted from src/variants_pipeline/rubric_contract.py lines 25-25 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
+run_summary.csv exists and contains all required columns.

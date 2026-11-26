@@ -1,0 +1,661 @@
+# Upstream files vendored unchanged from AI-Scientist-v3 (Apache License 2.0, Sakana AI).
+# Regenerate with: python tools/vendor_upstream.py --upstream <checkout> --refresh
+upstream = "https://github.com/SakanaAI/AI-Scientist-v3"
+commit = "df8313889a004f8a44a472e19a833cd547bb828a"
+
+[selection]
+paths = [
+    "LICENSE",
+    "CITATION.cff",
+    "README.md",
+    "configs",
+    "src/prompts",
+    "src/agents/skills",
+    "src/templates",
+    "src/aireview.py",
+    "src/scripts/task.sh",
+    "src/scripts/idea.sh",
+    "src/scripts/run.sh",
+    "src/scripts/paper.sh",
+    "src/scripts/paper_edit.sh",
+    "src/scripts/variant_agent.sh",
+    "src/scripts/posthoc_agent.sh",
+    "src/scripts/lib/task_gate.sh",
+    "src/scripts/lib/task_design.sh",
+    "src/scripts/lib/task_qualification.sh",
+    "src/scripts/lib/concept_figure.sh",
+    "src/scripts/lib/paper_figure_quality.sh",
+    "src/task_drafting/qualification_calibration.py",
+    "src/task_drafting/qualification_repair.py",
+    "src/task_drafting/qualification_context.py",
+    "src/task_drafting/repair_context.py",
+    "src/task_drafting/alignment_history.py",
+    "src/investigation/files.py",
+    "src/investigation/idea_retry_feedback.py",
+    "src/investigation/harness_eval.py",
+    "src/investigation/harness_feedback.py",
+    "src/investigation/public_task_contract.py",
+    "src/investigation/reset_sequence.py",
+    "src/investigation/paper_prompt_context.py",
+    "src/variants_pipeline/execute.py",
+    "src/variants_pipeline/materialize.py",
+    "src/variants_pipeline/cross_task.py",
+    "src/variants_pipeline/retrofit.py",
+    "src/variants_pipeline/constants.py",
+    "src/variants_pipeline/rubric_contract.py",
+    "src/variants_pipeline/readme.py",
+    "src/posthoc_pipeline/materialize.py",
+    "src/posthoc_pipeline/rubric_contract.py",
+    "src/orchestrator/paper_diagnostics.py",
+    "src/orchestrator/paper_feedback.py",
+    "src/orchestrator/paper_evidence_audit.py",
+    "src/orchestrator/paper_review.py",
+    "src/orchestrator/paper_venues.py",
+    "src/orchestrator/paper_watermark.py",
+    "src/orchestrator/paper_data.py",
+    "src/pipeline/revision.py",
+    "examples/circpack",
+    "examples/circpack_task_drafting",
+]
+
+[[file]]
+path = "CITATION.cff"
+sha256 = "736e23d620e234c78685db8cec928bb4a23dd2409a442bd5a65e49d824bc54dd"
+
+[[file]]
+path = "LICENSE"
+sha256 = "420f6e94d4266a7628735be654b7a99ead74976feb9e99f50bd834d92d03b6e5"
+
+[[file]]
+path = "README.md"
+sha256 = "d60f6b9f99400988cf2e75eed6c0deb321cac997589324898f244368f878d74c"
+
+[[file]]
+path = "configs/config.yaml"
+sha256 = "4adf454834452448c57d43011807c7a170cdddeec299f3372e8583df63da169e"
+
+[[file]]
+path = "configs/paper_config.yaml"
+sha256 = "056253ab94e20dbf4df6177d5f471072abe29119527ce5b97b345c14a8294570"
+
+[[file]]
+path = "configs/pipeline_config.yaml"
+sha256 = "53995809560e65c233a49359bd02435331bf8226f190d72d20ca22f1acf7428d"
+
+[[file]]
+path = "configs/posthoc_config.yaml"
+sha256 = "1043cd013714b843fae9f664c31f778104ea855dfc3db69afc124e299dcf5672"
+
+[[file]]
+path = "configs/preset/grpo.yaml"
+sha256 = "efc824daeb70d0c4ef3ac3eea176557b1d8f061e9de2f99932ae5464e6f0f4b4"
+
+[[file]]
+path = "configs/preset/paper.yaml"
+sha256 = "a3baff26f0ae91fd008cef194c29fe12b82198ef8893d8f89d4d99f093cd4aeb"
+
+[[file]]
+path = "configs/variants_config.yaml"
+sha256 = "1afed9ca12017878ec303321c747e14c72359932fcab19a8575f4e49ad0e02cc"
+
+[[file]]
+path = "configs/venue/alife.yaml"
+sha256 = "d34f5eb64b1ddf97a0e284213d93b0f6652e2c5e4e556154c929810f0209bb30"
+
+[[file]]
+path = "configs/venue/iclr.yaml"
+sha256 = "90c8b63e0d317f40c865641f8174b0ae0dc19605276f180036c39753e958d0fd"
+
+[[file]]
+path = "examples/circpack/__init__.py"
+sha256 = "f0c902e48d486aeb5474463bdf66244c9dbf5a199a7d7970f29dfae014743e95"
+dest = "examples/circpack/__init__.py"
+
+[[file]]
+path = "examples/circpack/capture.py"
+sha256 = "cc7a660d33180d61479bbf0df59fae815d0119dd19d9e5290e0d2126096804d5"
+dest = "examples/circpack/capture.py"
+
+[[file]]
+path = "examples/circpack/evaluate.py"
+sha256 = "11187fcb39331efccc1c23aa2761d6eaefce200d2d81df660f32e5595d18a4fa"
+dest = "examples/circpack/evaluate.py"
+
+[[file]]
+path = "examples/circpack/idea_example.json"
+sha256 = "ba413d1913d1909315b1bc27aada0b0564b9333e4396db97982c63e3f20c4b6e"
+dest = "examples/circpack/idea_example.json"
+
+[[file]]
+path = "examples/circpack/program_0/program_spec.toml"
+sha256 = "aae86f2acc2b5e9b040a712ed1c18ffc75809ba8f373f578c068d01faad3eb3c"
+dest = "examples/circpack/program_0/program_spec.toml"
+
+[[file]]
+path = "examples/circpack/program_0/src/program.py"
+sha256 = "72aaca25037f1cdc9f71257eb325ec456b888de55d9328f62eea488335d5101a"
+dest = "examples/circpack/program_0/src/program.py"
+
+[[file]]
+path = "examples/circpack/requirements.txt"
+sha256 = "8a1ff7c87e0b624415213e3652b974cfe92ac989b17c6cbec17a08d62afe5f72"
+dest = "examples/circpack/requirements.txt"
+
+[[file]]
+path = "examples/circpack/rubrics_example.json"
+sha256 = "931fe43f516c4e338847e80b6eab747e43a500ad7525b2c43dc52893addf97ca"
+dest = "examples/circpack/rubrics_example.json"
+
+[[file]]
+path = "examples/circpack/task.md"
+sha256 = "226af1f6d9d74f0dd3373abc03af9bdeab86dbd1578ee6f5d6909f575d93df80"
+dest = "examples/circpack/task.md"
+
+[[file]]
+path = "examples/circpack_task_drafting/task.md"
+sha256 = "43a84df0c0093fdadff9ed203cca734076c838f8c5ddfb5f49c9ad796724d4a1"
+dest = "examples/circpack_task_drafting/task.md"
+
+[[file]]
+path = "src/agents/skills/create-idea/SKILL.md"
+sha256 = "0d1445fd52928ec7627b3eba29b9810ca82431c285b09c7a3e8c0699ec263eb9"
+
+[[file]]
+path = "src/agents/skills/create-idea/scripts/create_idea_placeholder.py"
+sha256 = "b0d162b44bc77d670d528e6da6147576f4abb0365db29a321a9dd5c4059003c2"
+
+[[file]]
+path = "src/agents/skills/draft-task/SKILL.md"
+sha256 = "66762bc903b54fcbaa5105b514d5e2852671c0aba875a31ef8f38e892c60d76f"
+
+[[file]]
+path = "src/agents/skills/edit-program/SKILL.md"
+sha256 = "d375e68d20ef0ee6370e6bf5e6566c910643c84a615a8783b6e3f0755315d5be"
+
+[[file]]
+path = "src/agents/skills/evaluate-program/SKILL.md"
+sha256 = "250ef36ef16bf6b6c79da057ed92a609c4bc7fc582bc0c98009b1df6fa461c94"
+
+[[file]]
+path = "src/agents/skills/generate-concept-figure/SKILL.md"
+sha256 = "23b62bb7ab5b98704b0d2ed8d271db0c11702090f12ae08becac5636ac42a54f"
+
+[[file]]
+path = "src/agents/skills/memory-log/SKILL.md"
+sha256 = "676902cc5dd38f5675f27f713a689a1029e3142894c5fc34bfc36996ed9afff9"
+
+[[file]]
+path = "src/agents/skills/memory-log/scripts/append_memory.py"
+sha256 = "968658767a9158352d465650ebbd801e61ff797e6c21b49316d2553553a733a7"
+
+[[file]]
+path = "src/agents/skills/retrieve-references/SKILL.md"
+sha256 = "1a7db01a842268ee71e64c7c4ecae107c0bdae50198f43aedb86162457f2cffa"
+
+[[file]]
+path = "src/agents/skills/retrieve-references/scripts/openalex_fetch.py"
+sha256 = "c598b132565302b890318b4997ea9bb93698637ffb89838dd1351bc98e62f367"
+
+[[file]]
+path = "src/agents/skills/retrieve-references/scripts/s2_fetch.py"
+sha256 = "158be5cad15f17981b7e759cd8b462e3a32c3404e6bf3dd47cc65871bc4ee918"
+
+[[file]]
+path = "src/agents/skills/retrieve-references/scripts/scholarly_fetch.py"
+sha256 = "addbed33104cac59ec5acd740e869892cd2fe1d8b2ed77460436394254bf4c44"
+
+[[file]]
+path = "src/agents/skills/retrieve-references/templates/provenance.schema.json"
+sha256 = "2dd916cfdf88610ee557733ef61e0d2ecaa32cb1b05ef5a92d157a1e23b239e1"
+
+[[file]]
+path = "src/agents/skills/review-paper/SKILL.md"
+sha256 = "709c752dafd53070ded6cf0a305a3412fbc607662d756564acccdb2ffa6b1acd"
+
+[[file]]
+path = "src/agents/skills/scientific-evidence/SKILL.md"
+sha256 = "7f23790561ccda35f460d3b428853d6890417c381cf46078be8a973632a9c800"
+
+[[file]]
+path = "src/agents/skills/scientific-evidence/scripts/scientific_evidence.py"
+sha256 = "47670ef1109902f95f9b1ccbe7b66e091fc21467f807c1e6a99a16c7cd398b7c"
+
+[[file]]
+path = "src/agents/skills/scientific-evidence/scripts/scientific_evidence.sh"
+sha256 = "ab294f8e430975a53c5f54d5f5b13098c06e998e721f29266466686fc4bd42c3"
+
+[[file]]
+path = "src/agents/skills/validate-paper/SKILL.md"
+sha256 = "000e726a4e9c77a64026e1cefd2ea8409360336321a4e64eaebc506af1c4b33b"
+
+[[file]]
+path = "src/agents/skills/validate-paper/scripts/compile_latex.sh"
+sha256 = "cc6f0388c4f1659b75c3816c15cbafd897f2405001c69c7f103ab8ff72923a7c"
+
+[[file]]
+path = "src/agents/skills/validate-paper/scripts/validate_compile_inputs.py"
+sha256 = "f44ddb223cc352788cc43274082bf0e460631e56a240cfbcdceb2c567e813ce8"
+
+[[file]]
+path = "src/agents/skills/validate-paper/scripts/validate_figures.py"
+sha256 = "3438997ff6c69351b2274b931ed921c18413ddee34cf6530b975166e6592dcba"
+
+[[file]]
+path = "src/agents/skills/validate-paper/scripts/validate_rendered_si.py"
+sha256 = "b512e7e3680a64c7d042fdd1fe21ac5c6141b0bc9d2a9f15a96b8e11e429d2a8"
+
+[[file]]
+path = "src/agents/skills/validate-paper/scripts/validate_tex_refs.py"
+sha256 = "b93cef8b2f21475ba4c28f815ab86dc53730a11e8415af5b170b10af5978f414"
+
+[[file]]
+path = "src/agents/skills/validate-paper/templates/figure_manifest.schema.json"
+sha256 = "f8a9af94ce3ae788d6985e0ab40f37bf0c21657f9094a754c485ec64a419f51c"
+
+[[file]]
+path = "src/agents/skills/verify-rubrics/SKILL.md"
+sha256 = "266d46ab8b79c44b2f07f398d9843f69a486235cae1ed323d6ec3c7ee16c6e7d"
+
+[[file]]
+path = "src/agents/skills/verify-rubrics/scripts/create_rubric_status_placeholder.py"
+sha256 = "bb0a4ae41ea449b631bf0852592ba7b9871c715e01196edc98c4febf20c5f3d3"
+
+[[file]]
+path = "src/agents/skills/write-paper-standalone/SKILL.md"
+sha256 = "18a6f353ba1846585273c24f0c4c2525822f73026e48573cf5a44016a8174bd6"
+
+[[file]]
+path = "src/agents/skills/write-paper-standalone/scripts/validate_claims.py"
+sha256 = "8d2a449b8e716e7cdfdf98e9e60c0386e0f9784440bf39c94591114f4d500aa6"
+
+[[file]]
+path = "src/agents/skills/write-paper/SKILL.md"
+sha256 = "0079a9aee8a63f162ad7023d26fa66aa5763a99060be547ef2fc5e0adcaae0a3"
+
+[[file]]
+path = "src/agents/skills/write-paper/scripts/validate_claims.py"
+sha256 = "8d2a449b8e716e7cdfdf98e9e60c0386e0f9784440bf39c94591114f4d500aa6"
+
+[[file]]
+path = "src/agents/skills/write-paper/templates/alife/alifeconf.sty"
+sha256 = "07d255dd5bf107fbf6e53a8670f4f0474737ac651a233392add7528b84d6e357"
+
+[[file]]
+path = "src/agents/skills/write-paper/templates/alife/paper.tex"
+sha256 = "896c69f20d31c06cd1e58ab5ce4b6231de81aee3f1e94506d891e484f43de900"
+
+[[file]]
+path = "src/agents/skills/write-paper/templates/claims_grounding.schema.json"
+sha256 = "d2e751eb5c2aca0ccd3a1ff56b55cea7946edf8b61d86c2328edf1603a04ad56"
+
+[[file]]
+path = "src/agents/skills/write-paper/templates/iclr/paper.bst"
+sha256 = "2d67552db7ed38ccfccb5957b52f95656e25c249724761d3cf5f7922ad1844c5"
+
+[[file]]
+path = "src/agents/skills/write-paper/templates/iclr/paper.sty"
+sha256 = "c6ba63e52da9be4cb3805cec51b1fdeab2c6e93135cd3954a1250cd68e3a45d0"
+
+[[file]]
+path = "src/agents/skills/write-paper/templates/iclr/paper.tex"
+sha256 = "a2c791e13e851d969af6177430eee4106cfab86c5454e08c416eeab765317e98"
+
+[[file]]
+path = "src/agents/skills/write-paper/templates/references.bib"
+sha256 = "4703631b012b644ced627f7d1b9b88b58392e6188419a7bc29774a779650971e"
+
+[[file]]
+path = "src/aireview.py"
+sha256 = "88434ef4ce44c82c6e488848eb98b33ebd51a0196595499acb82e5a0986e7443"
+
+[[file]]
+path = "src/investigation/files.py"
+sha256 = "a377339e6f46e555055a6475a1c1962f3a01c10a6cab7721d804402543fce53c"
+
+[[file]]
+path = "src/investigation/harness_eval.py"
+sha256 = "4b3976e6d9f8c0e27dc8a447e0e1c1ccb26c22bc84171e593fb9070197fa07c6"
+
+[[file]]
+path = "src/investigation/harness_feedback.py"
+sha256 = "b102099075cc9a5d9c95e368159399694dd5187a30b5f2ab6e7862102a4e7868"
+
+[[file]]
+path = "src/investigation/idea_retry_feedback.py"
+sha256 = "30f849ee3dec10e411b88ab37b8e77a695e09f58e48549338b5ef4c49ff62065"
+
+[[file]]
+path = "src/investigation/paper_prompt_context.py"
+sha256 = "25b5708f50fcff0fe6dfae6edc93f14c9f91f4c01523264662150aa38da0254a"
+
+[[file]]
+path = "src/investigation/public_task_contract.py"
+sha256 = "872de474f1ebea8c030b6bce22baedd75f2231b935c2cca422a3a65d39cf6ffe"
+
+[[file]]
+path = "src/investigation/reset_sequence.py"
+sha256 = "e59a85528d3e9c82b42b10bebe0066e9c8250a049fc46fda4631aa8adcbf9940"
+
+[[file]]
+path = "src/orchestrator/paper_data.py"
+sha256 = "ac3e5d8e028978f90baa51c2e011236009472b48240412ec34fcd39b3d53f384"
+
+[[file]]
+path = "src/orchestrator/paper_diagnostics.py"
+sha256 = "f6339f6204d6e2e8bde65dfdb76e45f20dff40f6dbc0f6405c4abf03ec17fabe"
+
+[[file]]
+path = "src/orchestrator/paper_evidence_audit.py"
+sha256 = "e08ab2cb10fbecb83389e764ee5601869a8d78668bb618ec6101ab2af7fd5733"
+
+[[file]]
+path = "src/orchestrator/paper_feedback.py"
+sha256 = "f0cb668612e6cba188a00dd40f8ef203f755de1e238f4bb7e19f7beb668b2720"
+
+[[file]]
+path = "src/orchestrator/paper_review.py"
+sha256 = "83e94330099b7fb06070b24e7eddc6142105ec1006f83a87f5ddcd0a1ca08aae"
+
+[[file]]
+path = "src/orchestrator/paper_venues.py"
+sha256 = "f290a3933b84baab122e024ba61377604c22a3fc93084d0ca80b91dbc08e8afc"
+
+[[file]]
+path = "src/orchestrator/paper_watermark.py"
+sha256 = "18924691f4a27c9e374a27f318480b46e565781f5221290d4e0ad85aeda29319"
+
+[[file]]
+path = "src/pipeline/revision.py"
+sha256 = "b93a4a4ddfad6ed16f03255fac318e956ae6f6cf6e2fb2ed3aba480af902fd70"
+
+[[file]]
+path = "src/posthoc_pipeline/materialize.py"
+sha256 = "e4b7c73fad42b57a695d94000eb721c4903d43edb72afed61d3bb348e3523ec1"
+
+[[file]]
+path = "src/posthoc_pipeline/rubric_contract.py"
+sha256 = "a81c7b97cfc6938a7fc73d2d75387056e19c84e6837205eea5ab46418c6cac00"
+
+[[file]]
+path = "src/prompts/adjudicate_task_design.md"
+sha256 = "a2c44d82cbb53cc96fa6ef904c1b5988f735b644390fd55a591d5501282dff48"
+
+[[file]]
+path = "src/prompts/audit_task_design_delta.md"
+sha256 = "4bab043a4f7b8b54085ddb9ec277d2ef22d798ab0bf0b08d042c5b0ba6c44e38"
+
+[[file]]
+path = "src/prompts/design_task.md"
+sha256 = "e6432d52c4c26f5307cc27218015d4d2f94dbc3121ce167ed1bc986a70a6425e"
+
+[[file]]
+path = "src/prompts/draft_task.md"
+sha256 = "9772110c3763bda75b9d43782a902448ce8297e4e2c3c3ed1564b8cdaa874934"
+
+[[file]]
+path = "src/prompts/general.md"
+sha256 = "c1bf9d694b12d174790daed762484b24abe8e7844017dcf577d110f41f8bd104"
+
+[[file]]
+path = "src/prompts/harness_edit.md"
+sha256 = "577126d28be98ea5b30f111f27ae25e45ff99a98894797cb3b1150e10b6fda64"
+
+[[file]]
+path = "src/prompts/idea.md"
+sha256 = "0f0c5e91007ccbcafbe611e887da8c17a2c4cd591babf1a92a27ca71f6ffe74b"
+
+[[file]]
+path = "src/prompts/paper.md"
+sha256 = "4d41d659e68e438d4864b997fd8c6deee426824c28643b93ddb3fba20b2979e8"
+
+[[file]]
+path = "src/prompts/paper_detailed_grouped.md"
+sha256 = "9f9d97777e267e07a7bf10c47bc48fde4b2d7d52e4bf38ad080d0ffc0a3ed89b"
+
+[[file]]
+path = "src/prompts/paper_edit.md"
+sha256 = "b49ab241bd1529fd805fc978dd6bb0ca53d1109f772cb92ca029a59ad1c908aa"
+
+[[file]]
+path = "src/prompts/paper_edit_standalone.md"
+sha256 = "05ad1201170eb7634de40c84fa61d6788278555e4bf0c3bb0f41309821dad74d"
+
+[[file]]
+path = "src/prompts/paper_figure_quality_repair.md"
+sha256 = "ef45920e07776d49df5c96acf69c3211baa78c2df58831eca74e62cd434ed04c"
+
+[[file]]
+path = "src/prompts/paper_posthoc_ranking.md"
+sha256 = "45be9a113b5be05ad6df31e745565262f8890c553954673e624927701bc84b4f"
+
+[[file]]
+path = "src/prompts/paper_reference_gaps.md"
+sha256 = "8ded0a2b0288a37671eaa12a00f07f7767a21e907924553f61f1e5d813b708e5"
+
+[[file]]
+path = "src/prompts/paper_review/evidence_audit.md"
+sha256 = "bc390f0cdadd1aafb29ad1fe0b2caf1db4677f03011b7d41ce9600e7607f1153"
+
+[[file]]
+path = "src/prompts/paper_review/review_json.md"
+sha256 = "4392a953b50b1f7f5e87e9eb1b1e1497536d482ef0954662d0f035928a74dd4b"
+
+[[file]]
+path = "src/prompts/paper_revision.md"
+sha256 = "ec19fa0561a37a88485858a7a661faab47644ac3e37d7ccabbc596d533f59cd8"
+
+[[file]]
+path = "src/prompts/paper_standalone.md"
+sha256 = "98afb222c69e5a23672a6c7ec385095602b527d395c90840e8715a59bdda9430"
+
+[[file]]
+path = "src/prompts/paper_strategy.md"
+sha256 = "12e73b1c1f83c6f85da60c1ad92706628e006b9a3cd12669b34e47f42657c0da"
+
+[[file]]
+path = "src/prompts/posthoc_agent.md"
+sha256 = "3fcc921fb2895389d6bca82478143f86181ee6ab58a9f985b4a6ded370897ceb"
+
+[[file]]
+path = "src/prompts/posthoc_bootstrap.md"
+sha256 = "5c4849a939799d4dbba3acbf5335bd60520590f0e64fa34c2aee5258565b5220"
+
+[[file]]
+path = "src/prompts/posthoc_generate.md"
+sha256 = "eefc1e3bbad1c9bf92b383b2945f27fb441fa2cce55673fa21e732737adae768"
+
+[[file]]
+path = "src/prompts/posthoc_select.md"
+sha256 = "ca3ecf101f483b212ffa9473d23d76f7e0f39b2cd56b8bb0debf8b4e9e32d6bd"
+
+[[file]]
+path = "src/prompts/reference_query_plan.md"
+sha256 = "86c0a2e855f0eddc2356756adae58d482fc52ad8b26ad1f6e2c0a8392b8967b1"
+
+[[file]]
+path = "src/prompts/reference_query_plan_edit.md"
+sha256 = "1c915247286e37a1d86d3ef4880b0b497c0c33049478ef687dcebaed17387184"
+
+[[file]]
+path = "src/prompts/reference_query_plan_postdraft.md"
+sha256 = "09e3d56ae360caa539ead009eaa07225bead50e52c1a4b388d75e3d87804365c"
+
+[[file]]
+path = "src/prompts/repair_task.md"
+sha256 = "9b4a531b283d6bbf5ee303b46e7bc51cbb52b1c00ff17b8d6a1ffc1b8f7afd29"
+
+[[file]]
+path = "src/prompts/repair_task_design.md"
+sha256 = "5fa6712b1f3dde6994dd906f8e083ee0444ceaf57a00043760568317cc9614ab"
+
+[[file]]
+path = "src/prompts/repair_task_design_structure.md"
+sha256 = "0a9d8f58952f7a631ef869cf4ea8c631e3eaf787a838ea22318e9d03e4e7ac1a"
+
+[[file]]
+path = "src/prompts/repair_task_preflight.md"
+sha256 = "178014b40846676098dc2bafb264b991ad44f9e4e671b8647204aba4ab9a6a99"
+
+[[file]]
+path = "src/prompts/repair_task_smoke.md"
+sha256 = "70f8c4599c737f3a8d1152a62b29bc51bce92c5dc4a593d18e16bbd38a3d570b"
+
+[[file]]
+path = "src/prompts/shared/baseline_failures.md"
+sha256 = "48808a000072faf828784cd1f46bcda4b16c9bd04673619b4f9469a86a391edf"
+
+[[file]]
+path = "src/prompts/shared/candidate_environment.md"
+sha256 = "2809007c7b4ce443762e4e0443f6b5cd817e844a4d7c73d295fcb9cc2df2d5f2"
+
+[[file]]
+path = "src/prompts/shared/evaluator_evidence.md"
+sha256 = "8272afdbffd82a95444d500a6db66002c367b165041d927d6226a849256320d5"
+
+[[file]]
+path = "src/prompts/shared/evaluator_feasibility.md"
+sha256 = "00c1dfa7bf6d7667868df478ee0a8456da33724accc27c424b7637bbfda26851"
+
+[[file]]
+path = "src/prompts/shared/repair_diagnostics.md"
+sha256 = "437f35a11da3d9b4d1bc057774764010ac99c2ce7ca5cf9f6d49ea7ec2a8a16c"
+
+[[file]]
+path = "src/prompts/shared/worker_diagnostics.md"
+sha256 = "d59a14b1304a3b9036807bc1ba5c790a82fa9b0c1ce0df2da2affd52a4114459"
+
+[[file]]
+path = "src/prompts/validate_task.md"
+sha256 = "be9424a6dd66c586f21fdfac11f49160286ca34c897ef9865b89572be59c3af6"
+
+[[file]]
+path = "src/prompts/validate_task_design.md"
+sha256 = "a32b09e7c2ef72443aebdd377363a05ed01598378e29f712c07b59fc73d8dad1"
+
+[[file]]
+path = "src/prompts/variant_agent.md"
+sha256 = "c16ccecddd949ab9a982f45c8d6a249b3aebb72a1d5be4fde2b43473ff6f4878"
+
+[[file]]
+path = "src/prompts/variant_generate.md"
+sha256 = "89aeafd6d5c215feeecde1c454399cbe1c1efdef81bccd9c3d3650b6de76e654"
+
+[[file]]
+path = "src/prompts/variant_readme.md"
+sha256 = "b333391b8fe63a170a910ac75d6849711a6f5d3ea3484e187132d26151adae3d"
+
+[[file]]
+path = "src/prompts/variant_retrofit.md"
+sha256 = "c00a7ecd25c6406f045fe351de5979b1fbfa4e0b33c207e48c30da7a9e118959"
+
+[[file]]
+path = "src/prompts/variant_select.md"
+sha256 = "bb896aa5893ebbd4addbe2926a3ab5ea54271e69d1dd43f3135daaa0da210d22"
+
+[[file]]
+path = "src/scripts/idea.sh"
+sha256 = "1e12664a0b8e672dcd90a33973fa1232b0eb89482d16dc6560f7de98b0b586c0"
+
+[[file]]
+path = "src/scripts/lib/concept_figure.sh"
+sha256 = "43e29784dff347a3c5d229d057d82fd50ce240d9fbd9002094f8a95db5ad3801"
+
+[[file]]
+path = "src/scripts/lib/paper_figure_quality.sh"
+sha256 = "d1d47773a870b9ff162d1d75e030c400d16032f027abfb7f01c4a50feea05032"
+
+[[file]]
+path = "src/scripts/lib/task_design.sh"
+sha256 = "43a19902fd78cfe1cbe6180cb361b74fe6f7fef47a177db19f298cfad5f24bde"
+
+[[file]]
+path = "src/scripts/lib/task_gate.sh"
+sha256 = "6d7aaced83c9d5db9c305b505cd65c2f920dd8b80e76950c14f669fb28522472"
+
+[[file]]
+path = "src/scripts/lib/task_qualification.sh"
+sha256 = "2d81f2fb7f474ea05825a57a9962e2a10ddfd80d333cb65ad330b42488de7247"
+
+[[file]]
+path = "src/scripts/paper.sh"
+sha256 = "363f24ee25129947f2a71240cfb550a7d8d1606aa3d5ba458a044464d0f2966c"
+
+[[file]]
+path = "src/scripts/paper_edit.sh"
+sha256 = "c6cd16f3ea5796ec6e85fdb1fd985d99f16ccc6943961b321b1ebe49d6073f1e"
+
+[[file]]
+path = "src/scripts/posthoc_agent.sh"
+sha256 = "8453fa6d869d0bb50ad7305a9aec601fcdea13267f0bf5df41434a675c1acda6"
+
+[[file]]
+path = "src/scripts/run.sh"
+sha256 = "fd4567df93f3072f1e77c67a1c56d159617f4ea9ba5a4286168a433a593f5e29"
+
+[[file]]
+path = "src/scripts/task.sh"
+sha256 = "80e7f43312a53ba301a0101342c6fe24d53ed447219503ae38de56c524a09a42"
+
+[[file]]
+path = "src/scripts/variant_agent.sh"
+sha256 = "2e56fe6d90bcbca100b734904e9462c5d24a07915c58e90892969e451226b9d2"
+
+[[file]]
+path = "src/task_drafting/alignment_history.py"
+sha256 = "261e4cb6dd9857a58acabb954744963fe5eed9e94df86e2c0367e3cb124227b0"
+
+[[file]]
+path = "src/task_drafting/qualification_calibration.py"
+sha256 = "dba7acfb1d842e8ee5b8af10c907c9426b460d97a6c6e6d288090c2c1c3c9c92"
+
+[[file]]
+path = "src/task_drafting/qualification_context.py"
+sha256 = "ceec7be3431300bfeeb2af1e97536b0f7d41abf4b13d2d1d346e98e0ea6962b5"
+
+[[file]]
+path = "src/task_drafting/qualification_repair.py"
+sha256 = "d2e082baa5249dcb0803c3a7d48f0b530cd6967264b477db6c06a0ee856caa0a"
+
+[[file]]
+path = "src/task_drafting/repair_context.py"
+sha256 = "97b28e5aee4cc5ca2ff8a40d676056b419a7ee76b29ada8de7d5a67ddb578c0c"
+
+[[file]]
+path = "src/templates/paper_authors/alife.tex"
+sha256 = "0f7ce75483de503d2d3d66d43823aee12f9ed884feb7c610bee4046ccf924951"
+
+[[file]]
+path = "src/templates/paper_venues/alife.md"
+sha256 = "1663fa56aa224e724217d20405f2d9a42695e0c171efd98ca6710e0e4306639d"
+
+[[file]]
+path = "src/templates/paper_venues/iclr.md"
+sha256 = "dc674f54ad31d4ac668f3d282f22206dbd57426c3502f309f7b0fa421a7cdbdd"
+
+[[file]]
+path = "src/variants_pipeline/constants.py"
+sha256 = "996c34a342339befb9b75c83c79f97a0de490900c5ac8aea58fca0abdc458b75"
+
+[[file]]
+path = "src/variants_pipeline/cross_task.py"
+sha256 = "77628c5386506fdd0d64e0112276f181934f504df41bf72ed30d54a1e462e3ab"
+
+[[file]]
+path = "src/variants_pipeline/execute.py"
+sha256 = "b5216a84fa94af1731e0626ce71bdb941a408437a46be6100237d2757b680993"
+
+[[file]]
+path = "src/variants_pipeline/materialize.py"
+sha256 = "028aced57bf0d5025c065ab0424f8615eff0adef0aba2d13f53067c4e27afee2"
+
+[[file]]
+path = "src/variants_pipeline/readme.py"
+sha256 = "528179329c79167f247d7cfd2772dadcfc27ded8d7f1d9868b9efebe2d28e8a0"
+
+[[file]]
+path = "src/variants_pipeline/retrofit.py"
+sha256 = "a54fbe156f001d1992f0e4f30f2df60f2ad8ef9446a665cfe242554feac64ee5"
+
+[[file]]
+path = "src/variants_pipeline/rubric_contract.py"
+sha256 = "33c0714a79ede964a1a9704811e78b54da6420a7ae911d356b68fc3d7c4882b5"

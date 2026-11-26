@@ -1,0 +1,2 @@
+<!-- Extracted from src/variants_pipeline/readme.py lines 501-501 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
+| `generation/variant_selection.json` | Accepted/rejected proposals with reasons |

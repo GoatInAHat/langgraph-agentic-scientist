@@ -1,0 +1,2 @@
+<!-- Extracted from src/scripts/paper.sh lines 1382-1383 of AI-Scientist-v3 df8313889a00 by tests/paper/test_loop_provenance.py; deriving a package file drops this line. -->
+No precomputed paper strategy is provided for this run. Infer the framing directly from grounded inputs.

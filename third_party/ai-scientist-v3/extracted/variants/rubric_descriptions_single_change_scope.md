@@ -1,0 +1,2 @@
+<!-- Extracted from src/variants_pipeline/rubric_contract.py lines 47-48 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
+For ablations and extra baselines, only the declared comparison axis was changed relative to the control.

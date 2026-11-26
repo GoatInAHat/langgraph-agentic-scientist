@@ -1,0 +1,2 @@
+<!-- Extracted from src/variants_pipeline/readme.py lines 516-516 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
+| `extra_tasks/{task}/{variant}/` | Per-variant results for manually added tasks |

@@ -1,0 +1,2 @@
+<!-- Extracted from src/variants_pipeline/readme.py lines 496-496 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
+| `aggregated/{task}/run_summary.csv` | Per-task variant scores and replications |

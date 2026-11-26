@@ -1,0 +1,2 @@
+<!-- Extracted from src/investigation/paper_prompt_context.py lines 16-16 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
+No posthoc analyses are available for this run.

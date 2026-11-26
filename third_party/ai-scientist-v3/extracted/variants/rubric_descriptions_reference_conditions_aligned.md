@@ -1,0 +1,2 @@
+<!-- Extracted from src/variants_pipeline/rubric_contract.py lines 104-107 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
+Experimental conditions (e.g. training budget) are aligned with the control program so the reference implementation has no unfair advantage or disadvantage on factors outside its core contribution.

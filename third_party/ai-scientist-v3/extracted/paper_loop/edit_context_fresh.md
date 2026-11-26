@@ -1,0 +1,2 @@
+<!-- Extracted from src/scripts/paper_edit.sh lines 1943-1943 of AI-Scientist-v3 df8313889a00 by tests/paper/test_loop_provenance.py; deriving a package file drops this line. -->
+Fresh-paper mode is enabled for this run; there is no seeded prior manuscript to preserve.

@@ -1,0 +1,2 @@
+<!-- Extracted from src/investigation/paper_prompt_context.py lines 138-141 of AI-Scientist-v3 df8313889a00 by tools/derive_prompts.py; deriving a package file drops this line. -->
+No contributions scaffold is provided for this run. Infer the paper's claimed contributions directly from grounded artifacts.

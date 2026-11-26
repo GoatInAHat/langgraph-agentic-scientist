@@ -1,0 +1,2 @@
+<!-- Extracted from src/scripts/paper.sh lines 536-536 of AI-Scientist-v3 df8313889a00 by tests/paper/test_loop_provenance.py; deriving a package file drops this line. -->
+OPENAI_API_KEY is expected to be available in this run environment. Do not claim it is unavailable unless you re-check inside the active workspace or process environment.

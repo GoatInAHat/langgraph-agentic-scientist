@@ -1,0 +1,2 @@
+<!-- Extracted from src/scripts/paper_edit.sh lines 1390-1390 of AI-Scientist-v3 df8313889a00 by tests/paper/test_loop_provenance.py; deriving a package file drops this line. -->
+- Treat these task directories as grounded evaluation evidence available to this edit run:

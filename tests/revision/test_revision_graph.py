@@ -678,9 +678,9 @@ async def test_a_recorded_first_review_that_is_gone_is_not_replaced_by_the_lates
 @pytest.mark.parametrize(
     ("review", "message"),
     [
-        (b"not json", "valid UTF-8 JSON"),
-        (b"\xff\xfe", "valid UTF-8 JSON"),
-        (b"[1, 2]", "must be a JSON object"),
+        (b"not json", "invalid AI review JSON"),
+        (b"\xff\xfe", "invalid AI review JSON"),
+        (b"[1, 2]", "AI review must contain a JSON object"),
         (json.dumps(review_dict(Summary=["x"])).encode(), "Summary must be a string"),
         (json.dumps(review_dict(Strengths="x")).encode(), "Strengths must be a list of strings"),
         (json.dumps(review_dict(Weaknesses=["a", 1])).encode(), "list of strings"),

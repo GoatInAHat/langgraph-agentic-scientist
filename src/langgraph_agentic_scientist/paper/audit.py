@@ -357,7 +357,7 @@ def _validation_summary(payload: Any) -> dict[str, Any]:
     summary: Mapping[str, Any] = raw_summary if isinstance(raw_summary, Mapping) else {}
     return {
         "available": True,
-        "ok": payload.get("ok", payload.get("passed")),
+        "ok": payload.get("ok"),
         "pdf_path": payload.get("pdf_path"),
         "evidence_validation": {
             "checked": bool(evidence.get("checked", False)),

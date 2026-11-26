@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: uv sync --all-extras --group dev --locked
+      - name: Lint
+        run: uv run ruff check .
+      - name: Format
+        run: uv run ruff format --check .
+      - name: Types
+        run: uv run mypy src
+      - name: Prompt provenance
+        run: uv run python tools/derive_prompts.py --check
+      - name: Generated documentation
+        run: uv run python tools/list_steps.py --check
+      - name: Vendored files
+        run: uv run python tools/vendor_upstream.py --check
+      - name: Tests
+        run: uv run pytest -m "not integration"
+      - name: Public check
+        run: uv run python tools/check_public.py

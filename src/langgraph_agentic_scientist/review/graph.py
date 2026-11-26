@@ -43,6 +43,7 @@ from langgraph.runtime import Runtime
 from langgraph.types import Checkpointer, Command, RetryPolicy, Send
 
 from ..agents.factory import is_transient_provider_error
+from ..agents.runner import session_config
 from ..config import ReviewConfig
 from ..context import GraphOverrides, ScientistContext
 from ..core.render import truncate_utf8
@@ -174,7 +175,8 @@ async def review_attempt(
     if ctx.config.review.sampling == "upstream":
         call = call.bind(**sampling_kwargs(config, attempt))
     try:
-        return ReviewAttempt(review=_validated(await call.ainvoke(messages), context=context))
+        answer = await call.ainvoke(messages, session_config(role))
+        return ReviewAttempt(review=_validated(answer, context=context))
     except ValueError as exc:
         return ReviewAttempt(error=str(exc))
 

@@ -140,7 +140,14 @@ each role is asked to produce. What the code shows:
   `decide(question)` method can answer in the person's place.
 - **Tracing** is LangChain's: pass callbacks in the run config
   (`{"configurable": {...}, "callbacks": [handler]}`) and every model and tool call, and every
-  nested graph, appears in the trace. The package has no tracing of its own.
+  nested graph, appears in the trace. The package has no tracing of its own, but it marks the
+  root run of every agent session: each Deep Agents session and each plain model call of a
+  reviewer runs with `run_name="agsci:<role>"`, the tags `["agsci", <role>]` and the metadata
+  `agsci_role`, `agsci_phase` and `agsci_step`. Phase and step are the graph and the node that
+  run the session, as in the hook keys of [`docs/STEPS.md`](docs/STEPS.md) (`paper` and
+  `write` for the writer, `review` and `reviewer` for a reviewer); every node of the package's
+  graphs carries them as LangGraph node metadata, so they are also in the metadata of every run
+  inside a node.
 
 The pipeline's output holds the status of every phase (`completed`, `degraded`, `failed` or
 `skipped`, with a reason), each phase's result, and the run's overall `status`. Upstream's

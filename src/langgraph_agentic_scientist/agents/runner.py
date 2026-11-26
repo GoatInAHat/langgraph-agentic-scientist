@@ -24,6 +24,11 @@ Rules (design decisions D1 and D6):
   a crash, by contrast, continues the session from its checkpoint). Any other failure becomes
   ``failure`` (category ``agent_run_failed``), and the phase's budgets decide what follows, as
   upstream's non-zero exit of the agent did.
+
+Every session runs under :func:`session_config`: ``run_name="agsci:<role>"``, tags ``["agsci",
+<role>]`` and metadata ``agsci_role``, ``agsci_phase`` and ``agsci_step`` (the step of the calling
+node, from the node metadata that :class:`~langgraph_agentic_scientist.core.steps.StepGraph`
+sets), so a caller's tracing recognises the root run of each session.
 """
 
 from __future__ import annotations
@@ -34,7 +39,9 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
+from langgraph.config import get_config
 from langgraph.errors import GraphBubbleUp
 from langgraph.runtime import Runtime
 from langgraph.types import RetryPolicy
@@ -43,6 +50,7 @@ from pydantic import BaseModel
 from ..context import ScientistContext
 from ..core.render import truncate_utf8
 from ..core.state import Failure
+from ..core.steps import PHASE_METADATA_KEY, STEP_METADATA_KEY
 from ..evaluation.protocol import EvaluationResult
 from ..models import Role
 from .factory import is_transient_provider_error
@@ -84,6 +92,31 @@ class RoleOutcome:
     def ok(self) -> bool:
         """True when the session ended normally (no timeout, no failure)."""
         return not self.timed_out and self.failure is None
+
+
+SESSION_TAG = "agsci"
+ROLE_METADATA_KEY = "agsci_role"
+
+
+def session_config(role: Role) -> RunnableConfig:
+    """Return the run config of one session of ``role``: its run name, tags and metadata.
+
+    ``agsci_phase`` and ``agsci_step`` are read from the calling node's config; outside a node of
+    a :class:`~langgraph_agentic_scientist.core.steps.StepGraph` they are ``None``.
+    """
+    try:
+        ambient = get_config().get("metadata") or {}
+    except RuntimeError:
+        ambient = {}
+    return {
+        "run_name": f"{SESSION_TAG}:{role.value}",
+        "tags": [SESSION_TAG, role.value],
+        "metadata": {
+            ROLE_METADATA_KEY: role.value,
+            PHASE_METADATA_KEY: ambient.get(PHASE_METADATA_KEY),
+            STEP_METADATA_KEY: ambient.get(STEP_METADATA_KEY),
+        },
+    }
 
 
 def agent_node_retry_policy() -> RetryPolicy:
@@ -141,9 +174,10 @@ async def _invoke(
     """Stream the agent as a subgraph, keeping the last observed state."""
     last: dict[str, Any] | None = None
     inputs = {"messages": [HumanMessage(content=prompt)]}
+    config = session_config(outcome.role)
     try:
         async with asyncio.timeout(timeout):
-            async for chunk in agent.astream(inputs, stream_mode="values"):
+            async for chunk in agent.astream(inputs, config, stream_mode="values"):
                 if isinstance(chunk, dict):
                     last = chunk
     except TimeoutError:
@@ -302,9 +336,12 @@ async def run_structured_role(
 
 
 __all__ = [
+    "ROLE_METADATA_KEY",
+    "SESSION_TAG",
     "RoleOutcome",
     "agent_node_retry_policy",
     "render_prompt",
     "run_structured_role",
     "run_workspace_role",
+    "session_config",
 ]

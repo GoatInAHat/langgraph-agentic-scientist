@@ -15,6 +15,12 @@ Rules for phase builders:
   receive the argument, not the step); make it a subgraph whose inner steps carry the hooks.
 * Pure routing nodes need no hooks: add them with :meth:`StepGraph.add_node`.
 
+Every node the builder adds carries LangGraph node metadata ``agsci_phase`` (the graph's name) and
+``agsci_step`` (the node's name), so ``f"{agsci_phase}.{agsci_step}"`` is the step's hook key.
+LangGraph merges node metadata into the run config of the node, and an inner graph's node
+overrides an outer one's, so code running in a node reads the innermost step from
+``get_config()["metadata"]``.
+
 :func:`ask_person` is the one way a node asks a person: the context's
 :class:`~langgraph_agentic_scientist.HumanPolicy` answers, or the run stops with an ``interrupt``
 whose value is the question.
@@ -42,6 +48,9 @@ class HookError(ScientistError):
 
 
 NodeFunction = Callable[..., Any]
+
+PHASE_METADATA_KEY = "agsci_phase"
+STEP_METADATA_KEY = "agsci_step"
 
 
 def _is_graph(value: object) -> bool:
@@ -153,9 +162,14 @@ class StepGraph:
 
     # --- nodes ----------------------------------------------------------------------------
 
+    def node_metadata(self, name: str, metadata: Mapping[str, Any] | None = None) -> dict[str, Any]:
+        """Return the node metadata of node ``name``: its phase and step, then ``metadata``."""
+        return {PHASE_METADATA_KEY: self.phase, STEP_METADATA_KEY: name, **dict(metadata or {})}
+
     def add_node(self, name: str, action: Any, **kwargs: Any) -> str:
         """Add a node without hook nodes (routing nodes, ``Send`` targets)."""
-        self.graph.add_node(name, action, **kwargs)
+        metadata = self.node_metadata(name, kwargs.pop("metadata", None))
+        self.graph.add_node(name, action, metadata=metadata, **kwargs)
         return name
 
     def step(
@@ -176,7 +190,8 @@ class StepGraph:
             hooks: Whether to add hook nodes.
             **kwargs: Passed to ``StateGraph.add_node`` (``retry_policy``, ``metadata``, ...).
         """
-        self.graph.add_node(name, action, **kwargs)
+        metadata = self.node_metadata(name, kwargs.pop("metadata", None))
+        self.graph.add_node(name, action, metadata=metadata, **kwargs)
         self.steps.append(name)
         if not hooks:
             return name
@@ -347,4 +362,11 @@ async def ask_person(question: Question, runtime: Runtime[ScientistContext]) -> 
     return answer
 
 
-__all__ = ["HookError", "NodeFunction", "StepGraph", "ask_person"]
+__all__ = [
+    "PHASE_METADATA_KEY",
+    "STEP_METADATA_KEY",
+    "HookError",
+    "NodeFunction",
+    "StepGraph",
+    "ask_person",
+]

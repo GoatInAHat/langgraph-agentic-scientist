@@ -11,7 +11,7 @@ import pytest
 from langchain_core.messages import AIMessage, BaseMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from review_helpers import PAPER_TEXT, answer, last_text, make_pdf, review_dict
-from testkit import fast_config
+from testkit import SessionRoots, fast_config
 
 from langgraph_agentic_scientist import (
     Hooks,
@@ -782,3 +782,30 @@ async def test_each_role_uses_its_own_structured_output_method(
     out = await _run(ctx)
     assert out["result"].status == "completed"
     assert methods == {"role ai_reviewer": "json_schema", "role area_chair": "function_calling"}
+
+
+async def test_every_reviewer_and_area_chair_call_is_a_marked_session(
+    make_context: Callable[..., ScientistContext],
+) -> None:
+    handler = SessionRoots()
+    ctx = make_context(
+        {Role.AI_REVIEWER: [answer()] * 2, Role.AREA_CHAIR: [answer()]},
+        config=_config(num_reviewers=2),
+    )
+    graph = build_review_graph(checkpointer=InMemorySaver(), retry_policy=FAST)
+    await graph.ainvoke(
+        {"pdf_path": "paper/paper.pdf", "paper_text": PAPER_TEXT},
+        {"configurable": {"thread_id": "traced"}, "callbacks": [handler]},
+        context=ctx,
+    )
+    roots = sorted(
+        (run.name, run.metadata["agsci_phase"], run.metadata["agsci_step"])
+        for run in handler.runs
+        if handler.is_root(run)
+    )
+    assert roots == [
+        ("agsci:ai_reviewer", "review", "reviewer"),
+        ("agsci:ai_reviewer", "review", "reviewer"),
+        ("agsci:area_chair", "review", "area_chair"),
+    ]
+    assert all(run.tags[-2:] == ["agsci", run.name[6:]] for run in handler.runs)

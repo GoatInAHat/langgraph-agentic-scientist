@@ -693,6 +693,7 @@ async def _stage_inputs(state: PaperState, runtime: Runtime[ScientistContext]) -
             max_refs=cfg.max_refs,
             contributions_source=paths.get("contributions"),
             task_md=task_md,
+            venue_file=(state.get("edit_options") or EditOptions()).venue_file,
         )
     except PaperPreparationError as exc:
         return _failed(str(exc), "paper_preparation_failed")
@@ -734,6 +735,7 @@ async def _restage(
         include_review_skill=cfg.review_rounds > 0,
         values=values,
         paper_format=state.get("paper_format") or cfg.paper_format,
+        watermark=bool(cfg.watermark),
     )
 
 

@@ -391,6 +391,16 @@ async def seed_edit_workspace(
                     }
                 )
     seeded: list[str] = []
+    if options.main_file is not None:
+        seeded.extend(
+            await seed_main_file(
+                ws,
+                paper_dir=paper_dir,
+                previous_paper_dir=previous_paper_dir,
+                main_file=options.main_file,
+                snapshot=snapshot,
+            )
+        )
     if await ws.exists(join(snapshot, "source_evidence")) and not await ws.exists(
         join(paper_dir, "source_evidence")
     ):
@@ -400,6 +410,8 @@ async def seed_edit_workspace(
     if await ws.exists(join(paper_dir, "source_evidence")):
         seeded.append("source_evidence")
     for name in SEEDED_ARTIFACTS:
+        if name == "paper.tex" and options.main_file is not None:
+            continue
         if await copy_file_if_present(ws, join(previous_paper_dir, name), join(paper_dir, name)):
             seeded.append(name)
     if reference_mode == "preserve":
@@ -484,6 +496,7 @@ async def seed_edit_workspace(
         "mode": "edit_existing_paper",
         "existing_paper_dir": previous_paper_dir,
         "existing_paper_snapshot": "./previous_paper",
+        "existing_paper_main_file": options.main_file or "paper.tex",
         "figure_refresh_mode": options.figure_refresh_mode,
         "reference_mode": reference_mode,
         "seeded_workspace_artifacts": seeded,
@@ -507,6 +520,59 @@ async def seed_edit_workspace(
         edit_context_markdown(ctx, options, reference_mode, skipped, edit_rows, old_rows, linked),
     )
     return {"paper_data": updated, "seeded": seeded}
+
+
+async def seed_main_file(
+    workspace: Workspace,
+    *,
+    paper_dir: str,
+    previous_paper_dir: str,
+    main_file: str,
+    snapshot: str,
+) -> list[str]:
+    """Seed a named main file of the edited paper as ``paper.tex``, with the files it inputs.
+
+    The main file and the local files it inputs recursively are copied under their own names into
+    the ``previous_paper/`` snapshot; the main file becomes the workspace's ``paper.tex`` and each
+    input is copied to its relative path unless the workspace already has it. Returns the seeded
+    names (the main file as ``paper.tex``).
+
+    Raises:
+        PaperPreparationError: When the main file is missing or an input is refused (a dynamic
+            import, a path outside the paper, a symbolic link).
+    """
+    from .validation.evidence import paper_tex_dependency_paths
+    from .validation.files import SnapshotTree
+
+    source = join(previous_paper_dir, main_file)
+    if not await is_regular_file(workspace, source):
+        raise PaperPreparationError(f"Missing main file of the edited paper: {source}")
+    tree = await SnapshotTree.load(
+        workspace,
+        previous_paper_dir,
+        include=lambda rel, entry: entry.size if rel.endswith((".tex", ".sty", ".cls")) else 0,
+    )
+    try:
+        inputs = sorted(paper_tex_dependency_paths(tree, main_file) - {main_file})
+    except RuntimeError as exc:
+        raise PaperPreparationError(f"Cannot seed {main_file}: {exc}") from exc
+    seeded = ["paper.tex"]
+    await workspace.write_bytes(join(paper_dir, "paper.tex"), await workspace.read_bytes(source))
+    for rel in [main_file, *inputs]:
+        target = join(snapshot, rel)
+        if not await workspace.exists(target):
+            await workspace.write_bytes(
+                target, await workspace.read_bytes(join(previous_paper_dir, rel))
+            )
+    for rel in inputs:
+        target = join(paper_dir, rel)
+        if await workspace.exists(target):
+            continue
+        await workspace.write_bytes(
+            target, await workspace.read_bytes(join(previous_paper_dir, rel))
+        )
+        seeded.append(rel)
+    return seeded
 
 
 def edit_context_markdown(
@@ -728,9 +794,15 @@ async def stage_documents(
     max_refs: int,
     contributions_source: str | None,
     task_md: str | None,
+    venue_file: str | None = None,
 ) -> list[Event]:
     """``stage_venue_file``, ``stage_author_block_file``, ``stage_contributions_file`` and the
-    ``global_memory_summary.md`` of the grounding step."""
+    ``global_memory_summary.md`` of the grounding step.
+
+    ``venue_file`` is upstream's ``--venue-file``: ``None`` stages the format's brief when no
+    ``VENUE.md`` is present, a workspace path renders that brief into ``VENUE.md``, and ``""``
+    removes ``VENUE.md``.
+    """
     from ..venues import VenueCatalog, page_budget_sentence
 
     ws = ctx.workspace
@@ -740,18 +812,25 @@ async def stage_documents(
     )
     venue = VenueCatalog.default().find(paper_format)
     venue_path = join(paper_dir, "VENUE.md")
-    if venue is None:
+    venue_values = {
+        **base_values,
+        **VENUE_REPLACEMENT_PATHS,
+        "PAPER_FORMAT": paper_format,
+        "PAPER_PAGE_BUDGET": page_budget_sentence(venue),
+        "PAPER_MIN_REFS": str(min_refs),
+        "PAPER_MAX_REFS": str(max_refs),
+    }
+    if venue_file == "":
+        await ws.remove(venue_path)
+    elif venue_file is not None:
+        brief = await read_text_or_none(ws, venue_file)
+        if brief is None:
+            raise PaperPreparationError(f"Missing venue file: {venue_file}")
+        await write_text(ws, venue_path, render_text(brief, venue_values))
+    elif venue is None:
         events.append(Event(kind="venue_missing", phase="paper", data={"format": paper_format}))
     elif not await ws.exists(venue_path):
-        values = {
-            **base_values,
-            **VENUE_REPLACEMENT_PATHS,
-            "PAPER_FORMAT": paper_format,
-            "PAPER_PAGE_BUDGET": page_budget_sentence(venue),
-            "PAPER_MIN_REFS": str(min_refs),
-            "PAPER_MAX_REFS": str(max_refs),
-        }
-        await write_text(ws, venue_path, render_text(venue.brief_text(), values))
+        await write_text(ws, venue_path, render_text(venue.brief_text(), venue_values))
     author_path = join(paper_dir, "paper_authors.tex")
     if venue is not None and not await ws.exists(author_path):
         author = venue.author_block_text()
@@ -787,9 +866,10 @@ async def stage_writer_skills(
     include_review_skill: bool,
     values: Mapping[str, str],
     paper_format: str,
+    watermark: bool = True,
 ) -> tuple[list[str], list[str]]:
     """``stage_paper_skills``: stage the selected skills, the writer templates and the venue's
-    TeX support files; watermark the staged templates.
+    TeX support files; watermark the staged templates unless ``watermark`` is off.
 
     Skills that the registry does not ship are reported, not staged. Returns ``(staged,
     missing)``.
@@ -806,7 +886,7 @@ async def stage_writer_skills(
     staged = await stage_skills(
         ctx.workspace, paper_dir, present, prompts=ctx.prompts, values=values
     )
-    if writer_skill in staged:
+    if watermark and writer_skill in staged:
         await watermark_staged_templates(ctx.workspace, skill_dir(paper_dir, writer_skill))
     venue = VenueCatalog.default().find(paper_format)
     template_dir = venue.template_dir if venue is not None else f"templates/{paper_format}"
@@ -857,6 +937,7 @@ __all__ = [
     "resolve_reference_mode",
     "restore_revision_references",
     "seed_edit_workspace",
+    "seed_main_file",
     "stage_aliases",
     "stage_documents",
     "stage_external_review",

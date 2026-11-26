@@ -147,9 +147,9 @@ def _existing_file_dependency(tree: PaperTree, candidate: str) -> str | None:
     return resolved
 
 
-def paper_tex_dependency_paths(tree: PaperTree) -> set[str]:
-    """Return existing local files recursively imported by ``paper.tex``."""
-    pending = ["paper.tex"]
+def paper_tex_dependency_paths(tree: PaperTree, main: str = "paper.tex") -> set[str]:
+    """Return existing local files recursively imported by ``main`` (``paper.tex``)."""
+    pending = [main]
     visited: set[str] = set()
     dependencies: set[str] = set()
     while pending:

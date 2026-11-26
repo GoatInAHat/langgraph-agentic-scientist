@@ -205,6 +205,17 @@ out = await graph.ainvoke(
 )
 ```
 
+A paper that is not the package's own output names its main file and, if it has no venue, opts
+out of the venue brief: `EditOptions(main_file="main.tex", venue_file="")`. The main file is
+seeded as the workspace's `paper.tex` with the local files it inputs (`\input`, `\include`,
+local packages and classes), and kept under its own name in `previous_paper/`; the finished
+manuscript is `paper.tex` of the output directory, which every prompt, skill and validator of
+upstream names. `venue_file` is upstream's `--venue-file`: a workspace path stages that brief as
+`VENUE.md`, `""` stages none. The validation applies a page budget and venue checks only to a
+manuscript that carries the LaTeX markers of a declared venue (`WorkspacePaperToolchain(venues=
+VenueCatalog.from_directory(...))` declares your own, with `page_budget: null` for none), and
+`config.paper.watermark=False` leaves the watermark out. The scope audit of edit mode is kept.
+
 The same works through the pipeline: `{"task_dir": ..., "phases": ["paper"], "investigation": result,
 "previous_paper_dir": "paper_v1", "edit_options": EditOptions(...)}`. A pipeline run that starts
 later takes the results of the earlier phases in its input, as upstream's

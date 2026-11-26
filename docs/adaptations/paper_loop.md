@@ -187,7 +187,7 @@ staged from the external review with its 16 kept fields (`stage_external_review_
    do. Manifest paths are workspace paths.
 7. **Writer skills** are staged when the loop prepares the paper directory (and again when the
    strategy changes the writer family), and `watermark_staged_templates` is applied to the staged
-   templates then. The writer, strategist and ranker sessions are given those skills without restaging
+   templates then, unless `config.paper.watermark` is off. The writer, strategist and ranker sessions are given those skills without restaging
    them (the in-loop review gate, which can run alone, stages its own `review-paper`), so the templates a session
    sees carry the watermark block, as upstream's do. Host validation still inserts the block
    before every compile, which is upstream's authority.
@@ -198,7 +198,28 @@ staged from the external review with its 16 kept fields (`stage_external_review_
    audit paths** with `paper_edit.sh`'s fresh-paper sentences. `paper.sh` leaves them as literal
    placeholders in `paper_strategy.md`, an upstream defect that would show the model raw
    placeholders.
-10. **Final-outcome check before each audit**: `prepare_readonly_paper_audit_workspace` re-reads
+10. **A named main file of the edited paper** (`EditOptions.main_file`). Upstream seeds the
+    edited paper's `paper.tex` and a fixed list of artefacts, and snapshots a fixed list of files
+    and directories into `previous_paper/`; a paper whose main file has another name, or whose
+    text lives in files it inputs elsewhere, is seeded without its manuscript. With `main_file`
+    set, `seed_edit` requires that file, writes it as the workspace's `paper.tex`, copies the
+    local files it inputs recursively (`\input`, `\include`, local `\usepackage` and
+    `\documentclass` files, found by the validator's own dependency walk, which refuses dynamic
+    imports, paths outside the paper and symbolic links) to their relative paths unless the
+    workspace has them, and adds the main file and its inputs to the snapshot under their own
+    names; `paper_edit_context.json` names it as `existing_paper_main_file`. Everything after the
+    seeding (the prompts, the skills, the validators, the evidence verifier, the finalisation) is
+    upstream's and works on `./paper.tex`, so the finished manuscript is the output directory's
+    `paper.tex`. Without `main_file` the seeding is upstream's.
+11. **`--venue-file`** is `EditOptions.venue_file`, in every mode: a workspace path is rendered
+    into `VENUE.md` with the replacements of `stage_venue_file`, and `""` removes `VENUE.md`, as
+    upstream's `stage_optional_rendered_doc` does without a source, so the writer gets the
+    venue-absent context. Unset, the format's brief is staged when no `VENUE.md` is present (a
+    seeded one is kept). The page budget and the venue checks of the validation follow the venue
+    whose LaTeX markers the manuscript carries, as upstream's do: a manuscript without the markers
+    of a declared venue has no page budget, and a toolchain given a catalog without that venue
+    (`WorkspacePaperToolchain(venues=...)`) applies none.
+12. **Final-outcome check before each audit**: `prepare_readonly_paper_audit_workspace` re-reads
     the final evaluation from the run; the port compares `paper_data.json`'s `final_evaluation` and
     `final.*`/`study.final.*` grounding with the paper data the phase holds.
 

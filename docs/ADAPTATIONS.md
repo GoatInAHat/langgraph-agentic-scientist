@@ -138,7 +138,8 @@ The systematic changes that the declared prompt changes carry, by kind:
     again; `AutoApprovePolicy` behaves as upstream does without a terminal.
 16. **Watermark.** Kept, on by default and applied before every compile, with upstream's text.
     `config.paper.watermark` may be turned off by a caller who publishes into its own paper with its
-    own disclosure; upstream has no switch.
+    own disclosure; upstream has no switch. Off, the staged templates are not watermarked and the
+    validation removes a managed block already in the manuscript.
 17. **The paper's parallel-worker merge.** Upstream merges the workers' result directories with
     symlinks for the paper; the paper data are built from all workers' typed records instead.
 18. **Placeholders are rendered in one pass.** Upstream's sequential replacement re-expands

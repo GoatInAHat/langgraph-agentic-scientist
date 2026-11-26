@@ -6,7 +6,8 @@ order and the first failing gate ends the run with its message, as upstream's
 ``validate_and_compile_paper`` raises at the first failure:
 
 1. required artifacts exist (``paper.tex``, ``references.bib``);
-2. the managed watermark is (re)inserted into ``paper.tex`` before the manuscript is read;
+2. the managed watermark is (re)inserted into ``paper.tex`` before the manuscript is read, or,
+   when it is switched off, a managed block already there is removed;
 3. required sections; Supplementary Information (source); BibTeX dependencies; BibTeX keys and
    citations;
 4. ``references_provenance.json`` against ``references.bib``; ``claims_grounding.json`` against
@@ -46,6 +47,7 @@ from ..watermark import (
     PaperWatermarkError,
     apply_paper_watermark,
     has_managed_watermark,
+    strip_managed_block,
 )
 from .evidence import (
     EVIDENCE_BUNDLE_DIRNAME,
@@ -226,6 +228,7 @@ def new_validation_report(workspace: Workspace, paper_dir: str) -> dict[str, Any
             "text": WATERMARK_TEXT,
             "applied": False,
             "changed": False,
+            "removed": False,
             "hard_errors": [],
         },
         "latex_logs": [],
@@ -402,6 +405,11 @@ class WorkspacePaperToolchain:
                 )
                 raise RuntimeError("paper watermark failed: managed block missing after insertion")
             watermark_report["applied"] = True
+        elif has_managed_watermark(tex_text):
+            tex_text = strip_managed_block(tex_text)
+            await workspace.write_bytes(join(paper_dir, tex_rel), tex_text.encode("utf-8"))
+            tree = await load_validation_tree(workspace, paper_dir)
+            watermark_report["removed"] = True
         bib_text = read_text(tree, bib_rel) or ""
         venue_brief_text = read_text(tree, "VENUE.md") or ""
         missing_sections = missing_required_sections(tex_text)

@@ -110,7 +110,10 @@ exit status agrees with its dangling count.
 **The watermark** keeps upstream's text and block (the module is upstream's, and a test compares
 it with the vendored original). Upstream has no switch; the toolchain has `watermark=True` and
 `options["watermark"]` (the paper phase passes `PaperConfig.watermark`), so that a caller who
-publishes into a paper of its own with its own disclosure can switch it off.
+publishes into a paper of its own with its own disclosure can switch it off. Switched off, the
+validation removes a managed block already in `paper.tex` (one seeded from an earlier paper, or
+inserted by the toolchain's own `compile` after a concept figure), so the compiled paper carries
+none.
 
 **Venues.** `VenueCatalog` replaces the module-level `lru_cache` catalog and the repository path
 constants. `brief` and `author_block` of a venue file name files relative to the directory that

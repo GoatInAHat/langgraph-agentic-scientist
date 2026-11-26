@@ -8,6 +8,7 @@ a phase boundary is one of these.
 from __future__ import annotations
 
 import math
+from pathlib import PurePosixPath
 from typing import Any, Literal
 
 from pydantic import ConfigDict, Field, field_validator
@@ -231,6 +232,14 @@ class EditOptions(StateModel):
         skip_postdraft_enrichment: Skip the post-draft reference enrichment.
         contract_task_dir: ``--contract-task-dir``.
         investigation_results_dir: ``--investigation-results-dir``.
+        main_file: The edited paper's main file, relative to ``previous_paper_dir``. ``None`` is
+            upstream's seeding: ``paper.tex`` when present. A named main file must exist; it is
+            seeded as the workspace's ``paper.tex`` together with the local files it inputs,
+            recursively (``\\input``, ``\\include``, local packages and classes), and kept
+            under its own name in ``previous_paper/``.
+        venue_file: ``--venue-file``, in any mode: ``None`` stages the brief of the paper format,
+            a workspace path stages that brief as ``VENUE.md`` (rendered as upstream renders
+            the format's), and ``""`` stages none and removes a seeded one.
     """
 
     edit_programs: list[str] = Field(default_factory=list)
@@ -240,6 +249,23 @@ class EditOptions(StateModel):
     skip_postdraft_enrichment: bool = False
     contract_task_dir: str | None = None
     investigation_results_dir: str | None = None
+    main_file: str | None = None
+    venue_file: str | None = None
+
+    @field_validator("main_file")
+    @classmethod
+    def _relative_tex_file(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        path = PurePosixPath(value)
+        if (
+            path.is_absolute()
+            or ".." in path.parts
+            or path.suffix != ".tex"
+            or str(path) in ("", ".")
+        ):
+            raise ValueError("main_file must be a relative .tex path inside the edited paper")
+        return path.as_posix()
 
 
 class ValidationReport(StateModel):

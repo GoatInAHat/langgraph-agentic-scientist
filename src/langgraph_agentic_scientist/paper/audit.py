@@ -26,6 +26,7 @@ import json
 import operator
 import os
 import re
+import secrets
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import PurePosixPath
@@ -57,7 +58,7 @@ from .contexts import (
     write_validation_feedback_from_current_report,
 )
 from .models import AuditPayload, AuditResult
-from .validation.evidence import WORKSPACE_ALIAS_DIRS
+from .validation.evidence import WORKSPACE_ALIAS_DIRS, _is_usable_verification_payload
 from .validation.files import SnapshotTree, resolve_inside
 from .validation.fingerprint import AUDIT_INPUT_PATHS, paper_input_sha256
 from .validation.tex import AGENT_SKILL_DIR_PREFIXES
@@ -572,41 +573,78 @@ async def build_audit_packet(ctx: ScientistContext, paper_dir: str, output_path:
     await write_text(ws, output_path, "\n".join(lines))
 
 
-async def refresh_evidence_report(ctx: ScientistContext, root: str, script: str) -> str | None:
-    """``_refresh_evidence_verification_report``: rerun the vendored verifier when it is staged.
+_REFRESH_FAILURE = "Failed to refresh scientific-evidence verification report in readonly workspace"
 
-    Returns an error message when the verifier fails operationally, ``None`` otherwise (also when
-    there is no evidence trail or no staged verifier).
+
+async def stage_evidence_verifier(ctx: ScientistContext, paper_dir: str) -> str:
+    """Write the vendored verifier into the paper directory and return its path.
+
+    Upstream runs the repository's own copy, so a staged copy that was changed cannot change the
+    verdict.
+    """
+    script = join(paper_dir, SCIENTIFIC_EVIDENCE_SCRIPT)
+    files = ctx.prompts.skill_files("scientific-evidence")
+    await ctx.workspace.write_bytes(script, files["scripts/scientific_evidence.py"])
+    return script
+
+
+async def refresh_evidence_report(ctx: ScientistContext, root: str, script: str) -> str | None:
+    """``_refresh_evidence_verification_report``: rerun the verifier on ``root``.
+
+    The new report replaces ``scientific-evidence/verification-report.json`` only when it is
+    usable and the verifier's exit status agrees with its dangling count. Returns upstream's error
+    message when the refresh fails, ``None`` otherwise (also when there is no evidence trail).
     """
     ws = ctx.workspace
-    if not await ws.exists(join(root, "scientific-evidence")) or not await ws.exists(script):
+    script_entry = await ws.stat(script)
+    if script_entry is None or script_entry.kind != "file":
+        return f"Missing scientific-evidence verifier script: {ws.host_path(script)}"
+    evidence_dir = join(root, "scientific-evidence")
+    evidence_entry = await ws.stat(evidence_dir)
+    if evidence_entry is None:
         return None
-    output = join(root, "scientific-evidence", ".verification-report.tmp.json")
-    result = await ws.run(
-        [
-            "python3",
-            ws.host_path(script),
-            "verify",
-            "--root-dir",
-            ws.host_path(root),
-            "--output",
-            ws.host_path(output),
-        ],
-        cwd=root,
-        timeout=300,
-    )
-    if result.returncode not in (0, 1) or not await ws.exists(output):
-        detail = (result.stdout + "\n" + result.stderr).strip()
-        await ws.remove(output)
+    if evidence_entry.kind != "dir":
         return (
-            "Failed to refresh scientific-evidence verification report in readonly workspace: "
-            f"verifier exited {result.returncode}. {detail}"
+            f"Scientific-evidence directory must be a real directory: {ws.host_path(evidence_dir)}"
         )
-    await ws.write_bytes(
-        join(root, "scientific-evidence", "verification-report.json"), await ws.read_bytes(output)
-    )
-    await ws.remove(output)
-    return None
+    temporary = join(evidence_dir, f".verification-report.{secrets.token_hex(8)}.json")
+    await ws.write_bytes(temporary, b"")
+    try:
+        result = await ws.run(
+            [
+                "python3",
+                ws.host_path(script),
+                "verify",
+                "--root-dir",
+                ws.host_path(root),
+                "--output",
+                ws.host_path(temporary),
+            ],
+            cwd=root,
+            timeout=300,
+        )
+        details = "\n".join(
+            part for part in (result.stdout.strip(), result.stderr.strip()) if part
+        ).strip()
+        if result.returncode not in (0, 1):
+            return f"{_REFRESH_FAILURE}: verifier exited {result.returncode}. {details}"
+        data = await ws.read_bytes(temporary)
+        try:
+            payload = json.loads(data.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            payload = None
+        if not _is_usable_verification_payload(payload, expected_root=ws.host_path(root)):
+            fallback = f"verifier exited {result.returncode} without a usable report"
+            return f"{_REFRESH_FAILURE}: {details or fallback}"
+        assert isinstance(payload, dict)
+        if (result.returncode == 1) != (payload["summary"]["dangling_references"] > 0):
+            return (
+                f"{_REFRESH_FAILURE}: verifier exit status disagrees with dangling reference count"
+            )
+        await ws.write_bytes(join(evidence_dir, "verification-report.json"), data)
+        return None
+    finally:
+        await ws.remove(temporary)
 
 
 def verify_final_outcome(actual: Any, expected: PaperData | None) -> str | None:
@@ -844,7 +882,7 @@ async def _prepare(state: AuditState, runtime: Runtime[ScientistContext]) -> dic
         ignore=tuple(f"/{'/'.join(prefix)}/" for prefix in AGENT_SKILL_DIR_PREFIXES),
     )
     refresh_error = await refresh_evidence_report(
-        ctx, copy_dir, join(paper_dir, SCIENTIFIC_EVIDENCE_SCRIPT)
+        ctx, copy_dir, await stage_evidence_verifier(ctx, paper_dir)
     )
     if refresh_error is not None:
         await ws.remove(copy_dir)
@@ -920,7 +958,7 @@ async def _finalize(state: AuditState, runtime: Runtime[ScientistContext]) -> di
     payload = state.get("payload")
     if payload is not None:
         refresh_error = await refresh_evidence_report(
-            runtime.context, paper_dir, join(paper_dir, SCIENTIFIC_EVIDENCE_SCRIPT)
+            runtime.context, paper_dir, await stage_evidence_verifier(runtime.context, paper_dir)
         )
         current: dict[str, str] | None = None
         if refresh_error is None:
@@ -1054,6 +1092,7 @@ __all__ = [
     "is_generated_audit_artifact",
     "refresh_evidence_report",
     "render_audit_markdown",
+    "stage_evidence_verifier",
     "verify_final_outcome",
     "write_audit_artifacts",
 ]

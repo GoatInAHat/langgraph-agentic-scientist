@@ -17,6 +17,7 @@ from langgraph_agentic_scientist.paper.audit import (
     audit_input_sha256,
     build_audit_graph,
     build_audit_packet,
+    refresh_evidence_report,
 )
 from langgraph_agentic_scientist.paper.graph import _default_validation
 from langgraph_agentic_scientist.testing import FakePaperToolchain
@@ -184,3 +185,108 @@ async def test_hashes_cover_the_targets_the_verifier_resolved(workspace: Any) ->
     await workspace.write_bytes(f"{PAPER_DIR}/data/run/metrics.bin", b"2")
     after = await audit_input_sha256(workspace, PAPER_DIR)
     assert after["evidence-tree/data/run"] != before["evidence-tree/data/run"]
+
+
+FAKE_VERIFIER = """
+import json, sys
+root, out = sys.argv[3], sys.argv[5]
+mode = {mode!r}
+dangling = 1 if mode in ("rc0_dangling", "rc1") else 0
+report = {{
+    "schema_name": "scientific-evidence.verification-report",
+    "verified_at": "now",
+    "root_dir": root,
+    "summary": {{
+        "total_references": dangling,
+        "resolved_references": 0,
+        "anchored_references": 0,
+        "dangling_references": dangling,
+        "manifests_checked": 0,
+    }},
+    "results": [
+        {{
+            "subject_path": "paper.tex",
+            "subject_kind": "text-artifact",
+            "raw_reference": "r",
+            "target": "t",
+            "status": "dangling",
+            "messages": [],
+        }}
+    ][:dangling],
+}}
+if mode == "unusable":
+    print("  noisy out  ")
+    print("  noisy err  ", file=sys.stderr)
+    report = {{"schema_name": "other"}}
+if mode != "silent":
+    open(out, "w").write(json.dumps(report))
+sys.exit(1 if mode == "rc1" else 0)
+"""
+
+
+async def _refresh(make_context: Any, workspace: Any, mode: str) -> str | None:
+    await workspace.write_bytes(f"{PAPER_DIR}/scientific-evidence/ledger.jsonl", b"")
+    script = "run/verifier.py"
+    await workspace.write_bytes(script, FAKE_VERIFIER.format(mode=mode).encode())
+    return await refresh_evidence_report(make_context(), PAPER_DIR, script)
+
+
+@pytest.mark.parametrize(
+    ("mode", "expected"),
+    [
+        ("ok", None),
+        ("rc1", None),
+        (
+            "rc0_dangling",
+            "Failed to refresh scientific-evidence verification report in readonly workspace: "
+            "verifier exit status disagrees with dangling reference count",
+        ),
+        (
+            "unusable",
+            "Failed to refresh scientific-evidence verification report in readonly workspace: "
+            "noisy out\nnoisy err",
+        ),
+        (
+            "silent",
+            "Failed to refresh scientific-evidence verification report in readonly workspace: "
+            "verifier exited 0 without a usable report",
+        ),
+    ],
+)
+async def test_refresh_keeps_only_a_usable_report(
+    make_context: Any, workspace: Any, mode: str, expected: str | None
+) -> None:
+    assert await _refresh(make_context, workspace, mode) == expected
+    report_path = f"{PAPER_DIR}/scientific-evidence/verification-report.json"
+    assert await workspace.exists(report_path) == (expected is None)
+    listing = await workspace.list_tree(f"{PAPER_DIR}/scientific-evidence")
+    assert [entry.path for entry in listing if entry.path.startswith(".verification")] == []
+
+
+async def test_refresh_without_a_verifier_fails(make_context: Any, workspace: Any) -> None:
+    await workspace.write_bytes(f"{PAPER_DIR}/paper.tex", b"x")
+    message = await refresh_evidence_report(make_context(), PAPER_DIR, "run/missing.py")
+    assert message is not None
+    assert message.startswith("Missing scientific-evidence verifier script: ")
+
+
+async def test_the_audit_refreshes_the_report_with_the_vendored_verifier(
+    make_context: Any, workspace: Any
+) -> None:
+    seen: list[Any] = []
+
+    def look(messages: Any) -> Any:
+        copy = "run/paper/.paper_evidence_audit_workspaces/p-round1-attempt1"
+        report = Path(workspace.host_path(f"{copy}/scientific-evidence/verification-report.json"))
+        seen.append(json.loads(report.read_text()) if report.exists() else None)
+        return audit_pass()
+
+    ctx = make_context(
+        models=models({Role.EVIDENCE_AUDITOR: [look]}), config=fast_config(paper=paper_config())
+    )
+    task = await setup_task(workspace)
+    await _paper(workspace)
+    await workspace.write_bytes(f"{PAPER_DIR}/scientific-evidence/ledger.jsonl", b"")
+    out = await _run(ctx, task)
+    assert out["audit"].outcome == "pass", out["audit"].detail
+    assert seen[0]["schema_name"] == "scientific-evidence.verification-report"

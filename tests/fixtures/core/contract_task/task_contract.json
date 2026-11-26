@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "canonical_task": {
+    "path": "task.md",
+    "sha256": "773dcaa5e545d8fed5a2da8d900ad9403ca53e1d36ecc1d8061dc16365534814"
+  },
+  "method": {
+    "class": "toy_regression",
+    "description": "Return a number close to a hidden target."
+  },
+  "candidate": {
+    "interface": "python_rpc_v1:handle",
+    "editable_paths": [
+      "program_0/src/program.py"
+    ]
+  },
+  "evaluators": {
+    "search": "evaluate.py",
+    "final": "evaluate_final.py"
+  },
+  "resources": {
+    "search_root": "resources/search",
+    "final_root": "resources/final",
+    "public_artifact_bundle": null
+  },
+  "data": {
+    "search_roles": [
+      "train"
+    ],
+    "final_roles": [
+      "sealed_test"
+    ]
+  },
+  "metrics": {
+    "search": [
+      {
+        "name": "combined_score",
+        "data_role": "train"
+      },
+      {
+        "name": "accuracy",
+        "data_role": "train"
+      }
+    ],
+    "final": [
+      {
+        "name": "final_score",
+        "data_role": "sealed_test"
+      }
+    ]
+  },
+  "upstream": [],
+  "provenance": {
+    "dependencies": [
+      {
+        "name": "python",
+        "version": "3.12"
+      }
+    ],
+    "artifacts": [
+      {
+        "role": "search_target",
+        "path": "resources/search/target.txt",
+        "sha256": "66e4c000f2000eb1cca164f97c441e14d438ca2599c8e79f4de6ecade0de8b32",
+        "source": "fixture"
+      },
+      {
+        "role": "final_target",
+        "path": "resources/final/target.txt",
+        "sha256": "a5c0dfc64d745c1bff4a4f6397214178e1597fc224cdb21bb7783e556ed8493f",
+        "source": "fixture"
+      }
+    ]
+  },
+  "compute": {
+    "search": {
+      "accelerator": "cpu",
+      "accelerator_model": "none",
+      "gpu_count": 0,
+      "evaluator_gpu_count": 0,
+      "candidate_gpu_count": 0,
+      "cpu_cores": 1,
+      "memory_gb": 1,
+      "precision": "fp32",
+      "wall_clock_seconds": 600,
+      "max_candidate_rpc_calls": 100
+    },
+    "final": {
+      "accelerator": "cpu",
+      "accelerator_model": "none",
+      "gpu_count": 0,
+      "evaluator_gpu_count": 0,
+      "candidate_gpu_count": 0,
+      "cpu_cores": 1,
+      "memory_gb": 1,
+      "precision": "fp32",
+      "wall_clock_seconds": 600,
+      "max_candidate_rpc_calls": 100
+    }
+  },
+  "protocol": {
+    "search_seeds": [
+      1
+    ],
+    "final_seeds": [
+      7
+    ],
+    "final_reset_sequence": [
+      7
+    ],
+    "baselines": [
+      "program_0"
+    ],
+    "promotion_rule": "strict improvement of combined_score",
+    "search_proxies": []
+  },
+  "feedback": {
+    "search_visible": [
+      "combined_score",
+      "accuracy"
+    ],
+    "final_sealed": [
+      "final_score"
+    ]
+  },
+  "publication": {
+    "search_is_proxy": true,
+    "requires_final_evaluation": true,
+    "required_evidence": [
+      "final_score"
+    ]
+  }
+}

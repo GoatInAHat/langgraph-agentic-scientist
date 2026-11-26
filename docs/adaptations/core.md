@@ -43,14 +43,22 @@ agent run does. The two layers are upstream's too: the agent CLI retries its own
 harness retries the run. A node retry does not continue the session from its checkpoint (only a
 resume after a crash or an interrupt does), so dropping the inner layer would turn every transient
 error into a restart of the whole session. A caller that wants one layer sets
-`config.agents.model_retry.max_retries=0` or passes its own node policy; any other failure of a session becomes a `Failure` with category
+`config.agents.model_retry.max_retries=0`; a caller facing long provider outages raises
+`model_retry.max_retries` and `max_delay`, since the inner layer keeps the session's work. Deep
+Agents' `general-purpose` subagent (the `task` tool) gets the same middleware as the session that
+calls it (retries, the optional model-call limit, the shell maximum); Deep Agents would otherwise
+give it only the filesystem middleware. Any other failure of a session becomes a `Failure` with category
 `agent_run_failed`, which the phase's budgets handle as upstream handled a non-zero exit of the
 agent.
 
 **Shell budget.** Upstream sets `BASH_DEFAULT_TIMEOUT_MS=600000` and `BASH_MAX_TIMEOUT_MS=7200000`.
 The workspace backend uses 600 s as the default command timeout and refuses a requested timeout
 above 7200 s. Deep Agents' `FilesystemMiddleware` refuses timeouts above 3600 s by default; the
-agent factory replaces it with one whose maximum is the configured 7200 s.
+agent factory replaces it with one whose maximum is the configured 7200 s. `LocalWorkspace`'s shell
+is Deep Agents' `LocalShellBackend`, unmodified, so that a command that times out, or whose session
+is cancelled by its wall clock, is killed with its whole process group; the maximum is checked by
+the composite backend around it. A command keeps at most `config.agents.max_tool_output_bytes` of
+its output.
 
 **Deep Agents' own files.** Deep Agents writes offloaded large tool results and conversation
 history to its backend. `LocalWorkspace` routes those paths (`/.agent_artifacts/...`) to

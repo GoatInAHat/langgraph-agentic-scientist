@@ -308,6 +308,21 @@ override by role; `pool` is upstream's multi-agent sampling (one model chosen pe
   a failed agent run. `model_retry.max_retries=0` leaves only the outer line. A method retry that
   changes the prompt (a repair, a second attempt) is a graph loop, so each paid call is
   checkpointed on its own.
+- **Request settings.** The request timeout, the maximum output tokens, sampling and any other
+  model argument are the chat model's own: give a role its own model object in `by_role` to give
+  it its own settings (`ChatOpenAI(base_url=..., model=..., timeout=900, max_tokens=8192)`). A
+  `rate_limiter` set on a model (LangChain's `InMemoryRateLimiter`, or your own) paces every role
+  that uses it, since the package copies a model only to set its context window and the copy
+  shares the limiter.
+- **Bounds of a session.** Each session has its phase's wall clock (the `*_timeout_seconds` of
+  the configuration); a shell command has a default time limit of 600 s
+  (`config.agents.execute_timeout_seconds`), may ask for at most 7200 s
+  (`execute_max_timeout_seconds`), keeps `max_tool_output_bytes` of its output, and is killed with
+  its process group when it times out or its session ends. `config.agents.model_call_limit` bounds
+  the model calls of one session; the `general-purpose` subagent that an agent may start through
+  Deep Agents' `task` tool has the same retries and limit. A subclass of `DeepAgentFactory` that
+  extends `middleware()` adds middleware of your own (LangChain's `ToolCallLimitMiddleware`, for
+  one) to every agent and its subagent.
 
 ## Concurrency
 

@@ -37,6 +37,8 @@ paths = [
     "src/investigation/public_task_contract.py",
     "src/investigation/reset_sequence.py",
     "src/investigation/paper_prompt_context.py",
+    "src/investigation/safe_staging.py",
+    "src/investigation/evaluation_evidence.py",
     "src/variants_pipeline/execute.py",
     "src/variants_pipeline/materialize.py",
     "src/variants_pipeline/cross_task.py",
@@ -44,8 +46,17 @@ paths = [
     "src/variants_pipeline/constants.py",
     "src/variants_pipeline/rubric_contract.py",
     "src/variants_pipeline/readme.py",
+    "src/variants_pipeline/aggregate.py",
+    "src/variants_pipeline/qualification_summary.py",
+    "src/variants_pipeline/sandbox_outputs.py",
+    "src/variants_pipeline/select.py",
+    "src/variants_pipeline/generate.py",
+    "src/variants_pipeline/models.py",
     "src/posthoc_pipeline/materialize.py",
     "src/posthoc_pipeline/rubric_contract.py",
+    "src/posthoc_pipeline/models.py",
+    "src/posthoc_pipeline/select.py",
+    "src/posthoc_pipeline/common.py",
     "src/orchestrator/paper_diagnostics.py",
     "src/orchestrator/paper_feedback.py",
     "src/orchestrator/paper_evidence_audit.py",
@@ -309,6 +320,10 @@ path = "src/aireview.py"
 sha256 = "88434ef4ce44c82c6e488848eb98b33ebd51a0196595499acb82e5a0986e7443"
 
 [[file]]
+path = "src/investigation/evaluation_evidence.py"
+sha256 = "1bf7433de72fa7aab462c748b6d05303ac03963a13e9f6e9268a6a6f8d71190c"
+
+[[file]]
 path = "src/investigation/files.py"
 sha256 = "a377339e6f46e555055a6475a1c1962f3a01c10a6cab7721d804402543fce53c"
 
@@ -335,6 +350,10 @@ sha256 = "872de474f1ebea8c030b6bce22baedd75f2231b935c2cca422a3a65d39cf6ffe"
 [[file]]
 path = "src/investigation/reset_sequence.py"
 sha256 = "e59a85528d3e9c82b42b10bebe0066e9c8250a049fc46fda4631aa8adcbf9940"
+
+[[file]]
+path = "src/investigation/safe_staging.py"
+sha256 = "77dc44797ee8dee47e3478a99f053f01c80e5aeaa1b32c0566ce0fedb574b99f"
 
 [[file]]
 path = "src/orchestrator/paper_data.py"
@@ -369,12 +388,24 @@ path = "src/pipeline/revision.py"
 sha256 = "b93a4a4ddfad6ed16f03255fac318e956ae6f6cf6e2fb2ed3aba480af902fd70"
 
 [[file]]
+path = "src/posthoc_pipeline/common.py"
+sha256 = "8f8886cad0a66cd5d44c374bf3c26f3953c12b8cd4bbd2241b8c5ab296a3e5e0"
+
+[[file]]
 path = "src/posthoc_pipeline/materialize.py"
 sha256 = "e4b7c73fad42b57a695d94000eb721c4903d43edb72afed61d3bb348e3523ec1"
 
 [[file]]
+path = "src/posthoc_pipeline/models.py"
+sha256 = "468c4cc8933315e76c510dc6708ce289180dab622d02461a9302840a67b7c609"
+
+[[file]]
 path = "src/posthoc_pipeline/rubric_contract.py"
 sha256 = "a81c7b97cfc6938a7fc73d2d75387056e19c84e6837205eea5ab46418c6cac00"
+
+[[file]]
+path = "src/posthoc_pipeline/select.py"
+sha256 = "7f92de6bbe3bedc7ca8e01a537d05c585768bf7fec6ff84c60662088d26ec24c"
 
 [[file]]
 path = "src/prompts/adjudicate_task_design.md"
@@ -633,6 +664,10 @@ path = "src/templates/paper_venues/iclr.md"
 sha256 = "dc674f54ad31d4ac668f3d282f22206dbd57426c3502f309f7b0fa421a7cdbdd"
 
 [[file]]
+path = "src/variants_pipeline/aggregate.py"
+sha256 = "a23f27488a52a000507369b6c17da8857cdf15cae4409c316e49c4ba5d833701"
+
+[[file]]
 path = "src/variants_pipeline/constants.py"
 sha256 = "996c34a342339befb9b75c83c79f97a0de490900c5ac8aea58fca0abdc458b75"
 
@@ -645,8 +680,20 @@ path = "src/variants_pipeline/execute.py"
 sha256 = "b5216a84fa94af1731e0626ce71bdb941a408437a46be6100237d2757b680993"
 
 [[file]]
+path = "src/variants_pipeline/generate.py"
+sha256 = "ce0e71ce5a3071b00dd02a300e52cb4903b9816adcb9bd438222e939a16a9148"
+
+[[file]]
 path = "src/variants_pipeline/materialize.py"
 sha256 = "028aced57bf0d5025c065ab0424f8615eff0adef0aba2d13f53067c4e27afee2"
+
+[[file]]
+path = "src/variants_pipeline/models.py"
+sha256 = "1bbc63bfcb4262797e645121ee82773669f770daca2f9cbb8e25c0c05dd5c4b2"
+
+[[file]]
+path = "src/variants_pipeline/qualification_summary.py"
+sha256 = "c637449470efa9d81161c755b0234bb35377710ecfd440e48e3be33874309cff"
 
 [[file]]
 path = "src/variants_pipeline/readme.py"
@@ -659,3 +706,11 @@ sha256 = "a54fbe156f001d1992f0e4f30f2df60f2ad8ef9446a665cfe242554feac64ee5"
 [[file]]
 path = "src/variants_pipeline/rubric_contract.py"
 sha256 = "33c0714a79ede964a1a9704811e78b54da6420a7ae911d356b68fc3d7c4882b5"
+
+[[file]]
+path = "src/variants_pipeline/sandbox_outputs.py"
+sha256 = "56dcf6d105f274e1d0fac9c5e20502cf28fdc41861a2ffbb5aee32a896d591d6"
+
+[[file]]
+path = "src/variants_pipeline/select.py"
+sha256 = "1b423397cf48bf394cf8079953f5df2f5b8744e3aebec0d2c82865140761600b"

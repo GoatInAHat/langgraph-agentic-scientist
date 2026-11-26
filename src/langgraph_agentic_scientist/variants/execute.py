@@ -93,7 +93,7 @@ from .rubrics import (
     variant_attempt_id,
 )
 from .workspace_ops import (
-    program_indices,
+    program_dirs,
     read_json_object,
     read_text_or_none,
     stage_active_files,
@@ -512,12 +512,12 @@ async def publish_evaluation(
 
 
 async def check_analysis_files(
-    workspace: Workspace, task_bundle: str, *, upto: int
+    workspace: Workspace, task_bundle: str
 ) -> dict[str, bool]:
     """Report which analysis files exist across the ``program_<n>`` directories."""
     result: dict[str, bool] = {}
-    for index in await program_indices(workspace, task_bundle, upto=upto):
-        program = join(task_bundle, f"program_{index}")
+    for name in await program_dirs(workspace, task_bundle):
+        program = join(task_bundle, name)
         for filename in ANALYSIS_CSV_SCHEMAS:
             exists = await is_file(workspace, join(program, "analysis", filename))
             if exists:
@@ -1048,9 +1048,7 @@ async def finish_variant(
         eval_count=eval_count,
         exit_code=state.get("exit_code", 1),
         output=truncate_utf8(notes, NOTE_BYTES * 4),
-        analysis_files=await check_analysis_files(
-            ws, state["task_bundle"], upto=cfg.max_evals_per_variant
-        ),
+        analysis_files=await check_analysis_files(ws, state["task_bundle"]),
         spec=spec,
         task_bundle=state["task_bundle"],
         infrastructure_failure=infrastructure,

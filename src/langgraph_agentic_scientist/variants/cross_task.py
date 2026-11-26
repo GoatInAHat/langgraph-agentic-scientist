@@ -58,7 +58,7 @@ from .rubrics import build_rubric_contract, build_target_rubrics
 from .tasks import task_ref_for
 from .workspace_ops import (
     make_dir,
-    program_indices,
+    program_dirs,
     read_text_or_none,
     write_json,
 )
@@ -67,18 +67,22 @@ NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]*$")
 FAILURE_DETAIL_BYTES = 2048
 
 
-async def find_best_program_dir(workspace: Workspace, task_bundle: str, *, upto: int) -> str | None:
+async def find_best_program_dir(workspace: Workspace, task_bundle: str) -> str | None:
     """Return the highest-numbered evaluated ``program_<n>`` of a task bundle, or ``None``.
 
     A program counts when it holds ``metrics.json`` and its evaluation results are complete.
     """
     best: str | None = None
-    for index in await program_indices(workspace, task_bundle, upto=upto):
-        program = join(task_bundle, f"program_{index}")
-        if await is_file(workspace, join(program, "metrics.json")) and (
-            await evaluation_results_complete(workspace, program)
+    best_index = -1
+    for name in await program_dirs(workspace, task_bundle):
+        program = join(task_bundle, name)
+        index = int(name.split("_", 1)[1])
+        if (
+            index > best_index
+            and await is_file(workspace, join(program, "metrics.json"))
+            and await evaluation_results_complete(workspace, program)
         ):
-            best = program
+            best, best_index = program, index
     return best
 
 
@@ -479,7 +483,7 @@ async def prepare_control(
     if control is None:
         return {"control_spec": None, "cross_control": None}
     orig_bundle = join(control.variant_dir, "task_bundle")
-    best = await find_best_program_dir(ws, orig_bundle, upto=cfg.max_evals_per_variant)
+    best = await find_best_program_dir(ws, orig_bundle)
     if best is None:
         return {
             "control_spec": control,
@@ -557,9 +561,7 @@ async def after_control(
             "cross_task_failed",
             f"cross-task {current.name!r} adapted control failed verification",
         )
-    adapted = await find_best_program_dir(
-        ws, join(spec.variant_dir, "task_bundle"), upto=cfg.max_evals_per_variant
-    )
+    adapted = await find_best_program_dir(ws, join(spec.variant_dir, "task_bundle"))
     if adapted is None:
         return _fail(
             "cross_task_failed",
@@ -586,7 +588,7 @@ async def prepare_variants(
     cross_specs: list[VariantSpec] = []
     for orig in others:
         orig_bundle = join(orig.variant_dir, "task_bundle")
-        best = await find_best_program_dir(ws, orig_bundle, upto=cfg.max_evals_per_variant)
+        best = await find_best_program_dir(ws, orig_bundle)
         if best is None:
             continue
         variant_dir = join(cross_dir, VARIANTS_SUBDIR, orig.variant_id)

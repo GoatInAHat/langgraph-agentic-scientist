@@ -105,22 +105,18 @@ async def list_child_dirs(workspace: Workspace, path: str) -> list[str]:
     return [name for name, directory in await list_children(workspace, path) if directory]
 
 
-async def program_indices(workspace: Workspace, bundle: str, *, upto: int) -> list[int]:
-    """Return the indices ``n`` of the ``program_<n>`` directories of a bundle, ascending.
+async def program_dirs(workspace: Workspace, bundle: str) -> list[str]:
+    """Return the names of the ``program_<n>`` directories of a bundle, by ascending index.
 
-    Directories are probed by name from 0 up to ``upto + 1`` (a bundle holds at most one program
-    per allowed attempt) and on while consecutive indices exist.
+    Every child directory whose name matches ``program_<digits>`` counts, as upstream lists the
+    bundle; equal indices keep name order.
     """
-    found: list[int] = []
-    index = 0
-    while True:
-        exists = await is_dir(workspace, join(bundle, f"program_{index}"))
-        if exists:
-            found.append(index)
-        elif index > upto:
-            break
-        index += 1
-    return found
+    names = [
+        name
+        for name in await list_child_dirs(workspace, bundle)
+        if PROGRAM_DIR_RE.match(name)
+    ]
+    return sorted(names, key=lambda name: (int(name.split("_", 1)[1]), name))
 
 
 def anchored(pattern: str) -> str:
@@ -195,7 +191,7 @@ __all__ = [
     "list_child_dirs",
     "list_children",
     "make_dir",
-    "program_indices",
+    "program_dirs",
     "read_json_object",
     "read_json_or_none",
     "read_text_or_none",

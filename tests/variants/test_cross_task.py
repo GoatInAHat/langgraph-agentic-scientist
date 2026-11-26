@@ -176,8 +176,8 @@ async def test_best_program_dir_is_the_highest_complete_evaluated_program(
     await workspace.write_bytes(
         "b/program_2/.evaluation_pending", b"id"
     )  # an unfinished evaluation
-    assert await find_best_program_dir(workspace, "b", upto=2) == "b/program_1"
-    assert await find_best_program_dir(workspace, "empty", upto=2) is None
+    assert await find_best_program_dir(workspace, "b") == "b/program_1"
+    assert await find_best_program_dir(workspace, "empty") is None
 
 
 def test_reference_evaluator_section_is_empty_without_an_evaluator() -> None:

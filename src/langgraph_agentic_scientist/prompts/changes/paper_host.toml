@@ -234,7 +234,7 @@ reason = 'Self-contained helper, vendored unchanged.'
 [[file]]
 upstream = "src/agents/skills/validate-paper/scripts/validate_compile_inputs.py"
 target = "skills/validate-paper/scripts/validate_compile_inputs.py"
-reason = 'Self-contained helper of the compile script. Vendored with one declared change: the staged-skill directory of the port is added to the directories it refuses as TeX inputs.'
+reason = 'Self-contained helper of the compile script. Vendored with two declared changes: the staged-skill directory of the port is added to the directories it refuses as TeX inputs, and a system input linked from one approved system tree into another is approved.'
 
 [[file.change]]
 kind = "A4"
@@ -247,6 +247,30 @@ new = '''
 '''
 count = 1
 reason = "Skills are staged under ./.agents/skills/ of the role's workspace (A4). The script excludes the staged skill directories of coding-agent CLIs when it scans or validates a paper workspace; without this entry it would scan the staged skills of the port (whose documentation contains evidence-link examples) and would not refuse TeX inputs that enter them."
+
+[[file.change]]
+kind = "other"
+old = '''
+        try:
+            resolved_input = input_path.resolve(strict=True)
+            resolved_root = system_root.resolve(strict=True)
+        except OSError:
+            return False
+        return resolved_input.is_relative_to(resolved_root)
+'''
+new = '''
+        try:
+            resolved_input = input_path.resolve(strict=True)
+        except OSError:
+            return False
+        return any(
+            resolved_input.is_relative_to(root.resolve())
+            for root in LATEX_SYSTEM_INPUT_ROOTS
+            if root.exists()
+        )
+'''
+count = 1
+reason = "Correction of an upstream defect found on a real TeX Live: Debian's TeX Live (the system of upstream's own container) links /usr/share/texmf/web2c/texmf.cnf into /usr/share/texlive, and pdflatex records the link, so a system input whose link stays in the approved system trees was refused and no paper compiled. An input is approved when it resolves into any approved system root, which keeps the check's purpose: a link out of the system TeX trees is still refused."
 
 [[file]]
 upstream = "src/agents/skills/validate-paper/scripts/validate_rendered_si.py"

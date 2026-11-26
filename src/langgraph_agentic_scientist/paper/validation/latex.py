@@ -169,10 +169,13 @@ def _is_approved_latex_system_input(input_path: PurePosixPath) -> bool:
             return True
         try:
             resolved_input = host_path.resolve(strict=True)
-            resolved_root = system_root.resolve(strict=True)
         except OSError:
             return False
-        return resolved_input.is_relative_to(resolved_root)
+        return any(
+            resolved_input.is_relative_to(root.resolve())
+            for root in LATEX_SYSTEM_INPUT_ROOTS
+            if root.exists()
+        )
     return False
 
 

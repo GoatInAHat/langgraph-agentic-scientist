@@ -64,6 +64,14 @@ protocol that asks the agent to append to `./memory.md` and the global memory fi
 makes the query planners read-only roles, so the planner cannot write them. The prompt text is
 unchanged; the planner's decisions are in the plan and its memo.
 
+**System TeX inputs linked between system trees.** Upstream approves a TeX input of the
+compile's recorder only when it resolves inside the system root whose path it starts with. Debian's
+TeX Live, the system of upstream's own container, links `/usr/share/texmf/web2c/texmf.cnf` into
+`/usr/share/texlive`, and pdflatex records the link, so upstream's check refuses every compile
+there. The port (the toolchain's check and the staged `validate_compile_inputs.py`, declared in
+`paper_host.toml`) approves an input that resolves into any approved system root; a link out of the
+system TeX trees is still refused.
+
 ## How upstream's mechanics are carried
 
 **Validation reads a snapshot, not the file system.** `validate_and_compile_paper` opens the paper

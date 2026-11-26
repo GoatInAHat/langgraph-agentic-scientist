@@ -346,7 +346,9 @@ class PaperInput(TypedDict):
     ``manifest_dir`` (upstream's ``--manifest-dir``) is where ``latest_manifest.json`` is
     written, by default the output directory's parent. The pipeline writes into ``paper`` with
     the manifest beside the paper, and the revision into its attempt directory, as upstream's
-    pipeline and revision commands do.
+    pipeline and revision commands do. In ``revision`` mode ``external_review_path`` is the review
+    file (upstream's ``--external-review``), whose bytes become the feedback; without it the
+    ``external_review`` given as data is serialised instead.
     """
 
     task: TaskRef
@@ -362,6 +364,7 @@ class PaperInput(TypedDict):
     artifact_paths: NotRequired[dict[str, str]]
     previous_paper_dir: NotRequired[str | None]
     external_review: NotRequired[ReviewResult | dict[str, Any] | None]
+    external_review_path: NotRequired[str | None]
     edit_options: NotRequired[EditOptions | None]
     paper_dir: NotRequired[str]
     output_dir: NotRequired[str]
@@ -389,6 +392,7 @@ class PaperState(TypedDict, total=False):
     artifact_paths: dict[str, str]
     previous_paper_dir: str | None
     external_review: ReviewResult | dict[str, Any] | None
+    external_review_path: str | None
     edit_options: EditOptions | None
     paper_dir: str
     output_dir: str

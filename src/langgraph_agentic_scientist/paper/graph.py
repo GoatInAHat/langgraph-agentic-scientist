@@ -82,7 +82,9 @@ from .workspace import (
     PaperPreparationError,
     default_paper_dir,
     effective_edit_options,
+    external_review_bytes,
     profile_skills,
+    read_external_review,
     resolve_final_stage,
     resolve_reference_mode,
     restore_revision_references,
@@ -544,7 +546,11 @@ async def _prepare(state: PaperState, runtime: Runtime[ScientistContext]) -> dic
         previous = state.get("previous_paper_dir")
         if mode != "fresh" and (not previous or not await ctx.workspace.exists(previous)):
             raise PaperPreparationError(f"Missing edit paper directory: {previous}")
-        if mode == "revision" and state.get("external_review") is None:
+        if (
+            mode == "revision"
+            and state.get("external_review") is None
+            and not state.get("external_review_path")
+        ):
             raise PaperPreparationError("revision mode needs an external review")
         reference_mode = await resolve_reference_mode(
             ctx.workspace,
@@ -655,9 +661,14 @@ async def _seed_edit(state: PaperState, runtime: Runtime[ScientistContext]) -> d
             await write_json(ws, join(paper_dir, "paper_data.json"), seeded["paper_data"])
             update["paper_data"] = data
         if mode == "revision":
-            review = state.get("external_review")
-            assert review is not None
-            await stage_external_review(ws, paper_dir, review)
+            review_path = state.get("external_review_path")
+            if review_path:
+                raw = await read_external_review(ws, review_path)
+            else:
+                review = state.get("external_review")
+                assert review is not None
+                raw = external_review_bytes(review)
+            await stage_external_review(ws, paper_dir, raw)
             baseline = join(
                 paper_dir.rsplit("/", 1)[0] if "/" in paper_dir else ".",
                 ".revision_references",

@@ -210,6 +210,7 @@ async def test_the_paper_graph_is_given_the_revision_inputs_and_the_fixed_option
     assert review.review_path == "paper/ai_review.before_revision.json"
     assert review.aggregate is not None
     assert review.aggregate.overall == 4
+    assert payload["external_review_path"] == "paper/ai_review.before_revision.json"
     feedback = payload["revision_feedback"]
     assert feedback.untrusted_reviewer_data is True
     assert feedback.values["Weaknesses"] == ["Small evaluation.", "Claims are broad."]

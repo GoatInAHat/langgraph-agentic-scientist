@@ -20,6 +20,7 @@ The ``auto`` modes of ``paper_edit.sh`` are resolved here (:func:`resolve_refere
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from pathlib import PurePosixPath
@@ -694,10 +695,8 @@ def preserve_revision_posthoc(
     return copied
 
 
-async def stage_external_review(
-    workspace: Workspace, paper_dir: str, review: ReviewResult | Mapping[str, Any]
-) -> None:
-    """``stage_external_review_feedback``: bounded, untrusted ``revision_feedback.json``/``.md``.
+def external_review_bytes(review: ReviewResult | Mapping[str, Any]) -> bytes:
+    """The bytes of a review given as data, for a caller that has no review file.
 
     The review is a :class:`ReviewResult` (its aggregate review, else the area chair's) or an
     upstream ``review.json`` object.
@@ -713,28 +712,64 @@ async def stage_external_review(
         payload: dict[str, Any] = chosen.model_dump(mode="json", by_alias=True)
     else:
         payload = dict(review)
-    raw = json.dumps(payload, sort_keys=True).encode("utf-8")
+    return json.dumps(payload, sort_keys=True).encode("utf-8")
+
+
+async def read_external_review(workspace: Workspace, path: str) -> bytes:
+    """Read the review file as ``stage_external_review_feedback`` opens it."""
+    entry = await workspace.stat(path)
+    if entry is None:
+        raise PaperPreparationError(f"Missing external review: {path}")
+    if entry.kind != "file":
+        raise PaperPreparationError("External review must be a regular file, not a symlink")
+    if entry.size > EXTERNAL_REVIEW_MAX_BYTES:
+        raise PaperPreparationError(
+            f"External review must be at most {EXTERNAL_REVIEW_MAX_BYTES} bytes"
+        )
+    return await workspace.read_bytes(path)
+
+
+def normalize_external_review(raw: bytes) -> dict[str, Any]:
+    """``stage_external_review_feedback``: check a review file's bytes and keep its 16 fields.
+
+    Raises:
+        PaperPreparationError: With upstream's message when the review cannot be used.
+    """
     if len(raw) > EXTERNAL_REVIEW_MAX_BYTES:
         raise PaperPreparationError(
             f"External review must be at most {EXTERNAL_REVIEW_MAX_BYTES} bytes"
         )
+    try:
+        review = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError):
+        raise PaperPreparationError("External review must contain valid UTF-8 JSON") from None
+    if not isinstance(review, dict):
+        raise PaperPreparationError("External review must be a JSON object")
     for name in ("Strengths", "Weaknesses", "Questions", "Limitations"):
-        value = payload.get(name, [])
+        value = review.get(name, [])
         if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
             raise PaperPreparationError(f"External review {name} must be a list of strings")
         if len(value) > 100:
             raise PaperPreparationError(f"External review {name} must contain at most 100 items")
-    if "Summary" in payload and not isinstance(payload["Summary"], str):
+    if "Summary" in review and not isinstance(review["Summary"], str):
         raise PaperPreparationError("External review Summary must be a string")
-    import hashlib
-
     normalized: dict[str, Any] = {
         "untrusted_reviewer_data": True,
         "source_sha256": hashlib.sha256(raw).hexdigest(),
     }
     for name in EXTERNAL_REVIEW_FIELDS:
-        if name in payload:
-            normalized[name] = payload[name]
+        if name in review:
+            normalized[name] = review[name]
+    return normalized
+
+
+def render_external_review_json(normalized: Mapping[str, Any]) -> str:
+    """``revision_feedback.json`` as ``stage_external_review_feedback`` writes it."""
+    return json.dumps(normalized, indent=2, sort_keys=True) + "\n"
+
+
+def render_external_review_markdown(normalized: Mapping[str, Any]) -> str:
+    """``revision_feedback.md`` as ``stage_external_review_feedback`` writes it."""
     lines = [
         "# External AI Review Feedback",
         "",
@@ -751,14 +786,19 @@ async def stage_external_review(
         else:
             lines.append(str(value))
         lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+async def stage_external_review(workspace: Workspace, paper_dir: str, raw: bytes) -> None:
+    """``stage_external_review_feedback``: bounded, untrusted ``revision_feedback.json``/``.md``
+    from the bytes of the review file."""
+    normalized = normalize_external_review(raw)
     json_path = join(paper_dir, "revision_feedback.json")
     if not await workspace.exists(json_path):
-        await workspace.write_bytes(
-            json_path, (json.dumps(normalized, indent=2, sort_keys=True) + "\n").encode("utf-8")
-        )
+        await workspace.write_bytes(json_path, render_external_review_json(normalized).encode())
         await workspace.write_bytes(
             join(paper_dir, "revision_feedback.md"),
-            ("\n".join(lines).rstrip() + "\n").encode("utf-8"),
+            render_external_review_markdown(normalized).encode("utf-8"),
         )
 
 
@@ -930,9 +970,14 @@ __all__ = [
     "default_paper_dir",
     "edit_context_markdown",
     "effective_edit_options",
+    "external_review_bytes",
     "failure",
+    "normalize_external_review",
     "preserve_revision_posthoc",
     "profile_skills",
+    "read_external_review",
+    "render_external_review_json",
+    "render_external_review_markdown",
     "resolve_final_stage",
     "resolve_reference_mode",
     "restore_revision_references",

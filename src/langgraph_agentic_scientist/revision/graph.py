@@ -414,7 +414,7 @@ def build_revision_graph(
         try:
             before = await initial_review_path(workspace, paper_dir, state.get("review"))
             feedback = load_revision_feedback(
-                await read_regular(workspace, before, max_bytes=MAX_REVIEW_BYTES)
+                await read_regular(workspace, before, max_bytes=MAX_REVIEW_BYTES), before
             )
             manifest = await require_manifest(workspace, paper_dir)
             update: dict[str, Any] = {
@@ -542,6 +542,7 @@ def build_revision_graph(
             "output_dir": state["attempt_dir"],
             "manifest_dir": state["attempt_dir"],
             "external_review": review,
+            "external_review_path": review_path,
             "edit_options": fixed_edit_options(state.get("edit_options")),
         }
         feedback = state.get("feedback")

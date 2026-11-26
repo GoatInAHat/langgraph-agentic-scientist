@@ -116,8 +116,8 @@ class RevisionPaperInput(TypedDict):
 
     ``mode`` is ``revision``; ``previous_paper_dir`` is the published paper; ``output_dir`` is
     where the revised paper is to be written (the attempt directory); ``external_review`` is the
-    review that drives the revision, and ``edit_options`` the fixed options. The rest is passed
-    through from :class:`RevisionInput`. The slot returns a
+    review that drives the revision, ``external_review_path`` its file, and ``edit_options`` the
+    fixed options. The rest is passed through from :class:`RevisionInput`. The slot returns a
     :class:`~langgraph_agentic_scientist.core.results.PaperResult` (or a mapping holding one under
     ``result`` or ``paper``); its ``paper_dir`` is the directory of the revised paper.
     """
@@ -127,6 +127,7 @@ class RevisionPaperInput(TypedDict):
     output_dir: str
     manifest_dir: NotRequired[str]
     external_review: ReviewResult
+    external_review_path: str
     edit_options: EditOptions
     revision_feedback: NotRequired[RevisionFeedback]
     run_config: NotRequired[RunConfigRecord | None]

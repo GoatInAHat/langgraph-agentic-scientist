@@ -40,7 +40,7 @@ from langgraph.types import Checkpointer
 
 from ..agents.runner import agent_node_retry_policy, run_structured_role
 from ..context import GraphOverrides, ScientistContext
-from ..core.results import PaperData
+from ..core.results import DownstreamSelection, PaperData
 from ..core.runconfig import method_config
 from ..core.state import Event, RunConfigRecord, TaskRef, merge_dicts
 from ..core.steps import StepGraph
@@ -59,6 +59,12 @@ from .contexts import (
     write_text,
     write_validation_feedback,
     write_validation_feedback_from_current_report,
+)
+from .data import (
+    PaperDataError,
+    ResultsReader,
+    load_downstream_selection,
+    verify_study_sources,
 )
 from .models import AuditPayload, AuditResult
 from .validation.evidence import WORKSPACE_ALIAS_DIRS, _is_usable_verification_payload
@@ -831,6 +837,7 @@ class AuditInput(TypedDict):
     mode: NotRequired[str]
     paper_data: NotRequired[PaperData | None]
     final: NotRequired[FinalEvaluationResult | None]
+    downstream: NotRequired[DownstreamSelection | None]
     writer_prompt_key: NotRequired[str]
     writer_skill: NotRequired[str]
     paper_format: NotRequired[str]
@@ -897,6 +904,15 @@ async def _prepare(state: AuditState, runtime: Runtime[ScientistContext]) -> dic
         "operational": None,
         "copy_dir": None,
     }
+    try:
+        await verify_study_sources(
+            ws,
+            paper_dir,
+            await load_downstream_selection(ResultsReader(ws), state.get("downstream")),
+        )
+    except (PaperDataError, ValueError) as exc:
+        update["operational"] = str(exc)
+        return update
     error = None
     if (
         method_config(state).final_outcome_policy == "allow_not_qualified"

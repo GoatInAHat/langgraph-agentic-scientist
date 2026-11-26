@@ -52,7 +52,14 @@ from .contexts import (
     write_validation_feedback,
     write_validation_feedback_from_current_report,
 )
-from .data import augment_paper_data_with_posthoc, validate_posthoc_ranking
+from .data import (
+    PaperDataError,
+    ResultsReader,
+    augment_paper_data_with_posthoc,
+    load_downstream_selection,
+    stage_study_sources,
+    validate_posthoc_ranking,
+)
 from .figures import (
     authorize_concept_figure_repair,
     initial_state,
@@ -612,7 +619,10 @@ async def _check_final_outcome(
 async def _seed_edit(state: PaperState, runtime: Runtime[ScientistContext]) -> dict[str, Any]:
     mode = _mode(state)
     if mode == "fresh":
-        return {}
+        try:
+            return await _stage_study_sources(state, runtime.context, state.get("paper_data"))
+        except (PaperDataError, ValueError) as exc:
+            return _failed(str(exc), "paper_preparation_failed")
     ctx = runtime.context
     ws = ctx.workspace
     paper_dir = state["paper_dir"]
@@ -658,9 +668,30 @@ async def _seed_edit(state: PaperState, runtime: Runtime[ScientistContext]) -> d
                     )
                 await ws.write_bytes(join(baseline, name), await ws.read_bytes(source))
             update["reference_baseline_dir"] = baseline
+        update.update(
+            await _stage_study_sources(
+                state, ctx, update.get("paper_data") or state.get("paper_data")
+            )
+        )
         return update
-    except PaperPreparationError as exc:
+    except (PaperPreparationError, PaperDataError, ValueError) as exc:
         return _failed(str(exc), "paper_preparation_failed")
+
+
+async def _stage_study_sources(
+    state: PaperState, ctx: ScientistContext, data: PaperData | None
+) -> dict[str, Any]:
+    if data is None:
+        return {}
+    selection = await load_downstream_selection(
+        ResultsReader(ctx.workspace), state.get("downstream")
+    )
+    payload = data.model_dump(mode="json", by_alias=True)
+    await stage_study_sources(payload, ctx.workspace, state["paper_dir"], selection)
+    if payload == data.model_dump(mode="json", by_alias=True):
+        return {}
+    await write_json(ctx.workspace, join(state["paper_dir"], "paper_data.json"), payload)
+    return {"paper_data": PaperData.model_validate(payload)}
 
 
 async def _stage_inputs(state: PaperState, runtime: Runtime[ScientistContext]) -> dict[str, Any]:

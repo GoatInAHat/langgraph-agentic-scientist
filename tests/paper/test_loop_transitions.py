@@ -199,6 +199,7 @@ async def test_F13_audit_runs_read_only_on_a_copy(make_context: Any, workspace: 
     task = await setup_task(workspace)
     paper_dir = "run/paper/p"
     await workspace.write_bytes(f"{paper_dir}/paper.tex", b"\\documentclass{article}")
+    await workspace.write_bytes(f"{paper_dir}/paper_data.json", b"{}")
     out = await build_audit_graph().ainvoke(
         {"run_config": build_run_config(ctx), "task": task, "paper_dir": paper_dir},
         context=ctx,

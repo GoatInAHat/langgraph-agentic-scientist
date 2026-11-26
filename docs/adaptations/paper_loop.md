@@ -151,13 +151,32 @@ staged from the external review with its 16 kept fields (`stage_external_review_
    files. Upstream's "contract" failure (an invalid artefact) is a session that ends without a
    valid structured answer; a session that fails otherwise is upstream's non-zero exit. The
    strategist keeps a writable workspace, because its memory protocol appends to the memory files.
-2. **The evidence auditor** runs on a disposable copy beside the paper directory (the agents'
-   skill directory excluded, as upstream's copy excludes agent namespaces), through a read-only
-   backend, and the input hashes of the copy are compared with the paper directory's afterwards
-   (upstream `finalize_audit`). The hash covers upstream's audit inputs (watermark block and
-   volatile verifier fields stripped), every evidence source by upstream's extension list, and
-   the graphics files under `figures/`; upstream additionally hashes TeX includes, bibliography
-   styles and figure paths resolved through `\graphicspath`, which the host validator owns.
+2. **The evidence auditor** runs on a disposable copy beside the paper directory
+   (`<parent>/.paper_evidence_audit_workspaces/<name>-round<N>-attempt<K>`, without the agents'
+   skill directories), through a read-only backend, and the input hashes of the copy are compared
+   with the paper directory's afterwards (upstream `finalize_audit`). The hashes are upstream's
+   `audit_input_sha256`, with its bounds, strict decoding and errors. Kept differences:
+   - The packet's `paper_dir` line names the copy by its workspace path. Upstream names its
+     managed read-only copy by an absolute path under `.paper_evidence_audit_workspaces-<uid>/`.
+   - The packet and its JSON excerpts read files as UTF-8 with replacement characters, where
+     upstream's packet builder fails on a JSON input that is not UTF-8.
+   - The copy keeps symbolic links as the workspace copies them and applies
+     `.agentic_task_ignore`. Upstream's copy drops absolute links, links that lead outside the
+     paper directory, and entries that are neither files nor directories.
+   - The evidence scan does not enter the alias directories (`task/`, `results/`,
+     `global_memory/`, `aggregated/`, `extra_tasks/`), and does not hash a verifier-resolved
+     target inside one. Upstream's aliases are symbolic links, which its scan does not enter and
+     whose targets lie outside the paper directory.
+   - The refresh of the verification report runs the vendored `scientific_evidence.py` with
+     `python3`, not the repository's copy. The gate writes it into the paper directory
+     (`.agents/skills/scientific-evidence/scripts/`) before each refresh. Upstream's check that
+     the output file is a regular file owned by the current user has no counterpart through a
+     workspace.
+   - The audit feedback (`paper_evidence_audit_feedback.json`/`.md`) and the validation-feedback
+     error name the audit artefacts by workspace paths. Upstream uses absolute host paths.
+   - In edit mode, an audit pass whose validation feedback is not ok is an operational failure
+     with the detail "validation feedback is not ok after the evidence audit passed". Upstream
+     exits 1 without a message.
 3. **Figure-quality repair without containers** (design adaptation 21): attempted whenever
    `Workspace.snapshot` succeeds; the snapshot is restored with `Workspace.restore`.
 4. **Concept figures**: the renderer is `ScientistContext.figure_renderer` (default none). The
@@ -219,9 +238,13 @@ staged from the external review with its 16 kept fields (`stage_external_review_
     whose LaTeX markers the manuscript carries, as upstream's do: a manuscript without the markers
     of a declared venue has no page budget, and a toolchain given a catalog without that venue
     (`WorkspacePaperToolchain(venues=...)`) applies none.
-12. **Final-outcome check before each audit**: `prepare_readonly_paper_audit_workspace` re-reads
-    the final evaluation from the run; the port compares `paper_data.json`'s `final_evaluation` and
-    `final.*`/`study.final.*` grounding with the paper data the phase holds.
+12. **Checks before each audit**: `verify_study_sources` runs as upstream's does, on the
+    sources that `stage_study_sources` staged after the paper data, or after seeding in edit
+    mode. The final-outcome check runs when the run has a final evaluation and
+    `final_outcome_policy` is `allow_not_qualified`. Upstream runs it in `discover` mode with a
+    final-evaluation directory. `prepare_readonly_paper_audit_workspace` re-reads the final
+    evaluation from the run, whereas the port compares `paper_data.json`'s `final_evaluation`
+    and `final.*`/`study.final.*` grounding with the paper data the phase holds.
 11. **Edit seeding** (`seed_edit_workspace` of `paper_edit.sh` with `paper_revision_workspace.py`)
     keeps upstream's allow-lists, snapshot bounds (5,000 files, 256 MiB), snapshot exceptions,
     seeded artefacts, post-hoc preservation and context files. The paths in

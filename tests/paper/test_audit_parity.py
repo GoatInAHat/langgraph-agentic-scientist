@@ -8,7 +8,15 @@ from typing import Any
 
 import pytest
 from test_data_support import final_result
-from test_loop_support import audit_pass, models, paper_config, paper_data, setup_task
+from test_loop_support import (
+    SCOPE_AUDIT,
+    audit_fail,
+    audit_pass,
+    models,
+    paper_config,
+    paper_data,
+    setup_task,
+)
 from testkit import fast_config
 
 from langgraph_agentic_scientist.core.results import GroundingSource, ValidationReport
@@ -337,3 +345,107 @@ def test_final_outcome_allowances_for_older_papers() -> None:
         "Paper final evidence grounding differs from verified final evaluation"
     )
     assert verify_final_outcome(actual, None) == "Required paper final evidence is missing"
+
+
+async def test_an_invalid_validation_report_fails_after_the_raw_answer(
+    make_context: Any, workspace: Any
+) -> None:
+    def break_report(messages: Any) -> Any:
+        Path(workspace.host_path(f"{PAPER_DIR}/validation_report.json")).write_text("{bad")
+        return audit_pass()
+
+    ctx = make_context(
+        models=models({Role.EVIDENCE_AUDITOR: [break_report]}),
+        config=fast_config(paper=paper_config()),
+    )
+    task = await setup_task(workspace)
+    await _paper(workspace)
+    out = await _run(ctx, task)
+    assert out["audit"].outcome == "operational_failure"
+    assert out["audit"].detail.startswith("Invalid JSON in ")
+    assert await workspace.exists(f"{PAPER_DIR}/paper_evidence_audit_raw.txt")
+    assert not await workspace.exists(f"{PAPER_DIR}/paper_evidence_audit.json")
+
+
+async def test_changed_inputs_leave_the_raw_answer(make_context: Any, workspace: Any) -> None:
+    def change(messages: Any) -> Any:
+        Path(workspace.host_path(f"{PAPER_DIR}/notes.md")).write_text("new")
+        return audit_pass()
+
+    ctx = make_context(
+        models=models({Role.EVIDENCE_AUDITOR: [change]}), config=fast_config(paper=paper_config())
+    )
+    task = await setup_task(workspace)
+    await _paper(workspace)
+    out = await _run(ctx, task)
+    assert out["audit"].outcome == "operational_failure"
+    assert await workspace.exists(f"{PAPER_DIR}/paper_evidence_audit_raw.txt")
+
+
+async def test_findings_keep_the_stage_feedback(make_context: Any, workspace: Any) -> None:
+    from langgraph_agentic_scientist.testing import final
+
+    ctx = make_context(
+        models=models({Role.EVIDENCE_AUDITOR: [final("plain text"), audit_fail()]}),
+        config=fast_config(paper=paper_config()),
+    )
+    task = await setup_task(workspace)
+    await _paper(workspace)
+    out = await _run(ctx, task)
+    assert out["audit"].outcome == "findings"
+    assert await workspace.exists(f"{PAPER_DIR}/paper_evidence_audit_stage_feedback.json")
+
+
+async def test_edit_mode_feedback_carries_the_method_scope_audit(
+    make_context: Any, workspace: Any
+) -> None:
+    ctx = make_context(
+        models=models({Role.EVIDENCE_AUDITOR: [audit_fail()]}),
+        config=fast_config(paper=paper_config()),
+    )
+    task = await setup_task(workspace)
+    await _paper(workspace)
+    await workspace.write_bytes(
+        f"{PAPER_DIR}/method_scope_audit.json", json.dumps(SCOPE_AUDIT).encode()
+    )
+    await workspace.write_bytes(f"{PAPER_DIR}/method_scope_audit.md", b"# Scope\\n")
+    out = await _run(ctx, task, mode="edit")
+    assert out["audit"].outcome == "findings"
+    feedback = json.loads(
+        (await workspace.read_bytes(f"{PAPER_DIR}/validation_feedback.json")).decode()
+    )
+    assert "method_scope_audit" in feedback["auxiliary_checks"]
+
+
+async def test_edit_mode_pass_with_failing_feedback_is_operational(
+    make_context: Any, workspace: Any
+) -> None:
+    ctx = make_context(
+        models=models({Role.EVIDENCE_AUDITOR: [audit_pass(), audit_pass()]}),
+        config=fast_config(paper=paper_config()),
+    )
+    task = await setup_task(workspace)
+    await _paper(workspace)
+    out = await _run(ctx, task, mode="edit")
+    assert out["audit"].outcome == "operational_failure"
+    fresh = await _run(ctx, task)
+    assert fresh["audit"].outcome == "pass", fresh["audit"].detail
+
+
+async def test_edit_mode_contract_text(make_context: Any, workspace: Any) -> None:
+    from langgraph_agentic_scientist.testing import final
+
+    ctx = make_context(
+        models=models({Role.EVIDENCE_AUDITOR: [final("a"), final("b")]}),
+        config=fast_config(paper=paper_config()),
+    )
+    task = await setup_task(workspace)
+    await _paper(workspace)
+    out = await _run(ctx, task, mode="edit")
+    assert out["audit"].outcome == "contract_exhausted"
+    feedback = json.loads(
+        (
+            await workspace.read_bytes(f"{PAPER_DIR}/paper_evidence_audit_stage_feedback.json")
+        ).decode()
+    )
+    assert feedback["hard_errors"][0].startswith("evidence audit stage wrote an invalid artifact: ")

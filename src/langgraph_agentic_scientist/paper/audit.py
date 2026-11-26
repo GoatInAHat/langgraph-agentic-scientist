@@ -56,6 +56,7 @@ from .contexts import (
     write_stage_contract_feedback,
     write_stage_execution_feedback,
     write_text,
+    write_validation_feedback,
     write_validation_feedback_from_current_report,
 )
 from .models import AuditPayload, AuditResult
@@ -717,18 +718,28 @@ def render_audit_markdown(audit: AuditPayload) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+async def write_audit_raw(workspace: Workspace, paper_dir: str, audit: AuditPayload) -> None:
+    """Write ``paper_evidence_audit_raw.txt``, which upstream writes before its input check."""
+    await write_text(
+        workspace,
+        join(paper_dir, "paper_evidence_audit_raw.txt"),
+        json.dumps(audit.model_dump(mode="json"), indent=2) + "\n",
+    )
+
+
 async def write_audit_artifacts(
     workspace: Workspace, paper_dir: str, audit: AuditPayload, input_hashes: Mapping[str, str]
 ) -> None:
-    """``finalize_audit`` after parsing: the audit JSON and markdown, the feedback, and the
-    ``agentic_evidence_audit`` block of ``validation_report.json``."""
+    """``finalize_audit`` after the input check: the audit JSON and markdown, the feedback, and
+    the ``agentic_evidence_audit`` block of ``validation_report.json``.
+
+    Raises:
+        ValueError: When ``validation_report.json`` is not valid JSON, as upstream raises.
+    """
     findings = [finding.model_dump(mode="json") for finding in audit.findings]
     raw_path = join(paper_dir, "paper_evidence_audit_raw.txt")
     json_path = join(paper_dir, "paper_evidence_audit.json")
     md_path = join(paper_dir, "paper_evidence_audit.md")
-    await write_text(
-        workspace, raw_path, json.dumps(audit.model_dump(mode="json"), indent=2) + "\n"
-    )
     await write_text(workspace, md_path, render_audit_markdown(audit))
     feedback = {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -771,9 +782,14 @@ async def write_audit_artifacts(
         workspace, join(paper_dir, "paper_evidence_audit_feedback.md"), "\n".join(lines)
     )
     report_path = join(paper_dir, "validation_report.json")
-    report = await read_json_or_none(workspace, report_path)
-    if not isinstance(report, dict) or "_json_error" in report:
-        report = {}
+    report: dict[str, Any] = {}
+    report_entry = await workspace.stat(report_path)
+    if report_entry is not None and report_entry.kind == "file":
+        try:
+            loaded = json.loads((await workspace.read_bytes(report_path)).decode("utf-8"))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid JSON in {workspace.host_path(report_path)}: {exc}") from exc
+        report = loaded if isinstance(loaded, dict) else {}
     report["agentic_evidence_audit"] = {
         "checked": True,
         "verdict": audit.verdict,
@@ -975,6 +991,7 @@ async def _finalize(state: AuditState, runtime: Runtime[ScientistContext]) -> di
         }
     payload = state.get("payload")
     if payload is not None:
+        await write_audit_raw(ws, paper_dir, payload)
         refresh_error = await refresh_evidence_report(
             runtime.context, paper_dir, await stage_evidence_verifier(runtime.context, paper_dir)
         )
@@ -1001,19 +1018,46 @@ async def _finalize(state: AuditState, runtime: Runtime[ScientistContext]) -> di
                     )
                 ],
             }
-        await write_audit_artifacts(ws, paper_dir, payload, current)
-        await ws.remove(join(paper_dir, "paper_evidence_audit_stage_feedback.json"))
-        await ws.remove(join(paper_dir, "paper_evidence_audit_stage_feedback.md"))
+        try:
+            await write_audit_artifacts(ws, paper_dir, payload, current)
+        except ValueError as exc:
+            return {
+                "audit": AuditResult(
+                    outcome="operational_failure",
+                    payload=payload,
+                    attempts=attempt,
+                    detail=str(exc),
+                )
+            }
+        edit = state.get("mode", "fresh") != "fresh"
         if payload.verdict == "pass":
-            await write_validation_feedback_from_current_report(ws, paper_dir)
+            await ws.remove(join(paper_dir, "paper_evidence_audit_stage_feedback.json"))
+            await ws.remove(join(paper_dir, "paper_evidence_audit_stage_feedback.md"))
+            failure = await _write_validation_feedback(ws, paper_dir, None, edit=edit)
+            if failure is not None:
+                return {
+                    "audit": AuditResult(
+                        outcome="operational_failure",
+                        payload=payload,
+                        attempts=attempt,
+                        detail=failure,
+                    )
+                }
             return {"audit": AuditResult(outcome="pass", payload=payload, attempts=attempt)}
-        await write_validation_feedback_from_current_report(
+        failure = await _write_validation_feedback(
             ws,
             paper_dir,
             "agentic evidence audit failed: see "
             f"{join(paper_dir, 'paper_evidence_audit_feedback.json')} and "
             f"{join(paper_dir, 'paper_evidence_audit.md')}",
+            edit=edit,
         )
+        if failure is not None:
+            return {
+                "audit": AuditResult(
+                    outcome="operational_failure", payload=payload, attempts=attempt, detail=failure
+                )
+            }
         return {"audit": AuditResult(outcome="findings", payload=payload, attempts=attempt)}
     if state.get("session_failure"):
         await write_stage_execution_feedback(
@@ -1042,8 +1086,12 @@ async def _finalize(state: AuditState, runtime: Runtime[ScientistContext]) -> di
         prompt_path=prompt_path,
         expected_outputs=(),
         hard_errors=[
-            f"evidence audit stage '{stage_name}' wrote an invalid audit artifact: "
-            f"{state.get('contract_failure') or 'no structured audit answer'}"
+            (
+                "evidence audit stage wrote an invalid artifact: "
+                if state.get("mode", "fresh") != "fresh"
+                else f"evidence audit stage '{stage_name}' wrote an invalid audit artifact: "
+            )
+            + (state.get("contract_failure") or "no structured audit answer")
         ],
     )
     if attempt >= MAX_CONTRACT_ATTEMPTS:
@@ -1055,6 +1103,38 @@ async def _finalize(state: AuditState, runtime: Runtime[ScientistContext]) -> di
             ),
         }
     return {}
+
+
+async def _write_validation_feedback(
+    workspace: Workspace, paper_dir: str, error: str | None, *, edit: bool
+) -> str | None:
+    """``write_validation_feedback_from_current_report`` of the running script.
+
+    ``paper.sh`` writes the feedback from the merged report. ``paper_edit.sh`` also requires the
+    report to be an object, adds the method scope audit, and fails a pass whose feedback is not
+    ok. Returns the operational failure.
+    """
+    if not edit:
+        await write_validation_feedback_from_current_report(workspace, paper_dir, error)
+        return None
+    from .validation.scope_audit import validate_method_scope_audit_in
+
+    report = await read_json_or_none(workspace, join(paper_dir, "validation_report.json"))
+    if not isinstance(report, dict) or "_json_error" in report:
+        return "Finalized validation report must contain an object"
+    scope = await validate_method_scope_audit_in(workspace, paper_dir)
+    feedback = await write_validation_feedback(
+        workspace,
+        paper_dir,
+        report=report,
+        error=error,
+        extra_hard_errors=[str(m) for m in scope.get("hard_errors") or []],
+        extra_soft_warnings=[str(m) for m in scope.get("soft_warnings") or []],
+        auxiliary_checks={"method_scope_audit": scope},
+    )
+    if error is None and not feedback["ok"]:
+        return "validation feedback is not ok after the evidence audit passed"
+    return None
 
 
 def _after_finalize(state: AuditState) -> str:

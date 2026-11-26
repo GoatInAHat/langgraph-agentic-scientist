@@ -148,7 +148,13 @@ Hook step names are `revision.<node>` for each node after `record_run_config`.
 `ai_review.before_revision.json`, or the latest `ai_review.json`, which is then copied to the named
 file together with its log and recorded under `before_revision`; a replay must keep the named review
 (`initial_review_must_be_preserved`). The review must be usable as feedback (at most 1 MiB, an
-object, `Summary` a string, four list fields of strings, at most 100 items each). The fixed options
+object, `Summary` a string, four list fields of strings, at most 100 items each). The checks of `revision.py` run first, with
+its messages, and then those of `stage_external_review_feedback`. The paper edit stages the
+feedback from the bytes of the review file (`external_review_path`), so `source_sha256` is the
+digest of that file; a caller that gives the paper graph the review only as data
+(`external_review`) gets the digest of its JSON serialisation (sorted keys). A review nested too
+deeply for the JSON parser is refused as invalid JSON, where upstream's parser raises
+`RecursionError` and the process ends. The fixed options
 of the edit are upstream's: `reference_mode` is `preserve`, `figure_refresh_mode` is `auto`,
 `skip_postdraft_enrichment` is true. As upstream's command passes the post-hoc directory and the
 final evaluation only when the paper being revised has them in its `paper_data.json`, the graph

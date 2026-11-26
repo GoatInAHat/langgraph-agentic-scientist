@@ -222,6 +222,17 @@ staged from the external review with its 16 kept fields (`stage_external_review_
 12. **Final-outcome check before each audit**: `prepare_readonly_paper_audit_workspace` re-reads
     the final evaluation from the run; the port compares `paper_data.json`'s `final_evaluation` and
     `final.*`/`study.final.*` grounding with the paper data the phase holds.
+11. **Edit seeding** (`seed_edit_workspace` of `paper_edit.sh` with `paper_revision_workspace.py`)
+    keeps upstream's allow-lists, snapshot bounds (5,000 files, 256 MiB), snapshot exceptions,
+    seeded artefacts, post-hoc preservation and context files. The paths in
+    `paper_edit_context.json` and `.md` (`existing_paper_dir`, `input_path`, skipped entries) are
+    workspace paths instead of resolved host paths. The snapshot is taken afresh whenever the node
+    runs (upstream refuses an existing one, because it never re-enters the step). A skipped special
+    file is recorded as `non_regular`, because the workspace protocol does not tell named pipes,
+    sockets and devices apart (upstream records `named_pipe`, `socket` or `device_file`). Empty
+    `edit_programs/` and `old_programs/` directories are not created when no inputs are given,
+    because the workspace protocol creates directories only through their files. The descriptor
+    pinning and inode checks of the copy belong to the workspace.
 
 ## Omissions
 

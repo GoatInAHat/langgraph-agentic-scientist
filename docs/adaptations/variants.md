@@ -107,7 +107,8 @@ only when a template file is missing, and the registry always has it.
    interrupted) ends the variant as upstream's evaluation error does, and an
    `infrastructure_error` (upstream re-raises `CandidateBrokerInfrastructureError` and the
    pipeline dies) is recorded on the run and fails the phase after the join, so the summary is
-   still written.
+   still written. The same holds for the cross-task stage: an infrastructure failure of the
+   adapted control or of an adapted variant fails the phase with the evaluator's failure.
 7. **Retrofit.** The agent works on a copy; the sealed `evaluate.py` is restored from the source
    bundle (never touched by the agent) and the evaluator tree digest of the source is re-checked.
    A task runtime directory (`.venv`) is never copied, whether the candidate is brokered or not
@@ -155,6 +156,42 @@ only when a template file is missing, and the registry always has it.
     `generate`) and `selection` (after `select` and `custom_baselines`). The variant runner and the
     cross-task subgraph are replaceable through the slots `variants.run_variant` and
     `variants.cross_task` (compiled graphs).
+18. **Assembly details.**
+    - A bundle's programs are found by listing the directory and matching `^program_(\d+)$`, as
+      upstream does.
+    - `.agentic_task_ignore` patterns are matched as written against top-level entry names only,
+      as upstream's `_copy_task_files` does; extraction still matches at every depth, as
+      upstream's does.
+    - The primary task's label under `aggregated/` and in the README is the `task_name` that its
+      run-local snapshot records (upstream's `paths.task_name`), else the last component of the
+      task root.
+    - A piece's value is formatted as an f-string formats it, so a JSON null reads `None`.
+    - The cross-task stage reads `task.md` and `evaluate.py` with `\r\n` and `\r` translated to
+      `\n`, as `Path.read_text` does.
+    - Kept differences:
+      - Files are read through the workspace protocol. A text file that is not UTF-8 (`task.md`,
+        `evaluate.py`, a manifest) is treated as absent where upstream's process ends with a
+        decoding error. A CSV that is not UTF-8 is skipped whole; upstream keeps the rows it read
+        before the first undecodable chunk.
+      - Symlinks are not followed: a symlinked variant directory, `program_<n>`, `task.md` or
+        `evaluate.py` is not read, and a top-level symlink of the task is copied as a link, where
+        upstream's `Path` calls follow them.
+      - Empty directories (`aggregated/`, `aggregated/orig/`, an extra task's directory without
+        known CSVs) are not created, because the workspace protocol creates directories only
+        through their files.
+      - `variant_specs_sha256` in `pipeline_summary.json` hashes the specs with workspace paths,
+        and nothing re-validates it (adaptation 1).
+      - The cross-task bundle is rebuilt from scratch, where upstream copies over an existing
+        one (there is no resume from disk, adaptation 1).
+      - `run_manifest.json` records `agent: "langgraph-deepagents"` and the editor's model, and no
+        agent profile or reasoning effort, which are agent-CLI settings (ADAPTATIONS 1).
+      - Cross-task runs are one list (`cross_task_runs`), grouped by each spec's `task_name`,
+        and the stage's event carries the run count only, where upstream keeps a dictionary by
+        task and counts tasks and variants.
+      - A failed cross-task retrofit's message carries the retrofit's error after upstream's
+        text, and a failure's detail is cut at 2,048 characters.
+      - An extra task without an evaluator or with an invalid contract is refused when the stage
+        starts, not when it is evaluated.
 
 ## Discrepancies found while porting
 

@@ -71,7 +71,7 @@ def test_every_area_has_its_note_and_adaptations_links_it() -> None:
 def test_adaptations_covers_every_numbered_adaptation_and_omission() -> None:
     text = (DOCS / "ADAPTATIONS.md").read_text()
     adaptations = re.findall(r"^(\d+)\. \*\*", text.split("## Omissions")[0], flags=re.M)
-    assert [int(n) for n in adaptations] == list(range(1, 33))
+    assert [int(n) for n in adaptations] == list(range(1, 34))
     omissions = re.findall(r"^(\d+)\. ", text.split("## Omissions")[1], flags=re.M)
     assert [int(n) for n in omissions] == list(range(1, 16))
 

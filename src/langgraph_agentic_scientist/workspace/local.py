@@ -38,6 +38,44 @@ AGENT_ARTIFACTS_DIR = ".agent_artifacts"
 AGENT_ARTIFACTS_ROUTE = "/.agent_artifacts/"
 
 
+def _within_root(cwd: Path, workspace_root: Path, key: str) -> str:
+    """Map a host path inside ``cwd`` to the virtual path that names it under ``/``."""
+    if not key.startswith("/"):
+        return key
+    path = Path(key)
+    if path == cwd or cwd in path.parents:
+        return "/" + path.relative_to(cwd).as_posix() if path != cwd else "/"
+    if path == workspace_root or workspace_root in path.parents:
+        raise PermissionError(f"{key} is outside the working directory {cwd}")
+    return key
+
+
+class _HostPathsFilesystemBackend(FilesystemBackend):
+    """A virtual ``FilesystemBackend`` that also takes the host paths of its root."""
+
+    def __init__(self, *args: Any, workspace_root: Path, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._workspace_root = workspace_root
+
+    def _resolve_path(self, key: str) -> Path:
+        return super()._resolve_path(_within_root(self.cwd, self._workspace_root, key))
+
+
+class _HostPathsShellBackend(LocalShellBackend):
+    """A virtual ``LocalShellBackend`` whose file tools also take the host paths of its root.
+
+    The shell runs on the host, in the root, and prints host paths; the file tools accept them
+    as well as the virtual ``/``-rooted form, so that both name the same files.
+    """
+
+    def __init__(self, *args: Any, workspace_root: Path, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._workspace_root = workspace_root
+
+    def _resolve_path(self, key: str) -> Path:
+        return super()._resolve_path(_within_root(self.cwd, self._workspace_root, key))
+
+
 class _BoundedCompositeBackend(CompositeBackend):
     """``CompositeBackend`` that refuses a per-command timeout above a maximum.
 
@@ -121,6 +159,10 @@ class LocalWorkspace:
         """Return the absolute host path of a workspace path."""
         return str(self._path(path))
 
+    def agent_path(self, root: str, *, read_only: bool = False) -> str:
+        """Return the host path of ``root``: what an agent's shell prints, and its tools take."""
+        return str(self._path(root, follow=True))
+
     def agent_backend(
         self,
         root: str,
@@ -144,11 +186,16 @@ class LocalWorkspace:
         root_path = self._path(root, follow=True)
         root_path.mkdir(parents=True, exist_ok=True)
         if read_only:
-            return ReadOnlyBackend(FilesystemBackend(root_dir=root_path, virtual_mode=True))
+            return ReadOnlyBackend(
+                _HostPathsFilesystemBackend(
+                    root_dir=root_path, virtual_mode=True, workspace_root=self.root
+                )
+            )
         command_env = {**self.env, **dict(env or {})}
-        shell = LocalShellBackend(
+        shell = _HostPathsShellBackend(
             root_dir=root_path,
             virtual_mode=True,
+            workspace_root=self.root,
             timeout=execute_timeout,
             max_output_bytes=max_output_bytes,
             env=command_env,

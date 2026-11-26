@@ -210,12 +210,24 @@ async def write_text(
     await workspace.write_bytes(path, text.encode("utf-8"), exclusive=exclusive)
 
 
+def agent_path(workspace: Workspace, root: str, *, read_only: bool = False) -> str:
+    """Return the path at which an agent's tools see the workspace directory ``root``.
+
+    A workspace whose agent backends name their root ``/`` (the protocol's default) need not
+    define ``agent_path``; one whose writable backends use host paths, as their shell does,
+    returns the host path of ``root``.
+    """
+    method = getattr(workspace, "agent_path", None)
+    return "/" if method is None else str(method(root, read_only=read_only))
+
+
 __all__ = [
     "CommandResult",
     "EntryKind",
     "FileEntry",
     "SnapshotRef",
     "Workspace",
+    "agent_path",
     "is_dir",
     "is_file",
     "is_symlink",

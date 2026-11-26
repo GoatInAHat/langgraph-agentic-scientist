@@ -47,6 +47,7 @@ from langchain_core.tools import BaseTool
 from pydantic import BaseModel
 
 from ..models import Role, StructuredMethod
+from ..workspace.protocol import agent_path
 from ..workspace.readonly import ReadOnlyBackend
 
 if TYPE_CHECKING:
@@ -56,6 +57,7 @@ if TYPE_CHECKING:
 
 SKILLS_SOURCE = "/.agents/skills/"
 """Backend path of the staged skills, relative to the role's root."""
+
 
 TRANSIENT_STATUS_CODES = frozenset({408, 409, 425, 429, 500, 502, 503, 504, 529})
 _TRANSIENT_ERROR_NAMES = frozenset(
@@ -237,6 +239,12 @@ class DeepAgentFactory:
             spec["skills"] = [SKILLS_SOURCE]
         return [spec]
 
+    def system_prompt(self, ctx: ScientistContext, directory: str) -> str:
+        """Return the agents' system prompt for a role working in ``directory``."""
+        return ctx.prompts.render(
+            "harness/agent_system", {"WORKING_DIRECTORY": directory}, fragments=False
+        ).strip()
+
     def _build(
         self,
         role: Role,
@@ -247,11 +255,12 @@ class DeepAgentFactory:
         tools: Sequence[BaseTool],
         response_format: Any = None,
         pool_index: int | None,
+        directory: str = "/",
     ) -> CompiledStateGraph[Any, Any, Any, Any]:
         return create_deep_agent(
             model=self.model_for(role, ctx, pool_index=pool_index),
             tools=list(tools),
-            system_prompt=ctx.prompts.text("harness/agent_system").strip(),
+            system_prompt=self.system_prompt(ctx, directory),
             middleware=self.middleware(ctx, backend),
             subagents=self.subagents(ctx, backend, skills),
             skills=[SKILLS_SOURCE] if skills else None,
@@ -274,7 +283,13 @@ class DeepAgentFactory:
         """Return a Deep Agents agent with a writable backend rooted at ``root``."""
         backend = self.backend(ctx, root, read_only=False, env=env)
         return self._build(
-            role, ctx=ctx, backend=backend, skills=skills, tools=tools, pool_index=pool_index
+            role,
+            ctx=ctx,
+            backend=backend,
+            skills=skills,
+            tools=tools,
+            pool_index=pool_index,
+            directory=agent_path(ctx.workspace, root),
         )
 
     def structured_agent(
@@ -300,6 +315,7 @@ class DeepAgentFactory:
             tools=tools,
             response_format=response_format_for(schema, ctx.models.method_for(role)),
             pool_index=pool_index,
+            directory="/" if root is None else agent_path(ctx.workspace, root, read_only=read_only),
         )
 
     def structured_call(

@@ -11,8 +11,9 @@ replaces "exit non-zero and report the blocker" (A2); :func:`make_nl_tool` and
 name (A7). Memory and rubric placeholders have no tools: the staged upstream scripts serve.
 
 Each tool is built per session and closed over the workspace, the evaluator or the gate, and the
-role's root. Paths given by the agent are relative to its root (its working directory); a leading
-``/`` names that root, as Deep Agents' file tools do.
+role's root. Paths given by the agent are relative to its root (its working directory), start
+with ``/`` naming that root as Deep Agents' file tools do, or start with the path at which its
+shell sees the root (:func:`~langgraph_agentic_scientist.workspace.protocol.agent_path`).
 """
 
 from __future__ import annotations
@@ -35,7 +36,7 @@ from ..evaluation.program_spec import resolve_entrypoint
 from ..evaluation.protocol import EvaluationRequest, EvaluationResult, Evaluator
 from ..prompts import PromptRegistry
 from ..workspace.paths import join, safe_relpath
-from ..workspace.protocol import Workspace
+from ..workspace.protocol import Workspace, agent_path
 
 CLONE_PROGRAM = "clone_program"
 EVALUATE_PROGRAM = "evaluate_program"
@@ -51,8 +52,11 @@ def _description(prompts: PromptRegistry, name: str) -> str:
     return prompts.text(f"harness/{name}").strip()
 
 
-def _in_root(root: str, path: str) -> str:
-    """Map an agent path (relative to its root, or ``/``-rooted) to a workspace path."""
+def _in_root(workspace: Workspace, root: str, path: str, *, read_only: bool = False) -> str:
+    """Map an agent path (relative, or absolute as its file tools see it) to a workspace path."""
+    directory = agent_path(workspace, root, read_only=read_only).rstrip("/")
+    if directory and (path == directory or path.startswith(f"{directory}/")):
+        path = path[len(directory) :]
     return join(root, safe_relpath(path))
 
 
@@ -72,8 +76,8 @@ def make_clone_program_tool(
     @tool(CLONE_PROGRAM, description=_description(prompts, CLONE_PROGRAM))
     async def clone_program_tool(from_dir: str, to_dir: str) -> str:
         try:
-            source = _in_root(root, from_dir)
-            destination = _in_root(root, to_dir)
+            source = _in_root(workspace, root, from_dir)
+            destination = _in_root(workspace, root, to_dir)
             await require_candidate_source_ready(workspace, src_dir=source, dst_dir=destination)
             report = await clone_program(workspace, src_dir=source, dst_dir=destination)
         except (ValueError, FileNotFoundError, FileExistsError, ProgramSpecError) as exc:
@@ -205,7 +209,7 @@ def make_evaluate_program_tool(
             )
         eval_id = f"{id_to_path(settings.id_prefix)}/eval_{index + 1:02d}"
         try:
-            program = _in_root(root, program_dir)
+            program = _in_root(workspace, root, program_dir)
         except WorkspacePathError as exc:
             return f"evaluation wrapper error: {exc}", None
         name = program.rsplit("/", 1)[-1]
@@ -374,7 +378,7 @@ def make_nl_tool(workspace: Workspace, root: str, *, prompts: PromptRegistry) ->
     @tool(NL, description=_description(prompts, NL))
     async def nl_tool(path: str) -> str:
         try:
-            target = _in_root(root, path)
+            target = _in_root(workspace, root, path, read_only=True)
             data = await workspace.read_bytes(target)
         except (WorkspacePathError, FileNotFoundError, IsADirectoryError, PermissionError) as exc:
             return f"nl: {path}: {exc}"
@@ -397,7 +401,7 @@ def make_file_sha256_tool(workspace: Workspace, root: str, *, prompts: PromptReg
     @tool(FILE_SHA256, description=_description(prompts, FILE_SHA256))
     async def file_sha256_tool(path: str) -> str:
         try:
-            data = await workspace.read_bytes(_in_root(root, path))
+            data = await workspace.read_bytes(_in_root(workspace, root, path, read_only=True))
         except (WorkspacePathError, FileNotFoundError, IsADirectoryError, PermissionError) as exc:
             return f"sha256sum: {path}: {exc}"
         return f"{hashlib.sha256(data).hexdigest()}  {path}"

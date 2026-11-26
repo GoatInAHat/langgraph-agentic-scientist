@@ -212,6 +212,15 @@ These concern the orchestrator (`build_pipeline_graph`), which replaces upstream
     staged a stage-specific version whose clone step is the plain copy its prompt prescribes
     (`skills/edit-program-harness`, declared in `prompts/changes/core.toml`).
 
+33. **An agent's file tools take the paths its shell prints.** Upstream's agent CLIs work in a
+    directory of the real file system and say which, so their file tools and their shell name the
+    same files. Deep Agents' file tools name the role's directory `/` while its shell runs on the
+    host and prints host paths. `LocalWorkspace`'s backends therefore also accept the host path of
+    the role's directory (and refuse one elsewhere in the workspace), the package tools accept it
+    too, and the agents' system prompt (`harness/agent_system`, the port's own text) names the
+    directory and both forms. A workspace with its own backends says which directory its agents
+    are told through `agent_path(root, read_only=...)`; without it they are told `/`.
+
 ## Omissions
 
 1. Headless CLI, agent CLI installation, authentication staging, billing selection and paid

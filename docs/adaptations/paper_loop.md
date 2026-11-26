@@ -245,7 +245,7 @@ staged from the external review with its 16 kept fields (`stage_external_review_
     final-evaluation directory. `prepare_readonly_paper_audit_workspace` re-reads the final
     evaluation from the run, whereas the port compares `paper_data.json`'s `final_evaluation`
     and `final.*`/`study.final.*` grounding with the paper data the phase holds.
-11. **Edit seeding** (`seed_edit_workspace` of `paper_edit.sh` with `paper_revision_workspace.py`)
+13. **Edit seeding** (`seed_edit_workspace` of `paper_edit.sh` with `paper_revision_workspace.py`)
     keeps upstream's allow-lists, snapshot bounds (5,000 files, 256 MiB), snapshot exceptions,
     seeded artefacts, post-hoc preservation and context files. The paths in
     `paper_edit_context.json` and `.md` (`existing_paper_dir`, `input_path`, skipped entries) are

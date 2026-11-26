@@ -36,7 +36,6 @@ from ..workspace.protocol import Workspace
 from .contexts import (
     global_memory_summary,
     is_regular_file,
-    read_json_or_none,
     read_text_or_none,
     tail_jsonl,
     workflow_text,
@@ -375,22 +374,26 @@ async def seed_edit_workspace(
     ws = ctx.workspace
     snapshot = join(paper_dir, "previous_paper")
     skipped: list[dict[str, str]] = []
-    if not await ws.exists(snapshot):
-        for entry in await ws.list_tree(previous_paper_dir):
-            if "/" in entry.path:
-                continue
-            source = join(previous_paper_dir, entry.path)
-            if entry.kind == "file" and entry.path in PREVIOUS_PAPER_FILES:
-                await ws.write_bytes(join(snapshot, entry.path), await ws.read_bytes(source))
-            elif entry.kind == "dir" and entry.path in PREVIOUS_PAPER_DIRECTORIES:
-                await copy_tree_regular(ws, source, join(snapshot, entry.path), skipped)
-            elif entry.kind not in ("file", "dir"):
-                skipped.append(
-                    {
-                        "path": source,
-                        "reason": "symlink" if entry.kind == "symlink" else "non_regular",
-                    }
-                )
+    await ws.remove(snapshot)
+    for entry in await ws.list_tree(previous_paper_dir):
+        if "/" in entry.path:
+            continue
+        source = join(previous_paper_dir, entry.path)
+        if entry.path == "paper_data.json" and entry.kind != "file":
+            raise PaperPreparationError(
+                "Could not preserve revision posthoc inventory: paper data must be regular"
+            )
+        if entry.kind == "file" and entry.path in PREVIOUS_PAPER_FILES:
+            await ws.write_bytes(join(snapshot, entry.path), await ws.read_bytes(source))
+        elif entry.kind == "dir" and entry.path in PREVIOUS_PAPER_DIRECTORIES:
+            await copy_tree_regular(ws, source, join(snapshot, entry.path), skipped)
+        elif entry.kind not in ("file", "dir"):
+            skipped.append(
+                {
+                    "path": source,
+                    "reason": "symlink" if entry.kind == "symlink" else "non_regular",
+                }
+            )
     seeded: list[str] = []
     if options.main_file is not None:
         seeded.extend(
@@ -413,8 +416,18 @@ async def seed_edit_workspace(
     for name in SEEDED_ARTIFACTS:
         if name == "paper.tex" and options.main_file is not None:
             continue
-        if await copy_file_if_present(ws, join(previous_paper_dir, name), join(paper_dir, name)):
-            seeded.append(name)
+        source = join(previous_paper_dir, name)
+        entry = await ws.stat(source)
+        if entry is None:
+            continue
+        if entry.kind == "dir":
+            await copy_tree_regular(ws, source, join(paper_dir, name), skipped)
+        elif entry.kind == "file":
+            await ws.write_bytes(join(paper_dir, name), await ws.read_bytes(source))
+        else:
+            skipped.append({"path": source, "reason": "non_regular"})
+            continue
+        seeded.append(name)
     if reference_mode == "preserve":
         for name in REFERENCE_ARTIFACTS:
             if await copy_file_if_present(
@@ -452,10 +465,11 @@ async def seed_edit_workspace(
 
     updated: dict[str, Any] | None = None
     data = dict(paper_data or {})
-    previous_data = await read_json_or_none(ws, join(snapshot, "paper_data.json"))
-    if isinstance(previous_data, Mapping) and "posthoc_analyses" in previous_data:
+    previous_data = await read_previous_paper_data(ws, join(snapshot, "paper_data.json"))
+    if "posthoc_analyses" in previous_data:
         updated = preserve_revision_posthoc(previous_data, data)
         data = updated
+    if "posthoc_analyses" in data:
         seeded.append("posthoc_analyses")
 
     task_names = data.get("task_names")
@@ -643,6 +657,27 @@ def edit_context_markdown(
     return "\n".join(lines).rstrip() + "\n"
 
 
+async def read_previous_paper_data(workspace: Workspace, path: str) -> dict[str, Any]:
+    """``_previous_paper_data``: the snapshot's paper data, ``{}`` when it has none.
+
+    Raises:
+        PaperPreparationError: When the file is not a JSON object (upstream raises).
+    """
+    if not await workspace.exists(path):
+        return {}
+    try:
+        payload = json.loads((await workspace.read_bytes(path)).decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise PaperPreparationError(
+            f"Could not preserve revision posthoc inventory: {exc}"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise PaperPreparationError(
+            "Could not preserve revision posthoc inventory: paper data must be an object"
+        )
+    return payload
+
+
 def preserve_revision_posthoc(
     previous: Mapping[str, Any], paper_data: Mapping[str, Any]
 ) -> dict[str, Any]:
@@ -671,6 +706,11 @@ def preserve_revision_posthoc(
                     "non-empty and unique"
                 )
             seen.add(analysis_id)
+            if "rank" in entry and (type(entry["rank"]) is not int or entry["rank"] < 1):
+                raise PaperPreparationError(
+                    "Could not preserve revision posthoc inventory: posthoc rank must be a "
+                    "positive integer"
+                )
         return [dict(entry) for entry in items]
 
     original = inventory(previous)

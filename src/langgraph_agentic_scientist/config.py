@@ -211,7 +211,8 @@ class ScientistConfig(_Section):
 
     Attributes:
         phases: The phases a pipeline run executes (upstream ``execution.phases``).
-        fail_fast: Stop at the first failed phase instead of degrading.
+        fail_fast: Stop at the first failed phase instead of degrading (upstream
+            ``execution.fail_fast``, default true).
         no_winner_policy: ``best_available`` freezes a fallback program when investigation ends
             without a winner; ``skip`` skips the downstream phases.
         final_outcome_policy: Whether a verified ``not_qualified`` final evaluation may support a

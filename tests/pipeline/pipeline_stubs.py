@@ -61,6 +61,7 @@ class StubInput(TypedDict, total=False):
     edit_options: Any
     pdf_path: str
     paper_dir: str
+    manifest_dir: str
     artifact_stem: str
     manifest_key: str
 

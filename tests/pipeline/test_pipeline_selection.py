@@ -144,6 +144,7 @@ async def test_paper_edit_mode_carries_the_previous_paper_and_the_edit_options(
     )
     paper = ledger.last_input("paper")
     assert paper["mode"] == "edit" and paper["previous_paper_dir"] == "old_paper"
+    assert paper["paper_dir"] == paper["manifest_dir"] == "paper"
     assert paper["edit_options"] == options
 
 

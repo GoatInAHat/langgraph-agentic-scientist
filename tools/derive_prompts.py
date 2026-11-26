@@ -32,6 +32,31 @@ An extraction writes the value of the string (quoting removed; f-string fields b
 ``{{NAME}}`` placeholders, named after the field's variable or by ``names``) after a one-line
 header naming its source; deriving a package file from an extracted file drops that header.
 
+``kind`` selects the shape of the text (``expression`` when omitted):
+
+* ``expression``: the one string expression within ``lines`` (concatenations and f-strings
+  folded); in a file that is not Python the lines are dedented Python code of an embedded heredoc,
+  with ``strip_prefix`` and ``strip_suffix`` removed before parsing.
+* ``elements``: every string expression within ``lines`` (the elements of a list), joined by
+  newlines.
+* ``fstring``: the one f-string within ``lines``.
+* ``print``: the argument of the one ``print(...)`` statement of embedded Python.
+* ``assignment``: the module-level assignment ``name``; ``decode = "base85-bz2"`` decodes the
+  value and ``json_key`` then takes one key of the decoded JSON.
+* ``dict_value``: the value of ``key`` in the module-level dictionary ``name``.
+* ``shell_string``: the quoted value of a shell assignment or string; ``quote`` is ``double``
+  (default), ``single`` or ``ansi``; ``strip_prefix`` and ``strip_suffix`` remove the assignment
+  and the closing quote; expansions (``$x``, ``${x#y}``) need an entry in ``names``.
+* ``shell_concat``: the lines of ``lines`` are ``NAME+=$'...'``, ``NAME+="..."`` or
+  ``NAME+="$var"`` appends; the expansions need an entry in ``names``.
+* ``heredoc``: the body of a quoted heredoc; the line before ``lines`` opens it and the line
+  after closes it.
+
+A shape the extractor does not recognise is an error. A ``[[pin]]`` entry holds an ``extracted``
+file and a ``package`` source with the same locator fields; the tool extracts the text from the
+package's code and requires it to equal the extracted text, so an in-code constant cannot drift
+from upstream.
+
 Usage::
 
     python tools/derive_prompts.py           # write the package files
@@ -42,8 +67,13 @@ from __future__ import annotations
 
 import argparse
 import ast
+import base64
+import bz2
 import hashlib
+import json
+import re
 import sys
+import textwrap
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
@@ -84,7 +114,7 @@ class FileEntry:
 
 @dataclass
 class Extraction:
-    """One text extracted from upstream code."""
+    """One text extracted from code (upstream's, or the package's for a pin)."""
 
     upstream: str
     lines: tuple[int, int]
@@ -92,6 +122,28 @@ class Extraction:
     names: dict[str, str]
     reason: str
     source: str
+    kind: str = "expression"
+    name: str = ""
+    key: str = ""
+    decode: str = ""
+    json_key: str = ""
+    quote: str = "double"
+    strip_prefix: str = ""
+    strip_suffix: str = ""
+
+
+EXTRACT_KINDS = {
+    "expression",
+    "elements",
+    "fstring",
+    "print",
+    "assignment",
+    "dict_value",
+    "shell_string",
+    "shell_concat",
+    "heredoc",
+}
+NAMED_KINDS = {"assignment", "dict_value"}
 
 
 class DerivationError(Exception):
@@ -105,6 +157,46 @@ def _safe(base: Path, relative: str) -> Path:
     return base.joinpath(*path.parts)
 
 
+def _locator(raw: dict[str, object], source: str, path_key: str, output: str) -> Extraction:
+    kind = str(raw.get("kind", "expression"))
+    if kind not in EXTRACT_KINDS:
+        raise DerivationError(f"{source}: unknown extraction kind {kind!r}")
+    start, end = 0, 0
+    if kind in NAMED_KINDS:
+        if not str(raw.get("name", "")):
+            raise DerivationError(f"{source}: a {kind} extraction needs `name`")
+    else:
+        first, _, last = str(raw["lines"]).partition("-")
+        start, end = int(first), int(last or first)
+    names_raw = raw.get("names", {})
+    return Extraction(
+        upstream=str(raw[path_key]),
+        lines=(start, end),
+        output=output,
+        names={str(k): str(v) for k, v in dict(names_raw).items()},  # type: ignore[call-overload]
+        reason=str(raw.get("reason", "")),
+        source=source,
+        kind=kind,
+        name=str(raw.get("name", "")),
+        key=str(raw.get("key", "")),
+        decode=str(raw.get("decode", "")),
+        json_key=str(raw.get("json_key", "")),
+        quote=str(raw.get("quote", "double")),
+        strip_prefix=str(raw.get("strip_prefix", "")),
+        strip_suffix=str(raw.get("strip_suffix", "")),
+    )
+
+
+def load_pins(changes_dir: Path = CHANGES_DIR) -> list[Extraction]:
+    """Read the pins of every changes file; ``output`` of a pin is its extracted file."""
+    pins: list[Extraction] = []
+    for toml_path in sorted(changes_dir.glob("*.toml")):
+        data = tomllib.loads(toml_path.read_text(encoding="utf-8"))
+        for raw in data.get("pin", []):
+            pins.append(_locator(raw, toml_path.name, "package", str(raw["extracted"])))
+    return pins
+
+
 def load_changes(changes_dir: Path = CHANGES_DIR) -> tuple[list[Extraction], list[FileEntry]]:
     """Read every changes file."""
     extractions: list[Extraction] = []
@@ -113,17 +205,7 @@ def load_changes(changes_dir: Path = CHANGES_DIR) -> tuple[list[Extraction], lis
         source = toml_path.name
         data = tomllib.loads(toml_path.read_text(encoding="utf-8"))
         for raw in data.get("extract", []):
-            start, _, end = str(raw["lines"]).partition("-")
-            extractions.append(
-                Extraction(
-                    upstream=str(raw["upstream"]),
-                    lines=(int(start), int(end or start)),
-                    output=str(raw["output"]),
-                    names={str(k): str(v) for k, v in dict(raw.get("names", {})).items()},
-                    reason=str(raw.get("reason", "")),
-                    source=source,
-                )
-            )
+            extractions.append(_locator(raw, source, "upstream", str(raw["output"])))
         for raw in data.get("file", []):
             changes = []
             for change in raw.get("change", []):
@@ -186,6 +268,9 @@ def _string_nodes(tree: ast.AST, start: int, end: int) -> list[ast.expr]:
 
 
 def _render_string(node: ast.expr, names: dict[str, str]) -> str:
+    expression = ast.unparse(node)
+    if expression in names:
+        return "{{" + names[expression] + "}}"
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node.value
     if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
@@ -200,31 +285,228 @@ def _render_string(node: ast.expr, names: dict[str, str]) -> str:
                     raise DerivationError(
                         f"f-string field with conversion or format: {ast.unparse(value)}"
                     )
-                expression = ast.unparse(value.value)
-                if expression in names:
-                    parts.append("{{" + names[expression] + "}}")
+                field_expression = ast.unparse(value.value)
+                if field_expression in names:
+                    parts.append("{{" + names[field_expression] + "}}")
                 elif isinstance(value.value, ast.Name):
                     parts.append("{{" + value.value.id.upper() + "}}")
                 else:
-                    raise DerivationError(f"name the f-string field {expression!r} in `names`")
+                    raise DerivationError(
+                        f"name the f-string field {field_expression!r} in `names`"
+                    )
             else:
                 raise DerivationError(f"unsupported f-string part: {ast.dump(value)}")
         return "".join(parts)
-    raise DerivationError(f"not a string expression: {ast.dump(node)}")
+    raise DerivationError(f"not a string expression: {expression!r}; name it in `names`")
 
 
-def extract(extraction: Extraction) -> str:
-    """Return the content of an extracted file (header line and string value)."""
-    path = _safe(THIRD_PARTY, extraction.upstream)
-    tree = ast.parse(path.read_text(encoding="utf-8"))
+def _selected(source: str, extraction: Extraction) -> list[str]:
     start, end = extraction.lines
-    nodes = _string_nodes(tree, start, end)
+    lines = source.split("\n")
+    if start < 1 or end > len(lines) or end < start:
+        raise DerivationError(f"{extraction.source}: lines {start}-{end} are outside the file")
+    return lines[start - 1 : end]
+
+
+def _strip(text: str, extraction: Extraction) -> str:
+    if extraction.strip_prefix:
+        if not text.startswith(extraction.strip_prefix):
+            raise DerivationError(
+                f"{extraction.source}: {extraction.upstream}:{extraction.lines[0]} does not "
+                f"start with {extraction.strip_prefix!r}"
+            )
+        text = text[len(extraction.strip_prefix) :]
+    if extraction.strip_suffix:
+        if not text.endswith(extraction.strip_suffix):
+            raise DerivationError(
+                f"{extraction.source}: {extraction.upstream}:{extraction.lines[1]} does not "
+                f"end with {extraction.strip_suffix!r}"
+            )
+        text = text[: -len(extraction.strip_suffix)]
+    return text
+
+
+def _top_level_value(tree: ast.Module, name: str) -> ast.expr:
+    found = [
+        node.value
+        for node in tree.body
+        if isinstance(node, ast.Assign | ast.AnnAssign)
+        and node.value is not None
+        and any(
+            isinstance(target, ast.Name) and target.id == name
+            for target in (node.targets if isinstance(node, ast.Assign) else [node.target])
+        )
+    ]
+    if len(found) != 1:
+        raise DerivationError(f"expected one module-level assignment of {name}, found {len(found)}")
+    return found[0]
+
+
+def _decode_value(value: str, extraction: Extraction) -> str:
+    if not extraction.decode:
+        return value
+    if extraction.decode != "base85-bz2":
+        raise DerivationError(f"{extraction.source}: unknown decoding {extraction.decode!r}")
+    decoded = bz2.decompress(base64.b85decode(value)).decode("utf-8")
+    if extraction.json_key:
+        return str(json.loads(decoded)[extraction.json_key])
+    return decoded
+
+
+def _python_text(
+    source: str, extraction: Extraction, *, embedded: bool
+) -> tuple[str, tuple[int, int]]:
+    start, end = extraction.lines
+    kind = extraction.kind
+    if kind in NAMED_KINDS:
+        value = _top_level_value(ast.parse(source), extraction.name)
+        if kind == "dict_value":
+            if not isinstance(value, ast.Dict):
+                raise DerivationError(f"{extraction.name} is not a dictionary literal")
+            matches = [
+                item
+                for dict_key, item in zip(value.keys, value.values, strict=True)
+                if isinstance(dict_key, ast.Constant) and dict_key.value == extraction.key
+            ]
+            if len(matches) != 1:
+                raise DerivationError(f"{extraction.name} has no single key {extraction.key!r}")
+            value = matches[0]
+        text = _decode_value(_render_string(value, extraction.names), extraction)
+        return text, (value.lineno, value.end_lineno or value.lineno)
+    if embedded:
+        snippet = _strip(
+            textwrap.dedent("\n".join(_selected(source, extraction))).strip(), extraction
+        )
+        if kind == "print":
+            (statement,) = ast.parse(snippet).body
+            if not (isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Call)):
+                raise DerivationError(f"{extraction.source}: lines {start}-{end} are not a call")
+            call = statement.value
+            if not (isinstance(call.func, ast.Name) and call.func.id == "print"):
+                raise DerivationError(f"{extraction.source}: lines {start}-{end} are not print")
+            if len(call.args) != 1 or call.keywords:
+                raise DerivationError(f"{extraction.source}: print takes one argument here")
+            return _render_string(call.args[0], extraction.names), (start, end)
+        if kind == "elements":
+            listing = ast.parse(f"[\n{snippet}\n]", mode="eval").body
+            assert isinstance(listing, ast.List)
+            return "\n".join(_render_string(e, extraction.names) for e in listing.elts), (
+                start,
+                end,
+            )
+        expression = ast.parse(f"(\n{snippet}\n)", mode="eval").body
+        return _render_string(expression, extraction.names), (start, end)
+    nodes = _string_nodes(ast.parse(source), start, end)
+    if kind == "fstring":
+        nodes = [node for node in nodes if isinstance(node, ast.JoinedStr)]
+    if kind == "elements":
+        if not nodes:
+            raise DerivationError(
+                f"{extraction.source}: no string in {extraction.upstream}:{start}-{end}"
+            )
+        nodes.sort(key=lambda node: (node.lineno, node.col_offset))
+        return "\n".join(_render_string(node, extraction.names) for node in nodes), (start, end)
     if len(nodes) != 1:
         raise DerivationError(
             f"{extraction.source}: expected one string expression in "
             f"{extraction.upstream}:{start}-{end}, found {len(nodes)}"
         )
-    value = _render_string(nodes[0], extraction.names)
+    return _render_string(nodes[0], extraction.names), (start, end)
+
+
+_ANSI_ESCAPES = {"n": "\n", "t": "\t", "\\": "\\", "'": "'", '"': '"'}
+_EXPANSION = re.compile(r"\$(?:\{[^}]*\}|[A-Za-z_][A-Za-z0-9_]*)")
+
+
+def _shell_value(body: str, quote: str, names: dict[str, str], where: str) -> str:
+    if quote == "single":
+        if "'" in body:
+            raise DerivationError(f"{where}: a single quote inside a single-quoted string")
+        return body
+    out: list[str] = []
+    index = 0
+    while index < len(body):
+        char = body[index]
+        if char == "\\":
+            following = body[index + 1 : index + 2]
+            if quote == "ansi":
+                if following not in _ANSI_ESCAPES:
+                    raise DerivationError(f"{where}: unsupported ANSI-C escape \\{following}")
+                out.append(_ANSI_ESCAPES[following])
+            elif following in ('"', "\\", "$", "`"):
+                out.append(following)
+            else:
+                raise DerivationError(f"{where}: unsupported escape \\{following}")
+            index += 2
+            continue
+        if quote == "ansi":
+            out.append(char)
+            index += 1
+            continue
+        if char == "`":
+            raise DerivationError(f"{where}: an unescaped backtick (command substitution)")
+        if char == "$":
+            match = _EXPANSION.match(body, index)
+            if match is None:
+                raise DerivationError(
+                    f"{where}: unsupported expansion at {body[index : index + 20]!r}"
+                )
+            token = match.group(0)
+            if token not in names:
+                raise DerivationError(f"{where}: name the expansion {token!r} in `names`")
+            out.append("{{" + names[token] + "}}")
+            index = match.end()
+            continue
+        out.append(char)
+        index += 1
+    return "".join(out)
+
+
+def _shell_text(source: str, extraction: Extraction) -> str:
+    start, end = extraction.lines
+    where = f"{extraction.source}: {extraction.upstream}:{start}-{end}"
+    selected = _selected(source, extraction)
+    if extraction.kind == "heredoc":
+        if start < 2 or end >= len(source.split("\n")):
+            raise DerivationError(f"{where}: the heredoc has no opening or closing line")
+        lines = source.split("\n")
+        opener = re.search(r"<<-?\s*'([A-Za-z_]+)'\s*$", lines[start - 2])
+        if opener is None:
+            raise DerivationError(f"{where}: the line before is not a quoted heredoc opener")
+        if lines[end] != opener.group(1):
+            raise DerivationError(f"{where}: the line after is not the heredoc delimiter")
+        return "".join(line + "\n" for line in selected)
+    if extraction.kind == "shell_concat":
+        out: list[str] = []
+        for line in selected:
+            text = line.strip()
+            match = re.fullmatch(r"\w+\+=(?P<value>\$'.*'|\".*\")", text)
+            if match is None:
+                raise DerivationError(f"{where}: not an append of a quoted string: {text[:60]!r}")
+            value = match.group("value")
+            if value.startswith("$'"):
+                out.append(_shell_value(value[2:-1], "ansi", extraction.names, where))
+            else:
+                out.append(_shell_value(value[1:-1], "double", extraction.names, where))
+        return "".join(out)
+    text = "\n".join(selected)
+    if extraction.strip_prefix:
+        text = text.lstrip()
+    text = _strip(text, extraction)
+    return _shell_value(text, extraction.quote, extraction.names, where)
+
+
+def text_of(extraction: Extraction, root: Path) -> tuple[str, tuple[int, int]]:
+    """Return the value that ``extraction`` names in the file under ``root``, and its lines."""
+    source = _safe(root, extraction.upstream).read_text(encoding="utf-8")
+    if extraction.kind in {"shell_string", "shell_concat", "heredoc"}:
+        return _shell_text(source, extraction), extraction.lines
+    return _python_text(source, extraction, embedded=not extraction.upstream.endswith(".py"))
+
+
+def extract(extraction: Extraction) -> str:
+    """Return the content of an extracted file (header line and string value)."""
+    value, (start, end) = text_of(extraction, THIRD_PARTY)
     header = (
         f"{EXTRACT_HEADER_PREFIX}{extraction.upstream} lines {start}-{end} of AI-Scientist-v3 "
         f"{_commit()[:12]} by tools/derive_prompts.py; deriving a package file drops this line. -->"
@@ -332,6 +614,24 @@ def run(*, check: bool) -> list[str]:
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)
+    try:
+        pins = load_pins()
+    except (DerivationError, KeyError, ValueError) as exc:
+        return [*problems, str(exc)]
+    for pin in pins:
+        if not pin.output.startswith("extracted/"):
+            problems.append(f"{pin.source}: a pin names an extracted file, not {pin.output}")
+            continue
+        try:
+            actual, _ = text_of(pin, PACKAGE)
+            expected = _safe(THIRD_PARTY, pin.output).read_text(encoding="utf-8")
+        except (DerivationError, OSError, SyntaxError) as exc:
+            problems.append(f"{pin.source}: {pin.upstream}: {exc}")
+            continue
+        if actual != expected.partition("\n")[2]:
+            problems.append(
+                f"package code differs from the extracted text: {pin.upstream} ({pin.output})"
+            )
     for relative in _package_files():
         if relative not in targets:
             problems.append(f"package file is not declared in any changes file: {relative}")

@@ -165,6 +165,15 @@ placeholder values of the skills (`ATTEMPT_ID`, `IDEA_ID` as the analysis id, `T
 * **Checkpoint validation reads files through the workspace**, which has no ranged read, so a
   checkpoint larger than 4 GiB is accepted after the non-empty check only, and `.npy` files are
   checked by their header when `numpy` is not installed (upstream imports it).
+* **Name hints of a checkpoint and the paths of `_results.json` are read relative to the program.**
+  Upstream applied the `checkpoint`, `ckpt` and `weights` hints to the absolute path, so a program
+  below a directory of that name made every file of a checkpoint suffix a candidate; a path that
+  `_results.json` names through a linked directory or with `..` components is found only by the
+  name scan.
+* **Expected outputs and required artifacts follow the workspace path rules**: a `..` component,
+  a backslash, a leading `~`, or leading or trailing whitespace makes a path missing (upstream
+  resolved such a path inside the directory), and a path through a link that leaves the workspace
+  is missing instead of an error.
 * **Analyses run in parallel** through `Send`, each with its own attempt loop and agent sessions
   (upstream: one after another). Bound it with the run config's `max_concurrency`; use 1 for
   analyses that use a single GPU.

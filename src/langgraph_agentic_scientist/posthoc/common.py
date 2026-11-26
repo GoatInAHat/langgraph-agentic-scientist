@@ -561,10 +561,14 @@ async def validate_expected_outputs(
     missing: list[str] = []
     for relpath in expected_outputs:
         try:
-            safe = not relpath.startswith("/") and bool(safe_relpath(relpath, allow_root=False))
+            safe = (
+                not relpath.startswith("/")
+                and relpath == relpath.strip()
+                and bool(safe_relpath(relpath, allow_root=False))
+            )
+            entry = await workspace.stat(join(root_dir, relpath)) if safe else None
         except WorkspacePathError:
-            safe = False
-        entry = await workspace.stat(join(root_dir, relpath)) if safe else None
+            entry = None
         if entry is not None and entry.kind == "file":
             found.append(relpath)
         else:

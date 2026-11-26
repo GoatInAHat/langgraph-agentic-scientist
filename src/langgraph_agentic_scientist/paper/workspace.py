@@ -76,6 +76,10 @@ PREVIOUS_PAPER_FILES = frozenset(
 )
 """Upstream ``PREVIOUS_PAPER_FILES`` (``paper_revision_workspace.py``)."""
 
+MAX_SNAPSHOT_FILES = 5000
+MAX_SNAPSHOT_BYTES = 256 * 1024 * 1024
+"""Upstream's bounds on the previous-paper snapshot (``paper_revision_workspace.py``)."""
+
 PREVIOUS_PAPER_DIRECTORIES = frozenset(
     {"appendix", "assets", "figures", "sections", "source_evidence"}
 )
@@ -375,7 +379,22 @@ async def seed_edit_workspace(
     snapshot = join(paper_dir, "previous_paper")
     skipped: list[dict[str, str]] = []
     await ws.remove(snapshot)
-    for entry in await ws.list_tree(previous_paper_dir):
+    tree = await ws.list_tree(previous_paper_dir)
+    snapshot_files = snapshot_bytes = 0
+    for entry in tree:
+        top, _, rest = entry.path.partition("/")
+        if entry.kind != "file" or (
+            top not in PREVIOUS_PAPER_DIRECTORIES if rest else top not in PREVIOUS_PAPER_FILES
+        ):
+            continue
+        source = join(previous_paper_dir, entry.path)
+        snapshot_files += 1
+        if snapshot_files > MAX_SNAPSHOT_FILES:
+            raise PaperPreparationError(f"previous-paper snapshot has too many files: {source}")
+        snapshot_bytes += entry.size
+        if snapshot_bytes > MAX_SNAPSHOT_BYTES:
+            raise PaperPreparationError(f"previous-paper snapshot is too large: {source}")
+    for entry in tree:
         if "/" in entry.path:
             continue
         source = join(previous_paper_dir, entry.path)

@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 
 from langgraph_agentic_scientist.core.results import EditOptions
+from langgraph_agentic_scientist.paper import workspace as paper_workspace
 from langgraph_agentic_scientist.paper.workspace import (
     PaperPreparationError,
     seed_edit_workspace,
@@ -79,3 +80,23 @@ async def test_the_snapshot_is_taken_again_from_the_edited_paper(
     await _seed(make_context())
     assert not await workspace.exists(f"{NEW}/previous_paper/stale.tex")
     assert await workspace.read_bytes(f"{NEW}/previous_paper/paper.tex") == b"old"
+
+
+async def test_a_snapshot_of_more_files_than_upstream_allows_is_refused(
+    make_context: Any, workspace: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(paper_workspace, "MAX_SNAPSHOT_FILES", 2)
+    for name in ("a.tex", "b.tex", "c.tex"):
+        await workspace.write_bytes(f"{OLD}/sections/{name}", b"x")
+    await workspace.write_bytes(f"{OLD}/notes/d.tex", b"not snapshotted")
+    with pytest.raises(PaperPreparationError, match="too many files"):
+        await _seed(make_context())
+
+
+async def test_a_snapshot_larger_than_upstream_allows_is_refused(
+    make_context: Any, workspace: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(paper_workspace, "MAX_SNAPSHOT_BYTES", 4)
+    await workspace.write_bytes(f"{OLD}/paper.tex", b"12345")
+    with pytest.raises(PaperPreparationError, match="too large"):
+        await _seed(make_context())

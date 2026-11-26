@@ -19,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import posixpath
 import re
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, Literal
@@ -111,7 +112,7 @@ async def preserve_fingerprint(workspace: Workspace, paper_dir: str) -> str | No
         hasher.update(b"strategy\0" + (await workspace.read_bytes(strategy)))
     figures = join(paper_dir, "figures")
     if await workspace.exists(figures):
-        for entry in await workspace.list_tree(figures):
+        for entry in await workspace.list_tree(figures, with_digest=True):
             hasher.update(f"{entry.path}\0{entry.kind}\0{entry.sha256}\n".encode())
     return hasher.hexdigest()
 
@@ -329,23 +330,34 @@ async def authorize_concept_figure_repair(
     return state
 
 
+_DEFAULT_MODELS = {"claude": "claude-opus-5-5", "gemini": "gemini-3.1-pro-preview"}
+"""Upstream's ``concept_figure_default_model``: the model pinned per agent (none for others)."""
+
+
 class AutoillustrateRenderer:
     """A :class:`~langgraph_agentic_scientist.core.interfaces.ConceptFigureRenderer` over the
     outside ``autoillustrate`` CLI (upstream ``run_concept_figure_step``).
 
     The renderer runs ``autoillustrate ./paper.tex --output ./figures/<id>.png --placement ...
-    --agent <agent> --mode <mode> --prompt <text>`` in the paper directory through
-    ``Workspace.run``. Autoillustrate drives an agent CLI and, for its restyle pass, an image model
-    (OpenAI by default, Gemini as fallback); without either key it runs with ``--skip-enhance``.
-    The ``--prompt`` text is upstream's (``prompts/workflow/paper/concept_figure``) followed by
-    the strategy's figure purpose.
+    --agent <agent> [--model <m>] [--profile <p>] --workdir ./.autoillustrate/<id> [--effort <e>]
+    --mode <mode> --prompt <text>`` in the paper directory through ``Workspace.run``, as upstream's
+    ``build_concept_figure_command`` does. Autoillustrate drives an agent CLI and, for its restyle
+    pass, an image model (OpenAI by default, Gemini as fallback); without either key it runs with
+    ``--skip-enhance``. The ``--prompt`` text is the request's instructions unchanged: upstream
+    sends exactly the strategy's figure ``purpose`` (or its fallback sentence) and nothing else.
 
     Args:
         agent: The agent CLI Autoillustrate dispatches (upstream ``--agent``).
         executable: The ``autoillustrate`` command.
         timeout_seconds: Wall clock of one render (upstream default 9000 s).
         environment: Environment of the command; defaults to the host environment.
-        prompts: The registry holding the availability texts and the prompt prefix.
+        prompts: The registry holding the availability texts.
+        model: The agent's model (upstream ``--model``); by default upstream's pin for the
+            agents where Autoillustrate keeps a literal default (``claude-opus-5-5`` for
+            ``claude``, ``gemini-3.1-pro-preview`` for ``gemini``), none for the others.
+        profile: The agent profile (upstream ``--profile``), when one is used.
+        effort: The reasoning effort (``low``, ``medium``, ``high`` or ``xhigh``; upstream
+            ``--effort``), when one is set.
     """
 
     def __init__(
@@ -356,8 +368,16 @@ class AutoillustrateRenderer:
         timeout_seconds: float = 9000,
         environment: Mapping[str, str] | None = None,
         prompts: PromptRegistry | None = None,
+        model: str | None = None,
+        profile: str | None = None,
+        effort: Literal["low", "medium", "high", "xhigh"] | None = None,
     ) -> None:
+        if effort is not None and effort not in ("low", "medium", "high", "xhigh"):
+            raise ValueError(f"invalid concept-figure reasoning effort: {effort}")
         self.agent = agent
+        self.model = model if model is not None else _DEFAULT_MODELS.get(agent)
+        self.profile = profile
+        self.effort = effort
         self.executable = executable
         self.timeout_seconds = timeout_seconds
         self.environment = dict(environment) if environment is not None else dict(os.environ)
@@ -391,7 +411,7 @@ class AutoillustrateRenderer:
     ) -> ConceptFigureResult:
         """Render one concept figure; a missing CLI or a failed run is a non-gating failure."""
         availability = self.availability()
-        prefix = self.prompts.text("workflow/paper/concept_figure").strip()
+        stem = posixpath.splitext(posixpath.basename(request.output_path))[0]
         argv = [
             self.executable,
             "./paper.tex",
@@ -401,11 +421,15 @@ class AutoillustrateRenderer:
             str(request.metadata.get("placement", "half-width")),
             "--agent",
             self.agent,
-            "--mode",
-            request.mode,
-            "--prompt",
-            f"{prefix} {request.instructions}".strip(),
         ]
+        if self.model:
+            argv += ["--model", self.model]
+        if self.profile:
+            argv += ["--profile", self.profile]
+        argv += ["--workdir", f"./.autoillustrate/{stem}"]
+        if self.effort:
+            argv += ["--effort", self.effort]
+        argv += ["--mode", request.mode, "--prompt", request.instructions]
         if not availability.openai and not availability.gemini:
             argv.append("--skip-enhance")
         try:

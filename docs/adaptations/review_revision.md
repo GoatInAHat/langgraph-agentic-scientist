@@ -68,6 +68,12 @@ manifest key and under `ai_review`; a failed review never discards the paper.
   `area_chair` roles through `with_structured_output`, with the method that the model registry gives
   each role. An answer that is missing or violates the review contract is invalid and is asked for
   again. Scores are therefore not comparable with upstream's.
+- *Each attempt is its own node execution.* Upstream asks again inside one function
+  (`_request_valid_review`); the port asks again in a new node execution, so that each paid call
+  is checkpointed on its own and a resume after a crash does not repeat a call already made: a
+  reviewer task sends itself again (`Send`) with the next attempt number and its log lines, and
+  the area chair step is a small graph that loops on a counter in state (`meta_attempt`). The join
+  of the reviewers is deferred until every reviewer task, retries included, has finished.
 - *The five reviewers run in parallel*, not one after the other. The calls are identical and
   independent. A reviewer with two invalid answers is a failure of the review, as it is upstream;
   the other reviewers' calls are made.

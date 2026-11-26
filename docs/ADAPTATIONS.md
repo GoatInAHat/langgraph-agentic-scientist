@@ -82,12 +82,30 @@ The systematic changes that the declared prompt changes carry, by kind:
    Shell commands keep upstream's 600 s default and 7200 s maximum; evaluation timeouts are kept on
    every evaluation request. Lost: after a crash the resumed session's clock starts again, as
    upstream's resumed cycle does. An optional bound on model calls per session is offered
-   (`config.agents.model_call_limit`); upstream has none.
+   (`config.agents.model_call_limit`); upstream has none. LangGraph's own node timeout
+   (`add_node(timeout=TimeoutPolicy(...))` with an `error_handler`) is not used for this, for three
+   reasons. The clock's value is a setting of the run (`run_timeout_seconds` and the other
+   per-phase timeouts of `ScientistConfig`, recorded in state and read at run time), whereas a
+   node's `TimeoutPolicy` is fixed when the graph is compiled. A timed-out session must leave its
+   partial result: the helper returns `timed_out=True` with the messages streamed so far, and the
+   graph reads from them the evaluations the agent already paid for and its blocker before checking
+   the outputs, as upstream does after a timed-out agent CLI; a `NodeTimeoutError` discards the
+   node's partial result, and an error handler sees only the state and the error. And the node's
+   timeout would bound the whole node (staging, the session and its post-processing), not the
+   session. The clock bounds each uninterrupted run of a session; it restarts after a resume, as a
+   `TimeoutPolicy` would. A caller who wants a hard bound on a whole step can still put a
+   `TimeoutPolicy` on it through a replacement slot.
 7. **Provider retries and sleeps become LangChain's and LangGraph's retry mechanisms.** A transient
    failure inside a session is retried by `ModelRetryMiddleware` with upstream's 15, 45 and 90 s
-   schedule; plain model calls (the AI reviewers) use a `RetryPolicy` with six attempts. Method
-   retries that change the prompt (repairs, second attempts, contract retries) stay graph loops
-   with counters.
+   schedule, which repeats only the failed model call; one that escapes the session is retried by
+   the node's `RetryPolicy` (four attempts, the same schedule), which starts the session again, as
+   upstream's retry of a failed agent run does. Both layers are kept, as upstream has both (the
+   agent CLI retries its API calls, the harness retries the run): a node retry does not continue a
+   session from its checkpoint, so without the inner layer every transient error would restart a
+   session of hours. `config.agents.model_retry.max_retries=0` leaves only the node's layer. Plain
+   model calls (the AI reviewers) use a `RetryPolicy` with six attempts. Method retries that change
+   the prompt (repairs, second attempts, contract retries, the reviewers' second attempt) are graph
+   loops with counters, so that each paid call is checkpointed on its own.
 8. **Sequential becomes parallel where independence is upstream's.** Five reviewers, the ablation
    variants after the control, the post-hoc analyses and the campaign workers fan out with `Send`.
    Variant results are joined, not chained; the control still runs first, so "a failed control
@@ -105,8 +123,9 @@ The systematic changes that the declared prompt changes carry, by kind:
     the manifest verification and the digests.
 11. **Concept figures.** Autoillustrate stays an outside tool behind `ConceptFigureRenderer`
     (`AutoillustrateRenderer` runs it through the workspace when it is installed, with upstream's
-    time-based modes). Without a renderer the placeholder figure and the prompts' documented
-    plain-export fallback apply, as upstream does without keys.
+    time-based modes, `--workdir` and the pinned `--model`). Its `--prompt` is the strategy's figure
+    purpose unchanged, as upstream sends it. Without a renderer the placeholder figure and the
+    prompts' documented plain-export fallback apply, as upstream does without keys.
 12. **Reference retrieval.** Semantic Scholar first, then the OpenAlex and `scholarly` scripts, behind
     `ReferenceRetriever`; a caller may substitute its own service.
 13. **The AI reviewer's model.** Upstream calls one hosted model; the port calls the models of the
@@ -180,6 +199,17 @@ These concern the orchestrator (`build_pipeline_graph`), which replaces upstream
     phases are explicit. A resumed run already holds its phases and its drafting result in its
     checkpoint, and a new run on an existing workspace skips drafting because the scaffold is
     present.
+31. **The harness incumbent is established once per campaign.** Upstream reads the baseline's score
+    from the task runtime's validated record and every worker reconciles against it. The port's
+    investigation graph takes it, before the first round, from the caller's `incumbent`, from the
+    task's qualification receipt (when the seed is the task's `program_0` and the receipt binds the
+    task's evaluators as they are now), or from one evaluation under `<run>/baseline`, and passes
+    it to every worker (`docs/adaptations/investigation.md`).
+32. **The harness-evaluated author's `edit-program` skill states the stage's plain copy.** Upstream
+    staged the generic skill, whose trusted-clone command its stage prompt overrides; in the port
+    the generic skill names a `clone_program` tool that this role is not given, so the role is
+    staged a stage-specific version whose clone step is the plain copy its prompt prescribes
+    (`skills/edit-program-harness`, declared in `prompts/changes/core.toml`).
 
 ## Omissions
 

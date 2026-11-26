@@ -5,7 +5,9 @@ of isolated workers that share memory at cycle boundaries, and with pruning enab
 barrier rounds in which each worker restarts from its best program
 (``investigation/parallel_helpers.py``). This graph plans the round (:func:`plan_round`), fans the
 workers out with ``Send`` (each worker is the compiled worker graph, mounted as a node), joins the
-round, and either prunes into the next round or finalises the result.
+round, and either prunes into the next round or finalises the result. Before the first round, a
+harness-evaluated campaign establishes its incumbent once (:func:`establish_incumbent`) and every
+worker reads it.
 
 Upstream's only question to a person, the prune warning, is asked here once for the whole
 campaign and the answer is passed to every worker.
@@ -23,10 +25,14 @@ from langgraph.runtime import Runtime
 from langgraph.types import Checkpointer, Send
 
 from ..context import GraphOverrides, ScientistContext
+from ..core.errors import ConfigurationMismatch
 from ..core.results import InvestigationResult
 from ..core.runconfig import method_config, record_run_config
-from ..core.state import Answer, BestManifest, Failure, ProgramRef, Question
+from ..core.state import Answer, BestManifest, EvaluationRecord, Failure, ProgramRef, Question
 from ..core.steps import StepGraph, ask_person
+from ..drafting.scaffold import evaluator_tree_sha256, load_qualification_receipt
+from ..evaluation.ids import campaign_baseline_id
+from ..evaluation.program_spec import resolve_entrypoint
 from ..workspace.paths import join
 from .attempt import AGENT_LOG_FAILURE, CONTRACT_FAILURE
 from .memory_sync import StoreRequired
@@ -42,6 +48,7 @@ from .worker import (
     BASELINE_SOURCE,
     build_campaign_worker_graph,
     default_results_dir,
+    evaluate_baseline,
     prune_needed,
 )
 
@@ -99,6 +106,122 @@ async def confirm_prune(
     return {"prune_confirmed": True}
 
 
+def _task_seed(task: Any) -> ProgramRef:
+    return task.seed_program or ProgramRef(path=join(task.root, "program_0"))
+
+
+async def _receipt_incumbent(
+    runtime: Runtime[ScientistContext], task: Any, seed: ProgramRef
+) -> tuple[BestManifest, EvaluationRecord] | None:
+    """The baseline measured by the task's qualification, when it may stand as the incumbent.
+
+    It may when the seed is the task's ``program_0``, the task publishes a qualification receipt
+    with a finite baseline score and a correctness verdict, and the receipt's evaluator digest is
+    that of the task's evaluators now.
+    """
+    ws = runtime.context.workspace
+    if task.contract is None or seed.path != join(task.root, "program_0"):
+        return None
+    receipt = await load_qualification_receipt(ws, task.root)
+    if receipt is None or receipt.baseline_correct is None:
+        return None
+    score = receipt.baseline_combined_score
+    if not math.isfinite(score):
+        return None
+    try:
+        digest = await evaluator_tree_sha256(ws, task.root, task.contract)
+    except (OSError, FileNotFoundError):
+        return None
+    if digest != receipt.evaluator_tree_sha256:
+        return None
+    entrypoint = await resolve_entrypoint(ws, seed.path)
+    incumbent = BestManifest(
+        program_dir=seed.path,
+        entrypoint_path=entrypoint,
+        combined_score=score,
+        correct=receipt.baseline_correct,
+        source_attempt_id=BASELINE_SOURCE,
+    )
+    record = EvaluationRecord(
+        evaluation_id=receipt.evaluation_id or "qualification",
+        program=ProgramRef(path=seed.path, entrypoint=entrypoint),
+        plane="search",
+        status="completed",
+        metrics={"combined_score": score},
+        correct=receipt.baseline_correct,
+        summary="baseline measured by the task's qualification (receipt)",
+        attempt_id="bootstrap",
+    )
+    return incumbent, record
+
+
+async def establish_incumbent(
+    state: InvestigationState, runtime: Runtime[ScientistContext]
+) -> dict[str, Any]:
+    """Establish the incumbent of a harness-evaluated campaign once, before any worker starts.
+
+    Upstream reads the baseline's score from the task runtime's validated record, produced once,
+    and every worker reconciles against it. The port takes, in order: the ``incumbent`` given in
+    the input; the baseline score of the task's qualification receipt (when the seed is the
+    task's ``program_0`` and the evaluators are those the receipt binds); or one evaluation of the
+    baseline under the campaign-level id ``<run>/baseline``. Every worker of every round whose
+    seed is the task's seed receives it as ``seed_best`` and evaluates nothing. A baseline that
+    cannot be validated ends the campaign with ``missing_validated_harness_incumbent``.
+    """
+    task = state["task"]
+    if not task.harness_evaluated:
+        return {}
+    given = state.get("incumbent")
+    if given is not None:
+        if given.correct is None or _finite(given.combined_score) is None:
+            raise ConfigurationMismatch(
+                ["incumbent: a given incumbent needs a finite combined_score and a verdict"]
+            )
+        return {"incumbent": given}
+    seed = _task_seed(task)
+    from_receipt = await _receipt_incumbent(runtime, task, seed)
+    if from_receipt is not None:
+        incumbent, record = from_receipt
+        return {"incumbent": incumbent, "baseline": record, "baseline_evaluated": False}
+    ws = runtime.context.workspace
+    entrypoint = await resolve_entrypoint(ws, seed.path)
+    program = ProgramRef(path=seed.path, entrypoint=entrypoint)
+    record, score, failure = await evaluate_baseline(
+        runtime,
+        method_config(state),
+        task,
+        program.model_copy(update={"digest": await ws.digest(seed.path)}),
+        campaign_baseline_id(state["run_id"]),
+    )
+    if failure is not None or score is None:
+        return {
+            "baseline": record,
+            "baseline_evaluated": True,
+            "stopped": True,
+            "investigation": InvestigationResult(
+                status="failed",
+                workers=0,
+                baseline=record,
+                evaluations=[record],
+                failure=failure,
+            ),
+        }
+    incumbent = BestManifest(
+        program_dir=seed.path,
+        entrypoint_path=entrypoint,
+        combined_score=score,
+        correct=bool(record.correct),
+        source_attempt_id=BASELINE_SOURCE,
+    )
+    return {"incumbent": incumbent, "baseline": record, "baseline_evaluated": True}
+
+
+def _finite(value: object) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    return float(value) if math.isfinite(value) else None
+
+
 def _round_dir(root: str, rounds: int, rnd: int) -> str:
     return join(root, f"round_{rnd:03d}") if rounds > 1 else root
 
@@ -126,7 +249,7 @@ async def plan_round(
     if share and runtime.store is None:
         raise StoreRequired()
     seeds = dict(state.get("seeds") or {})
-    seed_default = task.seed_program or ProgramRef(path=join(task.root, "program_0"))
+    seed_default = _task_seed(task)
     plans: list[WorkerPlan] = []
     offset = done
     for position, cycles in enumerate(split_cycle_budget(this_total, active)):
@@ -154,10 +277,19 @@ async def plan_round(
 
 
 def fan_out(state: Any) -> list[Send]:
-    """Send one worker graph run per planned worker (a single worker is one ``Send``)."""
+    """Send one worker graph run per planned worker (a single worker is one ``Send``).
+
+    A worker seeded from its own best program of an earlier round gets that program's manifest
+    as ``seed_best``; a worker seeded from the task's seed gets the campaign's incumbent.
+    """
     bests = state.get("seed_bests") or {}
+    incumbent = state.get("incumbent")
+    seed_path = _task_seed(state["task"]).path
     sends: list[Send] = []
     for plan in state["worker_plans"]:
+        seed_best = bests.get(str(plan.worker_index))
+        if seed_best is None and plan.seed.path == seed_path:
+            seed_best = incumbent
         payload: WorkerSend = {
             "task": state["task"],
             "run_id": state["run_id"],
@@ -167,7 +299,7 @@ def fan_out(state: Any) -> list[Send]:
             "cycles": plan.cycles,
             "cycle_offset": plan.cycle_offset,
             "seed": plan.seed,
-            "seed_best": bests.get(str(plan.worker_index)),
+            "seed_best": seed_best,
             "round": plan.round,
             "share_memory": plan.share_memory,
             "prune_confirmed": bool(state.get("prune_confirmed")),
@@ -282,13 +414,17 @@ async def finalize(state: InvestigationState, runtime: Runtime[ScientistContext]
             ),
         )
     plans_workers = {r.plan.worker_index for r in results}
+    baseline = state.get("baseline")
+    campaign_evaluations = (
+        [baseline] if baseline is not None and state.get("baseline_evaluated") else []
+    )
     result = InvestigationResult(
         status=status,
         best=best,
-        baseline=next((r.baseline for r in results if r.baseline is not None), None),
+        baseline=baseline or next((r.baseline for r in results if r.baseline is not None), None),
         ideas=[idea for r in results for idea in r.ideas],
         attempts=[attempt for r in results for attempt in r.attempts],
-        evaluations=[ev for r in results for ev in r.evaluations],
+        evaluations=campaign_evaluations + [ev for r in results for ev in r.evaluations],
         workers=len(plans_workers) or 1,
         results_dir=root,
         failure=failed,
@@ -305,7 +441,8 @@ def build_investigation_graph(
 ) -> CompiledStateGraph[Any, ScientistContext, InvestigationInput, InvestigationOutput]:
     """Build the investigation graph (upstream's campaign, parallel workers and pruning rounds).
 
-    Steps (hook keys ``investigation.<step>``): ``confirm_prune``, ``plan_round``, ``worker``
+    Steps (hook keys ``investigation.<step>``): ``confirm_prune``, ``establish_incumbent``,
+    ``plan_round``, ``worker``
     (slot ``investigation.worker``, a ``Send`` per worker), ``join_round``, ``prune_round`` and
     ``finalize``. ``store`` is needed (at the top-level compile) when ``workers > 1`` and workers
     share memory. The result is :class:`~langgraph_agentic_scientist.core.results.
@@ -327,6 +464,7 @@ def build_investigation_graph(
     )
     sg.add_node("record_run_config", record_run_config)
     sg.step("confirm_prune", confirm_prune)
+    sg.step("establish_incumbent", establish_incumbent)
     sg.step("plan_round", plan_round)
     sg.slot(
         "worker",
@@ -341,6 +479,11 @@ def build_investigation_graph(
     sg.add_edge("record_run_config", "confirm_prune")
     sg.add_conditional_edges(
         "confirm_prune",
+        lambda state: "finalize" if state.get("stopped") else "establish_incumbent",
+        {"finalize": "finalize", "establish_incumbent": "establish_incumbent"},
+    )
+    sg.add_conditional_edges(
+        "establish_incumbent",
         lambda state: "finalize" if state.get("stopped") else "plan_round",
         {"finalize": "finalize", "plan_round": "plan_round"},
     )

@@ -17,10 +17,13 @@ Rules (design decisions D1 and D6):
   as upstream does after a timed-out agent CLI (the outputs are still checked). The clock bounds
   each uninterrupted run of a session; a session resumed after a crash gets a fresh clock.
 * **Errors.** An interrupt from inside the session propagates (the run stops and resumes later).
-  A transient provider failure that the in-session retries could not absorb propagates, so that
-  the node's ``RetryPolicy`` (or a resume) runs the node again and the session continues from its
-  checkpoint. Any other failure becomes ``failure`` (category ``agent_run_failed``), and the
-  phase's budgets decide what follows, as upstream's non-zero exit of the agent did.
+  A transient provider failure is retried first inside the session by ``ModelRetryMiddleware``,
+  which repeats only the failed model call and keeps the session's work. One that it could not
+  absorb propagates, so that the node's ``RetryPolicy`` runs the node again: that starts the
+  session again from its prompt, as upstream's retry of a failed agent run does (a resume after
+  a crash, by contrast, continues the session from its checkpoint). Any other failure becomes
+  ``failure`` (category ``agent_run_failed``), and the phase's budgets decide what follows, as
+  upstream's non-zero exit of the agent did.
 """
 
 from __future__ import annotations
@@ -87,9 +90,11 @@ def agent_node_retry_policy() -> RetryPolicy:
     """Return the outer retry line of nodes that run an agent session.
 
     Upstream retries a transient provider failure of an agent run up to 4 times, waiting 15, 45
-    and 90 seconds. Inside a session ``ModelRetryMiddleware`` already retries; this policy, put on
-    the node (``add_node(..., retry_policy=agent_node_retry_policy())``), runs the node again
-    when a transient failure escapes the session, and the session resumes from its checkpoint.
+    and 90 seconds, and restarts the agent run each time. Inside a session ``ModelRetryMiddleware``
+    retries the failed model call alone (the agent CLIs upstream runs retry their API calls
+    themselves); this policy, put on the node (``add_node(..., retry_policy=
+    agent_node_retry_policy())``), runs the node again when a transient failure escapes the
+    session, which starts the session again from its prompt, as upstream's outer retry does.
     """
     return RetryPolicy(
         max_attempts=4,
@@ -176,6 +181,7 @@ async def run_workspace_role(
     suffix: str = "",
     skills: Sequence[str] = (),
     skill_values: Mapping[str, str] | None = None,
+    skill_sources: Mapping[str, str] | None = None,
     tools: Sequence[BaseTool] = (),
     timeout: float | None = None,
     env: Mapping[str, str] | None = None,
@@ -195,6 +201,7 @@ async def run_workspace_role(
         suffix: Text appended to the rendered prompt (upstream's retry feedback sections).
         skills: Skills to stage under ``<root>/.agents/skills/``.
         skill_values: Placeholder values of the staged ``SKILL.md`` files (default ``values``).
+        skill_sources: Role-specific versions of skills: staged name -> registry skill.
         tools: Package tools given to the role.
         timeout: The session's wall clock in seconds; ``None`` is unbounded.
         env: Extra environment variables for the agent's commands.
@@ -215,6 +222,7 @@ async def run_workspace_role(
             skills,
             prompts=ctx.prompts,
             values=skill_values if skill_values is not None else (values or {}),
+            sources=skill_sources,
         )
     agent = ctx.agent_factory.workspace_agent(
         role, ctx=ctx, root=root, skills=skills, tools=tools, pool_index=pool_index, env=env

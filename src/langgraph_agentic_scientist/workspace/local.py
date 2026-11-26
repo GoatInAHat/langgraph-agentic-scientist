@@ -41,15 +41,16 @@ AGENT_ARTIFACTS_ROUTE = "/.agent_artifacts/"
 class _BoundedShellBackend(LocalShellBackend):
     """``LocalShellBackend`` that refuses a per-command timeout above a maximum.
 
-    The check sits in ``_execute`` so that the base class keeps its cancellation cleanup: when
-    the session's wall clock cancels a running command, the command's process group is stopped.
+    The check wraps the public ``execute`` and ``aexecute``; a command within the bound runs
+    through the base class unchanged, which keeps its cancellation cleanup (when the session's
+    wall clock cancels a running command, the command's process group is stopped).
     """
 
     def __init__(self, *args: Any, max_timeout: int, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._max_timeout = max_timeout
 
-    def _execute(self, command: str, *, timeout: int | None, **kwargs: Any) -> ExecuteResponse:
+    def _refusal(self, timeout: int | None) -> ExecuteResponse | None:
         if timeout is not None and timeout > self._max_timeout:
             return ExecuteResponse(
                 output=(
@@ -57,7 +58,15 @@ class _BoundedShellBackend(LocalShellBackend):
                 ),
                 exit_code=1,
             )
-        return super()._execute(command, timeout=timeout, **kwargs)
+        return None
+
+    def execute(self, command: str, *, timeout: int | None = None) -> ExecuteResponse:
+        """Run ``command`` unless its timeout exceeds the maximum."""
+        return self._refusal(timeout) or super().execute(command, timeout=timeout)
+
+    async def aexecute(self, command: str, *, timeout: int | None = None) -> ExecuteResponse:
+        """Run ``command`` unless its timeout exceeds the maximum."""
+        return self._refusal(timeout) or await super().aexecute(command, timeout=timeout)
 
 
 class LocalWorkspace:
@@ -177,10 +186,10 @@ class LocalWorkspace:
             return None
         return _entry(safe_relpath(path), target, info, with_digest=False)
 
-    async def list_tree(self, path: str) -> list[FileEntry]:
-        """List every entry below ``path`` recursively; regular files carry their digest."""
+    async def list_tree(self, path: str, *, with_digest: bool = False) -> list[FileEntry]:
+        """List every entry below ``path`` recursively; ``with_digest`` hashes regular files."""
         base = self._path(path, follow=True)
-        return await asyncio.to_thread(_list_tree, base)
+        return await asyncio.to_thread(_list_tree, base, with_digest)
 
     async def copy_tree(self, src: str, dst: str, *, ignore: Sequence[str] = ()) -> None:
         """Copy a directory tree, honouring ``.agentic_task_ignore`` patterns."""
@@ -345,7 +354,7 @@ def _entry(relative: str, target: Path, info: os.stat_result, *, with_digest: bo
     )
 
 
-def _list_tree(base: Path) -> list[FileEntry]:
+def _list_tree(base: Path, with_digest: bool) -> list[FileEntry]:
     if not base.is_dir():
         raise FileNotFoundError(f"not a directory: {base}")
     entries: list[FileEntry] = []
@@ -355,7 +364,7 @@ def _list_tree(base: Path) -> list[FileEntry]:
             path = current / name
             info = os.lstat(path)
             relative = path.relative_to(base).as_posix()
-            entries.append(_entry(relative, path, info, with_digest=True))
+            entries.append(_entry(relative, path, info, with_digest=with_digest))
     entries.sort(key=lambda item: item.path)
     return entries
 

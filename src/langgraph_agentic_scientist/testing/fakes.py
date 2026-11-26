@@ -714,8 +714,8 @@ class MemoryWorkspace:
             return FileEntry(path=key, kind="dir")
         return None
 
-    async def list_tree(self, path: str) -> list[FileEntry]:
-        """List files and implied directories below ``path``."""
+    async def list_tree(self, path: str, *, with_digest: bool = False) -> list[FileEntry]:
+        """List files and implied directories below ``path`` (``with_digest`` hashes files)."""
         base = safe_relpath(path)
         if base and not self._children(base):
             raise FileNotFoundError(path)
@@ -728,7 +728,10 @@ class MemoryWorkspace:
                 entries[directory] = FileEntry(path=directory, kind="dir")
             data = self.files[key]
             entries[relative] = FileEntry(
-                path=relative, size=len(data), kind="file", sha256=sha256_bytes(data)
+                path=relative,
+                size=len(data),
+                kind="file",
+                sha256=sha256_bytes(data) if with_digest else None,
             )
         return [entries[name] for name in sorted(entries)]
 

@@ -6,6 +6,7 @@ import json
 from collections.abc import Callable
 from typing import Any
 
+import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 
 from langgraph_agentic_scientist import ScientistContext
@@ -186,3 +187,42 @@ def test_reference_evaluator_section_is_empty_without_an_evaluator() -> None:
     assert reference_evaluator_section(prompts, "") == ""
     text = reference_evaluator_section(prompts, "print(1)")
     assert text.startswith("## Reference Evaluator (read-only context)") and "print(1)" in text
+
+
+class _StopBeforeCrossTask(Exception):
+    """Raised by the capturing hook once it has the cross-task stage's input."""
+
+
+async def test_the_cross_task_graph_runs_alone_with_its_own_checkpointer(
+    workspace: LocalWorkspace,
+    study: tuple[TaskRef, ProgramRef],
+    phase_context: Callable[..., ScientistContext],
+) -> None:
+    import dataclasses
+
+    from langgraph_agentic_scientist import Hooks
+    from langgraph_agentic_scientist.variants import build_cross_task_graph
+    from langgraph_agentic_scientist.variants.cross_task import CrossTaskInput
+
+    task, best = study
+    await write_minimal_task(workspace, "extra1", program="SCORE = 0.5\n")
+    captured: dict[str, Any] = {}
+
+    async def capture(state: Any, runtime: Any) -> None:
+        captured.update({key: state[key] for key in CrossTaskInput.__annotations__ if key in state})
+        raise _StopBeforeCrossTask
+
+    evaluator = FakeEvaluator()
+    ctx = phase_context(_scripts(), evaluator=evaluator, extra_tasks=("extra1",))
+    hooked = dataclasses.replace(ctx, hooks=Hooks(before={"variants.cross_task": [capture]}))
+    with pytest.raises(_StopBeforeCrossTask):
+        await _run(hooked, task, best)
+    assert set(CrossTaskInput.__annotations__) <= set(captured)
+
+    graph = build_cross_task_graph(checkpointer=InMemorySaver())
+    out = await graph.ainvoke(captured, {"configurable": {"thread_id": "alone"}}, context=ctx)
+
+    assert out["cross_failure"] is None
+    assert out["cross_task_runs"][0].result.variant_id == "control_best"
+    assert all(run.result.passed for run in out["cross_task_runs"])
+    assert (await graph.aget_state({"configurable": {"thread_id": "alone"}})).next == ()

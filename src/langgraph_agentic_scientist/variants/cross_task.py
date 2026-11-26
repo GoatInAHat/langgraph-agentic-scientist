@@ -44,7 +44,7 @@ from ..workspace.paths import join
 from ..workspace.protocol import Workspace, is_dir, is_file
 from .constants import CONTROL_BEST_ID, EXTRA_TASKS_SUBDIR, RETROFITTED_BUNDLE_DIR, VARIANTS_SUBDIR
 from .digests import managed_evaluator_tree_digest
-from .execute import RunVariantInput, run_variant_input
+from .execute import RunVariantInput, build_run_variant_graph, run_variant_input
 from .materialize import build_run_manifest, copy_task_files, piece
 from .models import RetrofitReport, VariantRun, make_spec, spec_detail, spec_to_dict
 from .retrofit import (
@@ -655,23 +655,31 @@ def _failed(state: Mapping[str, Any]) -> str:
 
 
 def build_cross_task_graph(
-    run_variant_graph: CompiledStateGraph[Any, Any, Any, Any],
     *,
     checkpointer: Any = None,
     store: Any = None,
     overrides: GraphOverrides | None = None,
     name: str = "cross_task",
+    run_variant_graph: CompiledStateGraph[Any, Any, Any, Any] | None = None,
 ) -> CompiledStateGraph[Any, ScientistContext, CrossTaskInput, CrossTaskOutput]:
     """Return the compiled cross-task graph (see the module docstring).
 
     Args:
-        run_variant_graph: The compiled graph that runs one variant
-            (:func:`~langgraph_agentic_scientist.variants.execute.build_run_variant_graph`).
         checkpointer: Only for running the graph alone.
         store: Only for running the graph alone.
-        overrides: Replacement slots.
+        overrides: Replacement slots; ``variants.run_variant`` replaces the graph that runs one
+            variant.
         name: The graph's name.
+        run_variant_graph: The compiled graph that runs one variant, when the caller has built
+            it already (the variants graph shares its own); by default the ``variants.run_variant``
+            slot of ``overrides`` or :func:`~langgraph_agentic_scientist.variants.execute.
+            build_run_variant_graph`.
     """
+    if run_variant_graph is None:
+        slot = (overrides or GraphOverrides()).slots.get("variants.run_variant")
+        if slot is not None and not isinstance(slot, CompiledStateGraph):
+            raise TypeError("slot variants.run_variant must be a compiled graph")
+        run_variant_graph = slot or build_run_variant_graph(overrides=overrides)
     graph = StepGraph(
         "cross_task",
         CrossTaskState,

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 from test_loop_support import (
     audit_pass,
@@ -144,3 +145,54 @@ async def test_no_gaps_skips_postdraft_retrieval(make_context: Any, workspace: A
     out = await run(build_paper_graph(checkpointer=InMemorySaver()), ctx, task)
     assert out["paper"].status == "complete"
     assert not await workspace.exists(f"{out['paper'].paper_dir}/postdraft_references.bib")
+
+
+class _StopBeforePostdraft(Exception):
+    """Raised by the capturing slot once it has the post-draft input."""
+
+
+async def test_the_postdraft_graph_runs_alone_with_its_own_checkpointer(
+    make_context: Any, workspace: Any
+) -> None:
+    from langgraph_agentic_scientist import GraphOverrides
+    from langgraph_agentic_scientist.paper import PostdraftInput, build_postdraft_graph
+
+    task = await setup_task(workspace)
+    captured: dict[str, Any] = {}
+
+    async def capture(state: Any, runtime: Any) -> Any:
+        captured.update({key: state[key] for key in PostdraftInput.__annotations__ if key in state})
+        raise _StopBeforePostdraft
+
+    scripted = models(
+        {
+            Role.REFERENCE_PLANNER: [plan_answer("circle packing")],
+            Role.PAPER_WRITER: [*write_paper(), *write_paper()],
+            Role.DRAFT_GAP_ANALYST: [gaps_ready()],
+            Role.POSTDRAFT_REFERENCE_PLANNER: [plan_answer("packing heuristics")],
+        }
+    )
+    ctx = make_context(
+        models=scripted,
+        retriever=FakeRetriever(
+            {"circle packing": [record("A")], "packing heuristics": [record("C")]}
+        ),
+        paper_toolchain=reports(True),
+        config=fast_config(paper=paper_config(min_refs=1, max_refs=5)),
+    )
+    paper = build_paper_graph(
+        checkpointer=InMemorySaver(),
+        overrides=GraphOverrides(slots={"paper.postdraft_enrichment": capture}),
+    )
+    with pytest.raises(_StopBeforePostdraft):
+        await run(paper, ctx, task)
+    assert {"task", "paper_dir", "run_config"} <= set(captured)
+
+    graph = build_postdraft_graph(checkpointer=InMemorySaver())
+    config = {"configurable": {"thread_id": "postdraft"}}
+    out = await graph.ainvoke(captured, config, context=ctx)
+
+    assert out["postdraft_status"] == "done", out
+    paper_dir = captured["paper_dir"]
+    assert await workspace.exists(f"{paper_dir}/.postdraft_reference_enrichment_complete")
+    assert (await graph.aget_state(config)).next == ()

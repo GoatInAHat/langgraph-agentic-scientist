@@ -647,6 +647,39 @@ async def test_a_resume_after_a_crash_does_not_ask_the_reviewers_again(
     assert _model(ctx, Role.AREA_CHAIR).call_count == 1
 
 
+async def test_each_attempt_is_checkpointed_so_a_resume_does_not_repeat_it(
+    make_context: Callable[..., ScientistContext],
+) -> None:
+    ctx = make_context(
+        {
+            Role.AI_REVIEWER: [answer(review_dict(Overall=11)), answer(), answer()],
+            Role.AREA_CHAIR: [answer(), answer()],
+        },
+        config=_config(num_reviewers=1),
+    )
+    graph = build_review_graph(checkpointer=InMemorySaver(), retry_policy=FAST)
+    config: Any = {"configurable": {"thread_id": "attempts"}}
+    inputs = {"pdf_path": "paper/paper.pdf", "paper_text": PAPER_TEXT}
+    assert (await graph.ainvoke(inputs, config, context=ctx))["result"].status == "completed"
+
+    # The checkpoints whose next task is a reviewer: before the first attempt and, newer, after
+    # the invalid first attempt. A crash at the newer one resumes with the second attempt.
+    pending = [
+        snapshot
+        async for snapshot in graph.aget_state_history(config)
+        if snapshot.next == ("reviewer",)
+    ]
+    assert len(pending) == 2
+    out = await graph.ainvoke(None, pending[0].config, context=ctx)
+
+    assert out["result"].status == "completed"
+    first_attempts = [
+        call for call in _model(ctx, Role.AI_REVIEWER).calls if RETRY_TEXT not in last_text(call)
+    ]
+    assert len(first_attempts) == 1  # the paid first attempt was not made again
+    assert _model(ctx, Role.AI_REVIEWER).call_count == 3
+
+
 async def test_the_run_configuration_is_recorded_and_a_changed_setting_is_refused(
     make_context: Callable[..., ScientistContext],
 ) -> None:

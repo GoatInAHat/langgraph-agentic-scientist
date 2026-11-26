@@ -33,6 +33,7 @@ from typing import Annotated, Any, NotRequired, TypedDict
 from langgraph.graph import END, START
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.runtime import Runtime
+from langgraph.types import Checkpointer
 
 from ..agents.runner import agent_node_retry_policy, run_structured_role
 from ..context import GraphOverrides, ScientistContext
@@ -195,7 +196,7 @@ async def paper_input_sha256(
         hashes[relative] = hashlib.sha256(data).hexdigest()
     figures = join(paper_dir, "figures")
     if await workspace.exists(figures):
-        for entry in await workspace.list_tree(figures):
+        for entry in await workspace.list_tree(figures, with_digest=True):
             if (
                 entry.kind == "file"
                 and PurePosixPath(entry.path).suffix.lower() in GRAPHICS_SUFFIXES
@@ -212,7 +213,7 @@ async def paper_input_sha256(
 async def audit_input_sha256(workspace: Workspace, paper_dir: str) -> dict[str, str]:
     """``audit_input_sha256``: the audit inputs plus every evidence source of the workspace."""
     hashes = await paper_input_sha256(workspace, paper_dir)
-    for entry in await workspace.list_tree(paper_dir):
+    for entry in await workspace.list_tree(paper_dir, with_digest=True):
         if entry.kind != "file":
             continue
         parts = PurePosixPath(entry.path).parts
@@ -898,10 +899,23 @@ def _after_finalize(state: AuditState) -> str:
 
 
 def build_audit_graph(
-    *, overrides: GraphOverrides | None = None, name: str = "paper.audit"
+    *,
+    checkpointer: Checkpointer = None,
+    store: Any = None,
+    overrides: GraphOverrides | None = None,
+    name: str = "paper.audit",
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
     """Return the default ``paper.audit`` slot: prepare, session and finalize per contract
-    attempt (at most two), mounted as a subgraph of the paper loop."""
+    attempt (at most two), mounted as a subgraph of the paper loop.
+
+    It runs mounted in the paper graph or alone (its input schema is the slot's input).
+
+    Args:
+        checkpointer: The caller's checkpointer when run alone; ``None`` inherits the parent's.
+        store: The caller's store when run alone.
+        overrides: Replacement slots (the steps carry hooks under the graph's phase name).
+        name: The compiled graph's name.
+    """
     graph = StepGraph(
         "paper.audit",
         AuditState,
@@ -916,7 +930,7 @@ def build_audit_graph(
     graph.add_edge("prepare", "session")
     graph.add_edge("session", "finalize")
     graph.add_conditional_edges("finalize", _after_finalize, {"done": END, "retry": "prepare"})
-    return graph.compile(name=name)
+    return graph.compile(checkpointer=checkpointer, store=store, name=name)
 
 
 __all__ = [

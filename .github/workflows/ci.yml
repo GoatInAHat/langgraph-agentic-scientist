@@ -14,6 +14,23 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.12", "3.13", "3.14"]
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: las
+          POSTGRES_PASSWORD: las
+          POSTGRES_DB: las
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U las"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # the Postgres resume test (tests/pipeline/test_pipeline_postgres.py) runs against it
+      LAS_TEST_POSTGRES_URL: postgresql://las:las@localhost:5432/las?sslmode=disable
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6

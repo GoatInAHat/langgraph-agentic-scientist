@@ -24,6 +24,7 @@ from typing import Annotated, Any, Literal, NotRequired, TypedDict
 from langgraph.graph import END, START
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.runtime import Runtime
+from langgraph.types import Checkpointer
 
 from ..agents.runner import (
     RoleOutcome,
@@ -534,9 +535,22 @@ async def _weave(state: PostdraftState, runtime: Runtime[ScientistContext]) -> d
 
 
 def build_postdraft_graph(
-    *, overrides: GraphOverrides | None = None, name: str = "paper.postdraft_enrichment"
+    *,
+    checkpointer: Checkpointer = None,
+    store: Any = None,
+    overrides: GraphOverrides | None = None,
+    name: str = "paper.postdraft_enrichment",
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
-    """Return the default ``paper.postdraft_enrichment`` slot."""
+    """Return the default ``paper.postdraft_enrichment`` slot.
+
+    It runs mounted in the paper graph or alone (its input schema is the slot's input).
+
+    Args:
+        checkpointer: The caller's checkpointer when run alone; ``None`` inherits the parent's.
+        store: The caller's store when run alone.
+        overrides: Replacement slots (the steps carry hooks under the graph's phase name).
+        name: The compiled graph's name.
+    """
     graph = StepGraph(
         "paper.postdraft_enrichment",
         PostdraftState,
@@ -584,7 +598,7 @@ def build_postdraft_graph(
     graph.add_edge("failed_plan", END)
     graph.add_conditional_edges("retrieve", _after_retrieve, {"weave": "weave", "end": END})
     graph.add_edge("weave", END)
-    return graph.compile(name=name)
+    return graph.compile(checkpointer=checkpointer, store=store, name=name)
 
 
 __all__ = [

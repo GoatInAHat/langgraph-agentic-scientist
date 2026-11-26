@@ -139,15 +139,6 @@ SPECS: list[Spec] = [
         strip_suffix=")",
     ),
     Spec("edit_results_linkage_outro.md", PAPER_EDIT_SH, 1422, 1423, "python_lines"),
-    Spec(
-        "concept_figure.md",
-        "src/agents/skills/generate-concept-figure/SKILL.md",
-        56,
-        56,
-        "shell",
-        strip_prefix='--prompt "',
-        strip_suffix=' <one or two sentences grounding the panels in the actual method>"',
-    ),
 ]
 
 

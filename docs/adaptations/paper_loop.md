@@ -138,8 +138,7 @@ staged from the external review with its 16 kept fields (`stage_external_review_
   `paper_prompt_context.py`, the key contexts of `paper.sh` 536-551, the ranking repair suffix
   (`paper.sh` 3077-3078; A3), the editing contract and linkage lines of `paper_edit_context.md`,
   the instruction lines of the audit and review packets, the header of
-  `global_memory_summary.md`, and the Autoillustrate prompt prefix of the
-  `generate-concept-figure` skill. Shell and list texts are re-extracted and compared by
+  `global_memory_summary.md`. Shell and list texts are re-extracted and compared by
   `tests/paper/test_loop_provenance.py`; Python string expressions by `tools/derive_prompts.py`.
 
 ## Adaptations of the flow
@@ -165,7 +164,15 @@ staged from the external review with its 16 kept fields (`stage_external_review_
    rendered figure is kept beside the paper directory (`.concept_figure/`) and re-asserted after a
    repair unless an audit finding about it authorised the repair. Autoillustrate's mode is chosen
    as upstream chooses it when a wall-clock budget is known; the port has no workflow deadline,
-   so the preferred `full` mode is used.
+   so the preferred `full` mode is used. The `--prompt` text is the request's instructions
+   unchanged, as upstream sends exactly the strategy's figure `purpose` (or its fallback
+   sentence); the example sentence of the `generate-concept-figure` skill is documentation, not a
+   prefix, and is not sent. `AutoillustrateRenderer` passes upstream's `--workdir
+   ./.autoillustrate/<figure id>` and upstream's pinned `--model` for the `claude` and `gemini`
+   agents; `--profile` and `--effort` are constructor options (upstream reads them from the
+   agent's environment). Not carried: upstream's environment allow-list for the renderer process,
+   its `--help` probe for `--prompt-file` (the renderer always uses `--prompt`), and its
+   timeout wrapper, which `Workspace.run` replaces.
 5. **Aliases are copies.** `task/`, `results/`, `aggregated/`, `extra_tasks/` are copied into the
    paper directory; of the global memory directory only `memory.md`, `memory.jsonl`,
    `conclusions.md` and `conclusions_history.jsonl` are copied. Upstream symlinks them, so the

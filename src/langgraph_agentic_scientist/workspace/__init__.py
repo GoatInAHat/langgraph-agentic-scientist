@@ -1,5 +1,6 @@
 """Workspaces: where a run keeps its files, and the agents' backends over them."""
 
+from .base import WorkspaceBase
 from .digest import sha256_bytes, tree_digest
 from .local import LocalWorkspace
 from .paths import (
@@ -32,6 +33,7 @@ __all__ = [
     "ReadOnlyBackend",
     "SnapshotRef",
     "Workspace",
+    "WorkspaceBase",
     "is_dir",
     "is_file",
     "is_symlink",

@@ -1150,6 +1150,9 @@ graph TD;
 	confirm_prune(confirm_prune)
 	investigation\2econfirm_prune\2ebefore(investigation.confirm_prune.before)
 	investigation\2econfirm_prune\2eafter(investigation.confirm_prune.after)
+	establish_incumbent(establish_incumbent)
+	investigation\2eestablish_incumbent\2ebefore(investigation.establish_incumbent.before)
+	investigation\2eestablish_incumbent\2eafter(investigation.establish_incumbent.after)
 	plan_round(plan_round)
 	investigation\2eplan_round\2ebefore(investigation.plan_round.before)
 	investigation\2eplan_round\2eafter(investigation.plan_round.after)
@@ -1165,10 +1168,14 @@ graph TD;
 	__end__(<p>__end__</p>)
 	__start__ --> record_run_config;
 	confirm_prune --> investigation\2econfirm_prune\2eafter;
+	establish_incumbent --> investigation\2eestablish_incumbent\2eafter;
 	finalize --> investigation\2efinalize\2eafter;
+	investigation\2econfirm_prune\2eafter -. &nbsp;establish_incumbent&nbsp; .-> investigation\2eestablish_incumbent\2ebefore;
 	investigation\2econfirm_prune\2eafter -. &nbsp;finalize&nbsp; .-> investigation\2efinalize\2ebefore;
-	investigation\2econfirm_prune\2eafter -. &nbsp;plan_round&nbsp; .-> investigation\2eplan_round\2ebefore;
 	investigation\2econfirm_prune\2ebefore --> confirm_prune;
+	investigation\2eestablish_incumbent\2eafter -. &nbsp;finalize&nbsp; .-> investigation\2efinalize\2ebefore;
+	investigation\2eestablish_incumbent\2eafter -. &nbsp;plan_round&nbsp; .-> investigation\2eplan_round\2ebefore;
+	investigation\2eestablish_incumbent\2ebefore --> establish_incumbent;
 	investigation\2efinalize\2ebefore --> finalize;
 	investigation\2eplan_round\2ebefore --> plan_round;
 	plan_round --> investigation\2eplan_round\2eafter;
@@ -2451,12 +2458,11 @@ graph TD;
 	review\2eextract_text\2eafter(review.extract_text.after)
 	__error_handler__reviewer(__error_handler__reviewer)
 	reviewer(reviewer)
-	join_reviews(join_reviews)
+	join_reviews(join_reviews<hr/><small><em>defer = True</em></small>)
 	publish(publish)
 	review\2epublish\2ebefore(review.publish.before)
 	review\2epublish\2eafter(review.publish.after)
 	__error_handler__area_chair(__error_handler__area_chair)
-	area_chair(area_chair)
 	review\2earea_chair\2ebefore(review.area_chair.before)
 	review\2earea_chair\2eafter(review.area_chair.after)
 	aggregate(aggregate)
@@ -2468,6 +2474,17 @@ graph TD;
 	record_run_config --> review\2eextract_text\2ebefore;
 	review\2eextract_text\2ebefore --> extract_text;
 	review\2eextract_text\2eafter --> __end__;
+	subgraph area_chair
+	area_chair\3a__start__(<p>__start__</p>)
+	area_chair\3aattempt(attempt)
+	area_chair\3ainvalid(invalid)
+	area_chair\3a__end__(<p>__end__</p>)
+	area_chair\3a__start__ --> area_chair\3aattempt;
+	area_chair\3aattempt -. &nbsp;done&nbsp; .-> area_chair\3a__end__;
+	area_chair\3aattempt -.-> area_chair\3ainvalid;
+	area_chair\3ainvalid --> area_chair\3a__end__;
+	area_chair\3aattempt -. &nbsp;again&nbsp; .-> area_chair\3aattempt;
+	end
 	classDef default fill:#f2f0ff,line-height:1.2
 	classDef first fill-opacity:0
 	classDef last fill:#bfb6fc

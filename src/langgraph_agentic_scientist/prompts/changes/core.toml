@@ -96,6 +96,33 @@ new = '''# call the clone_program tool: clone_program(from_dir="{{RESULTS_DIR}}/
 count = 1
 reason = "The example names the tool call; written as a shell comment so that the example block stays valid shell."
 
+# --- skill edit-program, as staged for the harness-evaluated candidate author ---------------------
+
+[[file]]
+upstream = "src/agents/skills/edit-program/SKILL.md"
+target = "skills/edit-program-harness/SKILL.md"
+reason = "The edit-program skill as staged (under its own name) for the harness-evaluated candidate author (R15). That role gets no package tools, and its stage prompt (harness_edit.md, Hard Boundaries) says that stage-specific boundaries override generic skill instructions and that the clone is a plain filesystem copy; upstream staged the generic skill, whose clone command contradicted the stage prompt. The port states the stage's clone rule in the skill instead of pointing at a tool the role does not have; every other line is upstream's."
+
+[[file.change]]
+kind = "other"
+old = '''2. Clone the full previous program project (`program_<idx-1>`) into the new `program_<idx>` with the trusted clone utility:
+   - `${TASK_PYTHON:-$WRAPPER_PYTHON} -I -m src.investigation.program_clone --from "{{RESULTS_DIR}}/program_<idx-1>" --to "{{RESULTS_DIR}}/program_<idx>"`
+   - The utility creates the destination and applies the `program_spec.toml` copy rules without carrying evaluator artifacts.
+   - For every source after `program_0`, the utility refuses to clone until canonical evaluation and mirrored rubric artifacts prove the previous iteration is complete.
+   - Do not use `cp`, `cp -r`, `cp -a`, `rsync`, or any other recursive copy. If the trusted clone fails, stop the attempt and report the error; do not fall back to another clone method.'''
+new = '''2. Clone the full previous program project (`program_<idx-1>`) into the new `program_<idx>` with plain filesystem operations (create the directory, then copy the files):
+   - In this harness-evaluated stage no clone utility is given; the stage prompt's Hard Boundaries allow copying `program_0` to `program_1` and override generic clone instructions.
+   - Do not carry evaluator artifacts (`metrics.json`, `correct.json`, `rubric_status.json`, `stdout.log`, `stderr.log`, `evaluation_manifest.json`) into the new program.'''
+count = 1
+reason = "The role has no clone tool; the stage prompt's plain-filesystem clone replaces the generic trusted-clone instructions, whose 'never cp, stop on failure' rule would contradict it."
+
+[[file.change]]
+kind = "other"
+old = '''${TASK_PYTHON:-$WRAPPER_PYTHON} -I -m src.investigation.program_clone --from "{{RESULTS_DIR}}/program_2" --to "{{RESULTS_DIR}}/program_3"'''
+new = '''# create {{RESULTS_DIR}}/program_3 and copy the files of {{RESULTS_DIR}}/program_2 into it'''
+count = 1
+reason = "The example follows the stage's plain-filesystem clone; written as a shell comment so that the example block stays valid shell."
+
 # --- skill evaluate-program ----------------------------------------------------------------------
 
 [[file]]

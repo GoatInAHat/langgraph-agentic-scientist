@@ -25,6 +25,11 @@ def evaluation_id(run_id: str, *parts: object) -> str:
     return "/".join([_part(run_id), *(_part(part) for part in parts)])
 
 
+def campaign_baseline_id(run_id: str) -> str:
+    """Id of the campaign's one baseline evaluation (the harness incumbent)."""
+    return evaluation_id(run_id, "baseline")
+
+
 def worker_baseline_id(run_id: str, worker: int) -> str:
     """Id of the harness incumbent's baseline evaluation of worker ``worker``."""
     return evaluation_id(run_id, f"w{worker}", "baseline")
@@ -47,6 +52,7 @@ def id_to_path(evaluation_id_value: str) -> str:
 
 
 __all__ = [
+    "campaign_baseline_id",
     "candidate_id",
     "evaluation_id",
     "final_id",

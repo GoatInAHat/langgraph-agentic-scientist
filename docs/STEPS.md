@@ -68,6 +68,7 @@ The end-to-end pipeline.
 | `ideation.stage` | `prompt_values` |
 | `ideation.validate` | none |
 | `investigation.confirm_prune` | none |
+| `investigation.establish_incumbent` | none |
 | `investigation.finalize` | none |
 | `investigation.join_round` | none |
 | `investigation.plan_round` | none |
@@ -241,6 +242,7 @@ The investigation campaign.
 | `ideation.stage` | `prompt_values` |
 | `ideation.validate` | none |
 | `investigation.confirm_prune` | none |
+| `investigation.establish_incumbent` | none |
 | `investigation.finalize` | none |
 | `investigation.join_round` | none |
 | `investigation.plan_round` | none |

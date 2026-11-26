@@ -138,7 +138,7 @@ async def test_run_output_is_bounded_and_timeout_kills(workspace: LocalWorkspace
 
 async def test_remove_and_list_tree(workspace: LocalWorkspace) -> None:
     await workspace.write_bytes("d/a.txt", b"a")
-    entries = await workspace.list_tree("d")
+    entries = await workspace.list_tree("d", with_digest=True)
     assert entries[0].sha256 == "sha256:" + hashlib.sha256(b"a").hexdigest()
     await workspace.remove("d")
     assert not await workspace.exists("d")

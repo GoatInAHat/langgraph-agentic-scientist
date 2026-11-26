@@ -28,6 +28,7 @@ from collections.abc import Hashable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, cast
 
+from langgraph.config import get_config
 from langgraph.graph import END, START
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.runtime import Runtime
@@ -74,6 +75,7 @@ from .models import (
     StrategyAnswer,
 )
 from .ranking import collect_posthoc_analyses
+from .references.graph import build_references_graph
 from .review_gate import build_review_gate_graph
 from .strategy import strategy_resolution, validate_strategy_files, write_strategy_artifacts
 from .workspace import (
@@ -735,42 +737,50 @@ async def _restage(
     )
 
 
-async def _default_references(
-    state: Mapping[str, Any], runtime: Runtime[ScientistContext]
-) -> dict[str, Any]:
-    """The default ``paper.references`` slot: the host side's references graph."""
-    from .contexts import prompt_values
-    from .references.graph import build_references_graph
+def references_runner(
+    graph: CompiledStateGraph[Any, Any, Any, Any],
+) -> Any:
+    """Return the default ``paper.references`` slot: run ``graph`` (the references graph).
 
-    ctx = runtime.context
-    cfg = method_config(state).paper
-    values = await prompt_values(
-        ctx,
-        paper_dir=state["paper_dir"],
-        template_key="paper/reference_query_plan",
-        main_prompt_key=state.get("writer_prompt_key") or "paper/paper",
-        writer_skill=state.get("writer_skill") or "write-paper",
-        paper_format=state.get("paper_format") or cfg.paper_format,
-        min_refs=cfg.min_refs,
-        max_refs=cfg.max_refs,
-        two_stage=bool(state.get("two_stage")),
-        review_rounds=cfg.review_rounds,
-    )
-    graph = build_references_graph()
-    result = await graph.ainvoke(
-        {
-            "task": state["task"],
-            "paper_dir": state["paper_dir"],
-            "run_config": state.get("run_config"),
-            "reference_mode": state.get("reference_mode", "refresh"),
-            "variant": "initial" if _mode(state) == "fresh" else "edit",
-            "values": values,
-            "results_dir": "./results",
-            "campaign_results_dir": "./results",
-        },
-        context=ctx,
-    )
-    return {"references": result.get("references")}
+    The graph is built once by :func:`build_paper_graph`, with the paper graph's overrides, and
+    invoked with the node's config, so that it runs as a subgraph of the node.
+    """
+    from .contexts import prompt_values
+
+    async def run_references(
+        state: Mapping[str, Any], runtime: Runtime[ScientistContext]
+    ) -> dict[str, Any]:
+        ctx = runtime.context
+        cfg = method_config(state).paper
+        values = await prompt_values(
+            ctx,
+            paper_dir=state["paper_dir"],
+            template_key="paper/reference_query_plan",
+            main_prompt_key=state.get("writer_prompt_key") or "paper/paper",
+            writer_skill=state.get("writer_skill") or "write-paper",
+            paper_format=state.get("paper_format") or cfg.paper_format,
+            min_refs=cfg.min_refs,
+            max_refs=cfg.max_refs,
+            two_stage=bool(state.get("two_stage")),
+            review_rounds=cfg.review_rounds,
+        )
+        result = await graph.ainvoke(
+            {
+                "task": state["task"],
+                "paper_dir": state["paper_dir"],
+                "run_config": state.get("run_config"),
+                "reference_mode": state.get("reference_mode", "refresh"),
+                "variant": "initial" if _mode(state) == "fresh" else "edit",
+                "values": values,
+                "results_dir": "./results",
+                "campaign_results_dir": "./results",
+            },
+            get_config(),
+            context=ctx,
+        )
+        return {"references": result.get("references")}
+
+    return run_references
 
 
 def _after_references(state: PaperState) -> str:
@@ -1355,7 +1365,11 @@ def build_paper_graph(
     g.step("check_final_outcome", _check_final_outcome)
     g.step("seed_edit", _seed_edit)
     g.step("stage_inputs", _stage_inputs)
-    g.slot("references", _default_references, key="paper.references")
+    g.slot(
+        "references",
+        references_runner(build_references_graph(overrides=overrides)),
+        key="paper.references",
+    )
     g.add_node("references_failed", _references_failed)
     g.step("strategy", _strategy, retry_policy=retry)
     g.add_node("strategy_repair", _strategy_repair)

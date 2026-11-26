@@ -175,7 +175,7 @@ The package is tested with scripted models and a fake evaluator, and with the lo
 small task. No run of the whole pipeline with a served model, no container or GPU evaluator, and
 no contracted task evaluated through a broker has been exercised.
 
-Performance: `Workspace.list_tree` hashes every file it lists. The evaluator tree digest lists
+Performance: the digests of the variants hash every file they list (`list_tree(..., with_digest=True)`). The evaluator tree digest lists
 only the task's top-level entries one by one and never reads omitted or masked ones (`resources/`,
 `.venv`, `.git`, `results/`), as upstream does not, but a task directory should keep environments
 and large resources outside the tree the variants copy: each variant workspace holds its own copy

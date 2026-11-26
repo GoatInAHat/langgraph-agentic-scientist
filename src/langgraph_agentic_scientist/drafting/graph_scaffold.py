@@ -150,6 +150,7 @@ from .scaffold import (
     contract_policy_for_smoke_diagnostic,
     draft_paths,
     draft_values,
+    evaluator_tree_sha256,
     inspect_scaffold,
     open_scoped_transaction,
     open_tree_transaction,
@@ -1451,13 +1452,6 @@ async def alignment_validation_failed(
 # --- qualification -----------------------------------------------------------------------------
 
 
-async def _evaluator_tree_sha256(workspace: Workspace, root: str, contract: Any) -> str:
-    parts = []
-    for relative in (contract.evaluators.search, contract.evaluators.final):
-        parts.append(sha256_hex(await workspace.read_bytes(join(root, relative))))
-    return sha256_text("\n".join(parts))
-
-
 async def qualify(state: ScaffoldState, runtime: Runtime[ScientistContext]) -> dict[str, Any]:
     """Run the full production search qualification and bind a receipt to the result.
 
@@ -1508,7 +1502,7 @@ async def qualify(state: ScaffoldState, runtime: Runtime[ScientistContext]) -> d
             workspace, root, state["task"].root, max_runtime_bytes=cfg.max_runtime_bytes
         )
         contract = await load_task_contract(workspace, root)
-        evaluator_sha = await _evaluator_tree_sha256(workspace, root, contract)
+        evaluator_sha = await evaluator_tree_sha256(workspace, root, contract)
         requirements = await workspace.stat(join(root, "requirements.txt"))
         requirements_sha = (
             sha256_hex(await workspace.read_bytes(join(root, "requirements.txt")))

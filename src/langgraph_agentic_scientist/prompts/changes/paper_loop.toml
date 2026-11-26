@@ -606,11 +606,6 @@ target = "prompts/workflow/paper/edit_results_linkage_outro.md"
 reason = "Closing lines of the Results Linkage section of paper_edit_context.md, verbatim."
 
 [[file]]
-upstream = "extracted/paper_loop/concept_figure.md"
-target = "prompts/workflow/paper/concept_figure.md"
-reason = "The Autoillustrate --prompt prefix of the generate-concept-figure skill, verbatim; AutoillustrateRenderer appends the strategy's figure purpose."
-
-[[file]]
 upstream = "extracted/paper_loop/ranking_repair.md"
 target = "prompts/workflow/paper/ranking_repair.md"
 reason = "Contract-repair suffix of the post-hoc ranking repair rounds (paper.sh), appended after a blank line."

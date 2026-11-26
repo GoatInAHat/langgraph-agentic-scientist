@@ -15,7 +15,11 @@ The graph::
         -> publish
 
 The reviewers run in parallel (upstream: one after the other; the calls are identical and
-independent). Selecting the review phase is the consent to send the manuscript to the reviewer
+independent). An invalid answer is asked for again in a new node execution, not in a loop inside
+the node: a reviewer task sends itself again with the next attempt number, and the area chair step
+is a small graph that loops on a counter in state, so that each paid call is checkpointed on its
+own and a resume never repeats one. The join is deferred until every reviewer task has finished.
+Selecting the review phase is the consent to send the manuscript to the reviewer
 models, as it is upstream; the graph asks nothing.
 
 Step names for hooks: ``review.extract_text``, ``review.area_chair``, ``review.aggregate`` and
@@ -27,12 +31,13 @@ from __future__ import annotations
 import asyncio
 import posixpath
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain_core.runnables import Runnable
 from langgraph.errors import NodeError
-from langgraph.graph import END, START
+from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.runtime import Runtime
 from langgraph.types import Checkpointer, Command, RetryPolicy, Send
@@ -132,58 +137,50 @@ def _validated(answer: object, *, context: str) -> AIReview:
 
 @dataclass
 class ReviewAttempt:
-    """The outcome of asking a reviewer role for a valid review.
+    """The outcome of one call to a reviewer role.
 
     Attributes:
-        review: The valid review, or ``None`` when every attempt was invalid.
-        notes: Log lines of the invalid attempts (upstream prints them to its error stream).
-        error: Why the last attempt was invalid, when ``review`` is ``None``.
+        review: The valid review, or ``None`` when the answer was invalid.
+        error: Why the answer was invalid, when ``review`` is ``None``.
     """
 
     review: AIReview | None = None
-    notes: list[str] = field(default_factory=list)
     error: str | None = None
 
 
-async def request_valid_review(
+async def review_attempt(
     runtime: Runtime[ScientistContext],
     *,
     role: Role,
     system: str,
     message: str,
     config: ReviewConfig,
+    attempt: int,
     context: str,
 ) -> ReviewAttempt:
-    """Ask a reviewer role for a valid review, at most ``config.max_attempts`` times.
+    """Ask a reviewer role once for a valid review (attempt number ``attempt``, from 0).
 
     The first attempt sends ``message``; each later one sends it with the retry correction
     appended, as upstream's ``_request_valid_review`` does (the validation error is not added).
     An answer that is missing or violates the review contract (an out-of-range score, a boolean
-    as a score, a wrong ``Decision``, a missing field) is invalid and is asked for again;
-    transport failures are not caught here: the node's retry policy handles them.
+    as a score, a wrong ``Decision``, a missing field) is invalid; the graph asks again in a new
+    node execution, so that every paid call is checkpointed on its own. Transport failures are
+    not caught here: the node's retry policy handles them.
     """
     ctx = runtime.context
-    structured = ctx.agent_factory.structured_call(role, ReviewerAnswer, ctx=ctx)
-    outcome = ReviewAttempt()
-    for attempt in range(config.max_attempts):
-        text = message if attempt == 0 else with_retry_correction(ctx.prompts, message)
-        messages: list[BaseMessage] = [SystemMessage(content=system), HumanMessage(content=text)]
-        call = structured
-        if ctx.config.review.sampling == "upstream":
-            call = structured.bind(**sampling_kwargs(config, attempt))
-        try:
-            outcome.review = _validated(await call.ainvoke(messages), context=context)
-            outcome.error = None
-            return outcome
-        except ValueError as exc:
-            outcome.error = str(exc)
-            if attempt + 1 < config.max_attempts:
-                outcome.notes.append(
-                    f"aireview: invalid {context}; retrying {context} "
-                    f"(attempt {attempt + 2}/{config.max_attempts})"
-                )
-    outcome.notes.append(f"aireview: {outcome.error}")
-    return outcome
+    call: Runnable[Any, Any] = ctx.agent_factory.structured_call(role, ReviewerAnswer, ctx=ctx)
+    text = message if attempt == 0 else with_retry_correction(ctx.prompts, message)
+    messages: list[BaseMessage] = [SystemMessage(content=system), HumanMessage(content=text)]
+    if ctx.config.review.sampling == "upstream":
+        call = call.bind(**sampling_kwargs(config, attempt))
+    try:
+        return ReviewAttempt(review=_validated(await call.ainvoke(messages), context=context))
+    except ValueError as exc:
+        return ReviewAttempt(error=str(exc))
+
+
+def _retry_note(context: str, attempt: int, max_attempts: int) -> str:
+    return f"aireview: invalid {context}; retrying {context} (attempt {attempt + 2}/{max_attempts})"
 
 
 # --- nodes ----------------------------------------------------------------------------------
@@ -236,25 +233,43 @@ def _route_after_extract(state: Mapping[str, Any]) -> Any:
     ]
 
 
-async def _reviewer(task: ReviewerTask, runtime: Runtime[ScientistContext]) -> dict[str, Any]:
+async def _reviewer(task: ReviewerTask, runtime: Runtime[ScientistContext]) -> Command[Any]:
+    """One attempt of one reviewer; an invalid answer sends the task again with the next number."""
     config = method_config(task).review
     ctx = runtime.context
     index = task["index"]
+    attempt_number = task.get("attempt", 0)
+    notes = list(task.get("notes") or [])
     context = f"review {index}"
     source = f"reviewer {index}"
     message = review_message(ctx.prompts, task["paper_text"], fewshot=config.fewshot)
-    attempt = await request_valid_review(
+    attempt = await review_attempt(
         runtime,
         role=Role.AI_REVIEWER,
         system=reviewer_system_message(ctx.prompts),
         message=message,
         config=config,
+        attempt=attempt_number,
         context=context,
     )
-    if attempt.review is None:
-        failure = _invalid_failure(context, attempt.error)
-        return {"failures": {source: failure}, "notes": {source: attempt.notes}}
-    return {"reviews": {str(index): attempt.review}, "notes": {source: attempt.notes}}
+    if attempt.review is not None:
+        update = {"reviews": {str(index): attempt.review}, "notes": {source: notes}}
+        return Command(update=update, goto="join_reviews")
+    if attempt_number + 1 < config.max_attempts:
+        notes.append(_retry_note(context, attempt_number, config.max_attempts))
+        retry = ReviewerTask(
+            index=index,
+            paper_text=task["paper_text"],
+            run_config=task.get("run_config"),
+            attempt=attempt_number + 1,
+            notes=notes,
+        )
+        return Command(goto=Send("reviewer", retry))
+    notes.append(f"aireview: {attempt.error}")
+    failure = _invalid_failure(context, attempt.error)
+    return Command(
+        update={"failures": {source: failure}, "notes": {source: notes}}, goto="join_reviews"
+    )
 
 
 async def _reviewer_failed(task: ReviewerTask, error: NodeError) -> Command[Any]:
@@ -285,26 +300,67 @@ def _route_after_join(state: Mapping[str, Any]) -> str:
     return "failed" if state.get("failure") is not None else "complete"
 
 
-async def _area_chair(state: ReviewState, runtime: Runtime[ScientistContext]) -> dict[str, Any]:
+async def _area_chair_attempt(
+    state: ReviewState, runtime: Runtime[ScientistContext]
+) -> dict[str, Any]:
+    """One attempt of the area chair; the counter and the log lines are kept in state."""
     config = method_config(state).review
     ctx = runtime.context
     reviews = sorted_reviews(state["reviews"])
-    attempt = await request_valid_review(
+    attempt_number = state.get("meta_attempt") or 0
+    notes = list((state.get("notes") or {}).get(META_REVIEW) or [])
+    attempt = await review_attempt(
         runtime,
         role=Role.AREA_CHAIR,
         system=area_chair_system_message(ctx.prompts, len(reviews)),
         message=area_chair_message(ctx.prompts, reviews),
         config=config,
+        attempt=attempt_number,
         context=META_REVIEW,
     )
-    if attempt.review is None:
-        failure = _invalid_failure(META_REVIEW, attempt.error)
-        return {
-            "failure": failure,
-            "failures": {META_REVIEW: failure},
-            "notes": {META_REVIEW: attempt.notes},
-        }
-    return {"meta": attempt.review, "notes": {META_REVIEW: attempt.notes}}
+    if attempt.review is not None:
+        return {"meta": attempt.review, "meta_error": None, "notes": {META_REVIEW: notes}}
+    if attempt_number + 1 < config.max_attempts:
+        notes.append(_retry_note(META_REVIEW, attempt_number, config.max_attempts))
+    else:
+        notes.append(f"aireview: {attempt.error}")
+    return {
+        "meta_attempt": attempt_number + 1,
+        "meta_error": attempt.error,
+        "notes": {META_REVIEW: notes},
+    }
+
+
+def _route_area_chair_attempt(state: ReviewState) -> str:
+    if state.get("meta") is not None:
+        return "done"
+    if (state.get("meta_attempt") or 0) < method_config(state).review.max_attempts:
+        return "again"
+    return "invalid"
+
+
+def _area_chair_invalid(state: ReviewState) -> dict[str, Any]:
+    failure = _invalid_failure(META_REVIEW, state.get("meta_error"))
+    return {"failure": failure, "failures": {META_REVIEW: failure}}
+
+
+def _build_area_chair_graph(
+    policy: RetryPolicy,
+) -> CompiledStateGraph[ReviewState, ScientistContext, ReviewState, ReviewState]:
+    """Build the area chair step: one call per node execution, asked again while invalid."""
+    graph: StateGraph[ReviewState, ScientistContext, ReviewState, ReviewState] = StateGraph(
+        ReviewState, context_schema=ScientistContext
+    )
+    graph.add_node("attempt", _area_chair_attempt, retry_policy=policy)
+    graph.add_node("invalid", _area_chair_invalid)
+    graph.add_edge(START, "attempt")
+    graph.add_conditional_edges(
+        "attempt",
+        _route_area_chair_attempt,
+        {"done": END, "again": "attempt", "invalid": "invalid"},
+    )
+    graph.add_edge("invalid", END)
+    return graph.compile(name="area_chair")
 
 
 def _area_chair_failed(publish_entry: str) -> Any:
@@ -439,14 +495,19 @@ def build_review_graph(
     sg = StepGraph("review", ReviewState, input_schema=ReviewInput, output_schema=ReviewOutput)
     sg.add_node("record_run_config", record_run_config)
     sg.step("extract_text", _extract_text, hook_writable=("paper_text",))
-    sg.add_node("reviewer", _reviewer, retry_policy=policy, error_handler=_reviewer_failed)
-    sg.add_node("join_reviews", _join_reviews)
+    sg.add_node(
+        "reviewer",
+        _reviewer,
+        retry_policy=policy,
+        error_handler=_reviewer_failed,
+        destinations=("reviewer", "join_reviews"),
+    )
+    sg.add_node("join_reviews", _join_reviews, defer=True)
     sg.step("publish", _publish)
     sg.step(
         "area_chair",
-        _area_chair,
+        _build_area_chair_graph(policy),
         hook_writable=("meta",),
-        retry_policy=policy,
         error_handler=_area_chair_failed(sg.entry("publish")),
     )
     sg.step("aggregate", _aggregate, hook_writable=("aggregate",))
@@ -454,7 +515,6 @@ def build_review_graph(
     sg.add_edge(START, "record_run_config")
     sg.add_edge("record_run_config", "extract_text")
     sg.add_conditional_edges("extract_text", _route_after_extract)
-    sg.add_edge("reviewer", "join_reviews")
     sg.add_conditional_edges(
         "join_reviews", _route_after_join, {"complete": "area_chair", "failed": "publish"}
     )
@@ -469,7 +529,7 @@ def build_review_graph(
 __all__ = [
     "ReviewAttempt",
     "build_review_graph",
-    "request_valid_review",
+    "review_attempt",
     "reviewer_retry_policy",
     "sampling_kwargs",
 ]

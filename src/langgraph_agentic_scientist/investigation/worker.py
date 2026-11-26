@@ -224,10 +224,12 @@ async def init_campaign(state: WorkerState, runtime: Runtime[ScientistContext]) 
     """Prepare the campaign: seed, memory files, results layout and the harness incumbent.
 
     Idempotent. Freezes the seed program under the results root, ensures the memory files,
-    stages ``task/task.md`` for the ideator and, for a harness-evaluated task without an
-    incumbent, evaluates the baseline through the evaluator under the id
-    ``<run>/w<k>/r<round>/baseline`` (the evaluation is this node's last act). A baseline that
-    cannot be validated ends the campaign with ``missing_validated_harness_incumbent``.
+    stages ``task/task.md`` for the ideator and, for a harness-evaluated task, takes the
+    incumbent's score from ``seed_best``. The investigation graph establishes the incumbent once
+    for the whole campaign and passes it to every worker; only a worker run alone without
+    ``seed_best`` evaluates the baseline itself, under the id ``<run>/w<k>/r<round>/baseline``
+    (the evaluation is this node's last act). A baseline that cannot be validated ends the
+    campaign with ``missing_validated_harness_incumbent``.
     """
     ctx = runtime.context
     ws = ctx.workspace
@@ -276,6 +278,44 @@ async def init_campaign(state: WorkerState, runtime: Runtime[ScientistContext]) 
     await write_views(ws, root, {}, outer, best)
     if not task.harness_evaluated or seeded is not None:
         return update
+    record, score, failure = await evaluate_baseline(
+        runtime,
+        config,
+        task,
+        frozen.model_copy(update={"digest": await ws.digest(frozen_path)}),
+        evaluation_id(state["run_id"], f"w{worker}", f"r{rnd}", "baseline"),
+    )
+    update["baseline"] = record
+    update["evaluations"] = [record]
+    if failure is not None or score is None:
+        update["status"] = "failed"
+        update["failure"] = failure
+        return update
+    update["best"] = best.model_copy(
+        update={"combined_score": score, "correct": bool(record.correct)}
+    )
+    return update
+
+
+async def evaluate_baseline(
+    runtime: Runtime[ScientistContext],
+    config: Any,
+    task: TaskRef,
+    program: ProgramRef,
+    request_id: str,
+) -> tuple[EvaluationRecord, float | None, Failure | None]:
+    """Evaluate the baseline of a harness-evaluated campaign once, through the evaluator.
+
+    Returns the record, the finite ``combined_score`` and, when the baseline cannot serve as the
+    incumbent (not completed, no finite score or no correctness verdict), the failure
+    ``missing_validated_harness_incumbent``.
+
+    Raises:
+        ConfigurationMismatch: When the context has no evaluator, or a contracted task would be
+            evaluated by an evaluator that does not isolate candidates.
+    """
+    ctx = runtime.context
+    cfg = config.investigation
     if ctx.evaluator is None:
         raise ConfigurationMismatch(["evaluator: a harness-evaluated campaign needs an evaluator"])
     if (
@@ -290,16 +330,16 @@ async def init_campaign(state: WorkerState, runtime: Runtime[ScientistContext]) 
             ]
         )
     request = EvaluationRequest(
-        evaluation_id=evaluation_id(state["run_id"], f"w{worker}", f"r{rnd}", "baseline"),
+        evaluation_id=request_id,
         plane="search",
-        program=frozen.model_copy(update={"digest": await ws.digest(frozen_path)}),
+        program=program,
         task=task,
         timeout_seconds=float(cfg.harness_evaluation_timeout_seconds),
     )
     result = await ctx.evaluator.evaluate(request)
     record = EvaluationRecord(
         evaluation_id=result.evaluation_id,
-        program=frozen,
+        program=program.model_copy(update={"digest": None}),
         plane="search",
         status=result.status,
         metrics=dict(result.metrics),
@@ -310,23 +350,20 @@ async def init_campaign(state: WorkerState, runtime: Runtime[ScientistContext]) 
         attempt_id="bootstrap",
     )
     score = _score(result.metrics.get("combined_score"))
-    update["baseline"] = record
-    update["evaluations"] = [record]
     if result.status != "completed" or score is None or result.correct is None:
-        update["status"] = "failed"
-        update["failure"] = Failure(
-            category="missing_validated_harness_incumbent",
-            scope="task",
-            detail=(
-                "a harness-evaluated campaign needs a validated, scored baseline; the baseline "
-                f"evaluation ended {result.status}"
+        return (
+            record,
+            None,
+            Failure(
+                category="missing_validated_harness_incumbent",
+                scope="task",
+                detail=(
+                    "a harness-evaluated campaign needs a validated, scored baseline; the "
+                    f"baseline evaluation ended {result.status}"
+                ),
             ),
         )
-        return update
-    update["best"] = best.model_copy(
-        update={"combined_score": score, "correct": bool(result.correct)}
-    )
-    return update
+    return record, score, None
 
 
 def prune_needed(state: Mapping[str, Any], runtime: Runtime[ScientistContext]) -> bool:

@@ -67,6 +67,7 @@ from .models import (
     FINGERPRINTED_FILES,
     REQUIRED_ALIGNMENT_DIMENSIONS,
     AlignmentReport,
+    QualificationReceipt,
     RepairTransaction,
 )
 
@@ -266,7 +267,7 @@ async def tree_fingerprint(
     entry = await workspace.stat(root)
     if entry is None or entry.kind != "dir":
         raise ScaffoldError(f"unsafe scaffold directory: {root}")
-    listing = await workspace.list_tree(root)
+    listing = await workspace.list_tree(root, with_digest=True)
     if len(listing) > _MAX_FINGERPRINT_ENTRIES:
         raise ScaffoldError("scaffold exceeds fingerprint entry limit")
     children: dict[str, list[FileEntry]] = {}
@@ -585,7 +586,7 @@ def contract_policy_for_smoke_diagnostic(diagnostic: str) -> str:
 async def task_files(workspace: Workspace, root: str) -> dict[str, str]:
     """Return the SHA-256 of every file of a scaffold tree, refusing links and special files."""
     files: dict[str, str] = {}
-    for item in await workspace.list_tree(root):
+    for item in await workspace.list_tree(root, with_digest=True):
         if item.kind == "symlink":
             raise RepairScopeError(f"repair scope contains symlink: {item.path}")
         if item.kind == "file":
@@ -1264,6 +1265,31 @@ async def published_task_ref(workspace: Workspace, source: TaskRef, published_di
     )
 
 
+async def evaluator_tree_sha256(workspace: Workspace, root: str, contract: Any) -> str:
+    """Return the digest of a task's search and final evaluators (bound by the receipt)."""
+    parts = []
+    for relative in (contract.evaluators.search, contract.evaluators.final):
+        parts.append(sha256_hex(await workspace.read_bytes(join(root, relative))))
+    return hashlib.sha256("\n".join(parts).encode("utf-8")).hexdigest()
+
+
+async def load_qualification_receipt(
+    workspace: Workspace, task_root: str
+) -> QualificationReceipt | None:
+    """Return the published qualification receipt of a task, or ``None`` when it has none.
+
+    A receipt that does not validate is treated as absent: the caller then measures the baseline
+    itself instead of trusting it.
+    """
+    path = join(task_root, QUALIFICATION_FILENAME)
+    if not await workspace.exists(path):
+        return None
+    try:
+        return QualificationReceipt.model_validate_json(await workspace.read_bytes(path))
+    except ValueError:
+        return None
+
+
 __all__ = [
     "DEPENDENCY_AUTHORIZED",
     "DRAFT_REQUIRED_FILES",
@@ -1288,7 +1314,9 @@ __all__ = [
     "display_path",
     "draft_paths",
     "draft_values",
+    "evaluator_tree_sha256",
     "inspect_scaffold",
+    "load_qualification_receipt",
     "mutable_paths",
     "open_scoped_transaction",
     "open_tree_transaction",

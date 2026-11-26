@@ -34,10 +34,16 @@ its steps are checkpointed under the node's namespace and a resumed run continue
 its last completed step; a completed tool call is not repeated (tested). One node execution runs
 at most one session. The session's wall clock is an `asyncio.timeout` caught in the node: a timed-out
 workspace role returns `timed_out=True` with the messages streamed so far, and the graph goes on as
-upstream goes on after a timed-out agent CLI. A transient provider failure that the in-session
-retries (`ModelRetryMiddleware`, 15/45/90 s, no jitter) could not absorb propagates, so that the
-node's retry policy (`agent_node_retry_policy()`, four attempts with the same schedule) or a resume
-runs the node again; any other failure of a session becomes a `Failure` with category
+upstream goes on after a timed-out agent CLI. A transient provider failure is first
+retried inside the session (`ModelRetryMiddleware`, 15/45/90 s, no jitter), which repeats only the
+failed model call and keeps the session's work; one that it could not absorb propagates, so that
+the node's retry policy (`agent_node_retry_policy()`, four attempts with the same schedule) runs
+the node again, which starts the session again from its prompt, as upstream's retry of a failed
+agent run does. The two layers are upstream's too: the agent CLI retries its own API calls and the
+harness retries the run. A node retry does not continue the session from its checkpoint (only a
+resume after a crash or an interrupt does), so dropping the inner layer would turn every transient
+error into a restart of the whole session. A caller that wants one layer sets
+`config.agents.model_retry.max_retries=0` or passes its own node policy; any other failure of a session becomes a `Failure` with category
 `agent_run_failed`, which the phase's budgets handle as upstream handled a non-zero exit of the
 agent.
 

@@ -33,7 +33,7 @@ from langgraph.types import Checkpointer
 
 from ..agents.memory import has_record, parse_memory_records
 from ..agents.runner import RoleOutcome, agent_node_retry_policy, run_workspace_role
-from ..agents.staging import SKILLS_BY_STEP
+from ..agents.staging import HARNESS_EDIT_SKILL_SOURCES, SKILLS_BY_STEP
 from ..agents.tools import (
     EvaluateProgramSettings,
     make_clone_program_tool,
@@ -426,6 +426,7 @@ async def author_candidate(
         values=values,
         skills=SKILLS_BY_STEP["run_harness_eval"],
         skill_values=values,
+        skill_sources=HARNESS_EDIT_SKILL_SOURCES,
         tools=(),
         timeout=cfg.run_timeout_seconds,
         env=_env(state),

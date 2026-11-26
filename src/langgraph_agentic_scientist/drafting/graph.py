@@ -24,7 +24,7 @@ input and output schemas.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from typing import Annotated, Any, NotRequired, TypedDict
 
 from langgraph.config import get_config
@@ -39,6 +39,7 @@ from ..core.runconfig import method_config, record_run_config
 from ..core.state import Failure, RunConfigRecord, TaskRef, merge_dicts
 from ..core.steps import StepGraph
 from .design_models import Capacity
+from .graph_design import build_task_design_graph
 from .graph_scaffold import PHASE, build_task_scaffold_graph
 from .scaffold import draft_paths
 
@@ -110,20 +111,25 @@ def _design_input(state: Mapping[str, Any]) -> dict[str, Any]:
     return value
 
 
-async def run_design_graph(
-    value: Mapping[str, Any], runtime: Runtime[ScientistContext]
-) -> dict[str, Any]:
-    """The default of the design slot: run the task design graph as a subgraph of this node.
+def design_runner(
+    graph: CompiledStateGraph[Any, Any, Any, Any],
+) -> Callable[[Mapping[str, Any], Runtime[ScientistContext]], Awaitable[dict[str, Any]]]:
+    """Return the default of the design slot: run ``graph`` (the task design graph) in the node.
 
-    The design graph writes the accepted design to ``<drafting dir>/_task_design/task_design.json``,
-    where the drafter's prompt says it is; its result is mapped to ``accepted_design``,
-    ``accepted_review`` and ``design_failure``.
+    The graph is built once by :func:`build_task_drafting_graph`, with the drafting graph's
+    overrides, and invoked with the node's config, so that it runs as a subgraph of the node
+    (checkpointed under its namespace). The design graph writes the accepted design to
+    ``<drafting dir>/_task_design/task_design.json``, where the drafter's prompt says it is; its
+    result is mapped to ``accepted_design``, ``accepted_review`` and ``design_failure``.
     """
-    from .graph_design import build_task_design_graph
 
-    graph = build_task_design_graph()
-    design_input: Any = dict(value)
-    return dict(await graph.ainvoke(design_input, get_config()))
+    async def run_design_graph(
+        value: Mapping[str, Any], runtime: Runtime[ScientistContext]
+    ) -> dict[str, Any]:
+        design_input: Any = dict(value)
+        return dict(await graph.ainvoke(design_input, get_config()))
+
+    return run_design_graph
 
 
 def _design_output(result: Mapping[str, Any]) -> dict[str, Any]:
@@ -199,7 +205,7 @@ def build_task_drafting_graph(
     g.add_node("record_run_config", record_run_config)
     g.slot(
         STEP_DESIGN,
-        run_design_graph,
+        design_runner(build_task_design_graph(overrides=overrides)),
         input_mapper=_design_input,
         output_mapper=_design_output,
     )
@@ -229,5 +235,5 @@ __all__ = [
     "DraftingOutput",
     "DraftingState",
     "build_task_drafting_graph",
-    "run_design_graph",
+    "design_runner",
 ]

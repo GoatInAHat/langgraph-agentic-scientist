@@ -158,10 +158,8 @@ async def test_pruning_rounds_restart_each_worker_from_its_best_program(
     result = await _run(ctx, task, store=InMemoryStore())
     assert result.status == "completed" and len(result.attempts) == 4
     ids = [call.evaluation_id for call in evaluator.calls]
-    assert sum(i.endswith("r0/baseline") for i in ids) == 2
-    assert not any(i.endswith("r1/baseline") for i in ids), (
-        "round 1 starts from each worker's best, scored"
-    )
+    # the incumbent is established once for the campaign, not once per worker or round
+    assert [i for i in ids if i.endswith("baseline")] == ["run/baseline"]
     assert await workspace.exists("run/results/round_000/worker_01/ideas")
     assert await workspace.exists("run/results/round_001/worker_02/ideas")
     seed = (
@@ -275,3 +273,95 @@ async def test_two_workers_share_memory_including_entries_written_with_write_fil
     assert json.loads(memory[0])["attempt_id"] == "idea_x_attempt_01"
     keys = sorted(i.key for i in await store.asearch(memory_namespace("run", 0), limit=50))
     assert keys == ["delta/0001/01", "delta/0002/02"]
+
+
+# --- the campaign's incumbent ------------------------------------------------------------------
+
+
+async def test_parallel_workers_share_one_baseline_evaluation(
+    make_context: Any, workspace: Any
+) -> None:
+    task = await task_with_harness(workspace, harness=True)
+    evaluator = winning_evaluator()
+    ctx = make_context(
+        models=_models(), config=config(max_idea_cycles=2, workers=2), evaluator=evaluator
+    )
+    result = await _run(ctx, task, store=InMemoryStore(), name="one-baseline")
+    ids = [call.evaluation_id for call in evaluator.calls]
+    assert [i for i in ids if i.endswith("baseline")] == ["run/baseline"]
+    assert result.baseline is not None and result.baseline.evaluation_id == "run/baseline"
+    assert result.evaluations[0].evaluation_id == "run/baseline"
+
+
+async def test_a_given_incumbent_is_used_and_nothing_is_evaluated_for_it(
+    make_context: Any, workspace: Any
+) -> None:
+    from langgraph_agentic_scientist.core.state import BestManifest
+
+    task = await task_with_harness(workspace, harness=True)
+    evaluator = winning_evaluator()
+    ctx = make_context(models=_models(), config=config(max_idea_cycles=1), evaluator=evaluator)
+    incumbent = BestManifest(program_dir="run/task/program_0", combined_score=1.0, correct=True)
+    app = build_investigation_graph(checkpointer=InMemorySaver())
+    out = await app.ainvoke(
+        {"task": task, "run_id": "run", "incumbent": incumbent}, thread("given"), context=ctx
+    )
+    ids = [call.evaluation_id for call in evaluator.calls]
+    assert not any(i.endswith("baseline") for i in ids)
+    assert out["investigation"].status in ("completed", "completed_no_winner")
+
+
+async def test_the_qualification_receipt_supplies_the_incumbent(
+    make_context: Any, workspace: Any
+) -> None:
+    from langgraph_agentic_scientist.core.contract import parse_task_contract_bytes
+    from langgraph_agentic_scientist.drafting.models import QualificationReceipt
+    from langgraph_agentic_scientist.drafting.scaffold import (
+        QUALIFICATION_FILENAME,
+        evaluator_tree_sha256,
+    )
+
+    from .helpers import FIXTURES
+
+    contract = parse_task_contract_bytes(
+        (FIXTURES / "core/contract_task/task_contract.json").read_bytes()
+    )
+    task = (await task_with_harness(workspace, harness=True)).model_copy(
+        update={"contract": contract}
+    )
+    for name in ("evaluate.py", "evaluate_final.py"):
+        await workspace.write_bytes(
+            f"run/task/{name}", (FIXTURES / "core/contract_task" / name).read_bytes()
+        )
+
+    def receipt(digest: str) -> bytes:
+        return (
+            QualificationReceipt(
+                task_fingerprint="sha256:" + "0" * 64,
+                publication_plan_sha256="1" * 64,
+                evaluator_tree_sha256=digest,
+                requirements_sha256="2" * 64,
+                baseline_combined_score=0.25,
+                baseline_correct=True,
+                evaluation_id="draft/qualification_00",
+            )
+            .model_dump_json()
+            .encode()
+        )
+
+    digest = await evaluator_tree_sha256(workspace, "run/task", contract)
+    await workspace.write_bytes(f"run/task/{QUALIFICATION_FILENAME}", receipt(digest))
+    evaluator = winning_evaluator()
+    ctx = make_context(models=_models(), config=config(max_idea_cycles=1), evaluator=evaluator)
+    result = await _run(ctx, task, name="receipt")
+    assert not any(c.evaluation_id.endswith("baseline") for c in evaluator.calls)
+    assert result.baseline is not None
+    assert result.baseline.evaluation_id == "draft/qualification_00"
+
+    # a receipt that binds other evaluators is not trusted: the baseline is evaluated once
+    await workspace.write_bytes(f"run/task/{QUALIFICATION_FILENAME}", receipt("f" * 64))
+    evaluator = winning_evaluator()
+    ctx = make_context(models=_models(), config=config(max_idea_cycles=1), evaluator=evaluator)
+    await _run(ctx, task, name="stale-receipt")
+    ids = [c.evaluation_id for c in evaluator.calls]
+    assert [i for i in ids if i.endswith("baseline")] == ["run/baseline"]

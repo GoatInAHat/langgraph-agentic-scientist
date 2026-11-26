@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pytest
 from langchain_core.messages import HumanMessage
 
 from langgraph_agentic_scientist.models import Role
@@ -55,7 +56,12 @@ async def test_prompt_is_the_upstream_text_and_the_author_has_no_package_tools(
     names = set(author.bound_tools[0])
     assert not names & {"clone_program", "evaluate_program", "task_gate", "report_blocker", "nl"}
     assert {"execute", "write_file", "edit_file"} <= names
-    assert await workspace.exists(f"{EXPERIMENT}/.agents/skills/edit-program/SKILL.md")
+    skill = (
+        await workspace.read_bytes(f"{EXPERIMENT}/.agents/skills/edit-program/SKILL.md")
+    ).decode()
+    # the stage's version of the skill: a plain copy, no clone tool the role does not have
+    assert "plain filesystem operations" in skill and "clone_program" not in skill
+    assert "name: edit-program" in skill
     assert not await workspace.exists(f"{EXPERIMENT}/.agents/skills/evaluate-program/SKILL.md")
 
 
@@ -240,3 +246,49 @@ async def test_a_contracted_task_refuses_an_unisolated_evaluator(
     )
     with pytest.raises(ConfigurationMismatch):
         await run_worker(ctx, task)
+
+
+class _StopBeforeAttempt(Exception):
+    """Raised by the capturing slot once it has the attempt's input."""
+
+
+async def test_the_attempt_graph_runs_alone_with_its_own_checkpointer(
+    make_context: Any, workspace: Any
+) -> None:
+    from langgraph.checkpoint.memory import InMemorySaver
+
+    from langgraph_agentic_scientist import GraphOverrides
+    from langgraph_agentic_scientist.investigation import (
+        build_attempt_graph,
+        build_campaign_worker_graph,
+    )
+    from langgraph_agentic_scientist.investigation.models import AttemptInput
+
+    task = await task_with_harness(workspace, harness=True)
+    captured: dict[str, Any] = {}
+
+    async def capture(state: Any, runtime: Any) -> Any:
+        captured.update({key: state[key] for key in AttemptInput.__annotations__ if key in state})
+        raise _StopBeforeAttempt
+
+    # run a worker up to its first attempt, to get a real attempt input and workspace
+    models = _harness_models(author_steps(ATTEMPT))
+    ctx = make_context(models=models, config=config(), evaluator=FakeEvaluator())
+    worker = build_campaign_worker_graph(
+        checkpointer=InMemorySaver(),
+        overrides=GraphOverrides(slots={"investigation.attempt": capture}),
+    )
+    with pytest.raises(_StopBeforeAttempt):
+        await worker.ainvoke(
+            {"task": task, "run_id": "run"}, {"configurable": {"thread_id": "w"}}, context=ctx
+        )
+    assert set(AttemptInput.__required_keys__) <= set(captured)
+
+    attempt = build_attempt_graph(checkpointer=InMemorySaver())
+    out = await attempt.ainvoke(captured, {"configurable": {"thread_id": "a"}}, context=ctx)
+
+    result = out["attempt_result"]
+    assert result.record.attempt_id == ATTEMPT and result.evaluations
+    assert await workspace.exists(f"{EXPERIMENT}/program_1/src/program.py")
+    state = await attempt.aget_state({"configurable": {"thread_id": "a"}})
+    assert state.next == ()  # the run completed under the caller's checkpointer

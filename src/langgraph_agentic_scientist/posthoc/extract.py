@@ -513,7 +513,7 @@ async def verify_staged_evidence(
     if expected_total != total_bytes:
         raise BundleValidationError("Evidence manifest total_bytes is inconsistent")
 
-    tree = await workspace.list_tree(evidence_root)
+    tree = await workspace.list_tree(evidence_root, with_digest=True)
     if len(tree) > MAX_EVIDENCE_TREE_ENTRIES:
         raise BundleValidationError("Evidence tree exceeds entry safety limit")
     actual_paths: set[str] = set()

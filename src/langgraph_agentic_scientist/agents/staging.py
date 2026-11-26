@@ -37,6 +37,11 @@ SKILLS_BY_STEP: dict[str, tuple[str, ...]] = {
 }
 """Upstream ``SKILLS_BY_STEP``: the skill set of each workflow step."""
 
+HARNESS_EDIT_SKILL_SOURCES: dict[str, str] = {"edit-program": "edit-program-harness"}
+"""Skill sources of the harness-evaluated candidate author (R15): its ``edit-program`` is staged
+from ``skills/edit-program-harness``, whose clone step is the stage prompt's plain filesystem copy
+(the role has no clone tool; see ``docs/adaptations/investigation.md``)."""
+
 PAPER_SKILLS_BY_PROFILE: dict[str, tuple[str, ...]] = {
     "default": SKILLS_BY_STEP["paper"],
     "standalone": (
@@ -84,9 +89,12 @@ async def stage_skills(
     *,
     prompts: PromptRegistry,
     values: Mapping[str, str],
+    sources: Mapping[str, str] | None = None,
 ) -> list[str]:
     """Stage skills under ``<root>/.agents/skills/`` and return the staged names.
 
+    ``sources`` maps a staged name to the registry skill whose files are staged under it (a
+    role-specific version of a generic skill); a name not in it is staged from itself.
     ``SKILL.md`` is rendered with ``values`` in one pass (unknown placeholders stay literal);
     every other file is copied unchanged. A paper writer skill other than ``write-paper`` also
     receives ``write-paper``'s ``templates/`` tree, as upstream ``stage_paper_templates`` does.
@@ -97,7 +105,7 @@ async def stage_skills(
     staged: list[str] = []
     for name in names:
         try:
-            files = dict(prompts.skill_files(name))
+            files = dict(prompts.skill_files((sources or {}).get(name, name)))
         except PromptNotFound as exc:
             raise SkillNotFound(name) from exc
         if name in PAPER_WRITER_SKILLS and name != PAPER_TEMPLATES_SKILL:
@@ -119,6 +127,7 @@ async def stage_skills(
 
 
 __all__ = [
+    "HARNESS_EDIT_SKILL_SOURCES",
     "PAPER_SKILLS_BY_PROFILE",
     "PAPER_TEMPLATES_SKILL",
     "PAPER_WRITER_SKILLS",

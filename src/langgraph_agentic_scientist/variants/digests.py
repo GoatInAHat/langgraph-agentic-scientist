@@ -87,7 +87,7 @@ async def evaluator_tree_digest(
         if top.kind == "dir" and name not in EVALUATOR_TREE_MASKED_DIRS:
             entries.extend(
                 sub.model_copy(update={"path": f"{name}/{sub.path}"})
-                for sub in await workspace.list_tree(join(root, name))
+                for sub in await workspace.list_tree(join(root, name), with_digest=True)
             )
     children: dict[str, list[FileEntry]] = {}
     for entry in entries:
@@ -155,7 +155,7 @@ async def strict_tree_digest(
     depth 256); the record layout differs only in using the listing's file digests.
     """
     omitted = frozenset(omitted_root_entries)
-    entries = await workspace.list_tree(root)
+    entries = await workspace.list_tree(root, with_digest=True)
     digest = hashlib.sha256()
 
     def record(kind: bytes, relative: str, payload: bytes = b"") -> None:
@@ -196,7 +196,7 @@ async def tree_fingerprint(
     extraction manifest) records links as links; so does this one.
     """
     excluded_paths = frozenset(excluded)
-    entries = await workspace.list_tree(root)
+    entries = await workspace.list_tree(root, with_digest=True)
     digest = hashlib.sha256()
 
     def update(kind: bytes, relative: str, payload: bytes = b"") -> None:

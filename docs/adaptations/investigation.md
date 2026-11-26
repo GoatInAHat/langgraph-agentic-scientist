@@ -66,7 +66,17 @@ beyond the pre-cycle count) is positional, as upstream's.
 
 The harness-evaluated author gets **no package tools**: its prompt forbids the clone and memory
 helpers and restricts it to plain filesystem operations, so it clones with a shell command and
-writes memory with its file tools or the shell. For this regime the harness does not stage
+writes memory with its file tools or the shell. Upstream staged the generic `edit-program` skill
+for this role, whose step 2 tells the agent to clone with the trusted utility, never with `cp`, and
+to stop the attempt if the trusted clone fails; the stage prompt says that its own boundaries
+override generic skill instructions, so upstream's effective rule was the plain copy. In the port
+the generic skill names the `clone_program` tool, which this role does not have, and an agent
+that followed the skill would stop the attempt. The role is therefore staged a stage-specific
+version of the skill, `skills/edit-program-harness` (staged under the name `edit-program`;
+`HARNESS_EDIT_SKILL_SOURCES`), whose step 2 and example state the plain filesystem copy and that
+evaluator artifacts are not carried; every other line is upstream's. The stage prompt
+(`harness_edit.md`) stays byte-identical and still overrides the skill, as its own sentence says.
+The changes are declared in `prompts/changes/core.toml`. For this regime the harness does not stage
 `evaluate.py`, `capture.py` or the task's helper modules into the experiment directory
 (upstream copies them and tells the agent not to read them): the evaluator owns them. They are
 staged, as read-only views, for a self-evaluated attempt only, as upstream does for uncontracted
@@ -75,12 +85,22 @@ staged.
 
 ## The flow, step by step
 
+* **Incumbent** (`graph.py`, `establish_incumbent`): upstream reads the baseline's score and
+  correctness from the task runtime's validated record, produced once, and every worker
+  reconciles its best manifest against it (`main_entry.py` with
+  `harness_incumbent.reconcile_harness_incumbent`). The port establishes the incumbent once per
+  campaign, before the first round, from the first of: the `incumbent` of the input (a caller that
+  holds a validated baseline); the task's published qualification receipt, when the seed is the
+  task's `program_0`, the receipt records a finite score and a correctness verdict, and its
+  `evaluator_tree_sha256` is the digest of the task's evaluators now (the drafting phase measured
+  the baseline in qualification); or one evaluation of the baseline under the campaign-level id
+  `<run>/baseline`. Every worker of every round whose seed is the task's seed receives it as
+  `seed_best` and evaluates nothing, including a worker that found no correct program in an
+  earlier pruning round. A baseline that does not complete with a finite score and a correctness
+  verdict ends the campaign with `missing_validated_harness_incumbent`.
 * **Worker** (`worker.py`): `init_campaign` freezes the seed under `.baseline-seed/`, ensures the
-  memory files and, for a harness-evaluated task without an incumbent, evaluates the baseline
-  under the id `<run>/w<k>/r<round>/baseline` (upstream takes the score from the task runtime's
-  record; the port has no such record, so the baseline is evaluated once, keyed). A baseline that
-  does not complete with a finite score and a correctness verdict ends the campaign with
-  `missing_validated_harness_incumbent`. `confirm_prune` is the first and only effect of its node
+  memory files and takes the incumbent from `seed_best`. Only a worker graph run alone without
+  `seed_best` evaluates the baseline itself, under the id `<run>/w<k>/r<round>/baseline`. `confirm_prune` is the first and only effect of its node
   when it asks. `cycle_start` is idempotent: the model choice is a seeded draw (run, worker,
   cycle) persisted in `outer.agent_cycle_assignments`; the prune archives each file once and
   resets after all are archived; the pull replaces files wholesale; the history views are

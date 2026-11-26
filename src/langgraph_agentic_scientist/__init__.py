@@ -105,7 +105,7 @@ from .review import build_review_graph
 from .revision import build_revision_graph
 from .serde import serde_allowlist
 from .variants import build_variants_graph
-from .workspace import CommandResult, LocalWorkspace, SnapshotRef, Workspace
+from .workspace import CommandResult, LocalWorkspace, SnapshotRef, Workspace, WorkspaceBase
 
 __all__ = [
     "AIReview",
@@ -175,6 +175,7 @@ __all__ = [
     "VariantsConfig",
     "VariantsResult",
     "Workspace",
+    "WorkspaceBase",
     "WorkspacePaperToolchain",
     "build_attempt_graph",
     "build_campaign_worker_graph",

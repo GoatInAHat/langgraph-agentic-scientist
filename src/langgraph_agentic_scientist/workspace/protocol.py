@@ -6,6 +6,9 @@ Deep Agents backend rooted at a sub-directory through :meth:`Workspace.agent_bac
 package ships :class:`~langgraph_agentic_scientist.workspace.LocalWorkspace`, a directory on
 the host. A caller substitutes a git worktree, a container or a remote sandbox by implementing
 this protocol; any Deep Agents sandbox backend can serve :meth:`Workspace.agent_backend`.
+:class:`~langgraph_agentic_scientist.workspace.WorkspaceBase` derives every operation but a core
+of six (``read_bytes``, ``write_bytes``, ``stat``, ``list_tree``, ``remove``, ``run``) and
+``agent_backend``, so an implementation need only write those.
 
 Paths are POSIX paths relative to the workspace root. ``""`` and ``"."`` name the root.
 """
@@ -122,10 +125,11 @@ class Workspace(Protocol):
         """Return the entry at ``path`` without following a final symlink, or ``None``."""
         ...
 
-    async def list_tree(self, path: str) -> list[FileEntry]:
+    async def list_tree(self, path: str, *, with_digest: bool = False) -> list[FileEntry]:
         """List every entry below ``path`` recursively, sorted by path, without following links.
 
-        Entry paths are relative to ``path``; regular files carry their ``sha256``.
+        Entry paths are relative to ``path``. With ``with_digest=True`` regular files carry their
+        ``sha256`` (which reads every file); otherwise ``sha256`` is ``None``.
         """
         ...
 

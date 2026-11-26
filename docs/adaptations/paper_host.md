@@ -76,8 +76,8 @@ read a host directory (`DirectoryTree`) for the `validate-paper` skill's script.
 `.agents/` and the workspace aliases (`task/`, `results/`, `global_memory/`, `aggregated/`,
 `extra_tasks/`) are not read: upstream's aliases are symbolic links that its scan does not enter,
 and a workspace without symbolic links may hold copies. Figure PNG and PDF files are read for
-their header only; their digests come from the listing entry (`Workspace.list_tree` gives the
-digest of regular files).
+their header only; their digests come from the listing entry (the snapshot lists with
+`Workspace.list_tree(..., with_digest=True)`).
 
 **Gates run in upstream's order**, the first failure ending the run with upstream's message:
 artifacts, watermark, sections, Supplementary Information, BibTeX dependencies and keys,
@@ -182,4 +182,5 @@ module docstring).
 * `PaperToolchain.validate` is given `options={"watermark": bool}`; other keys are ignored.
 * The default toolchain needs `pypdf` (the page and Supplementary Information checks) and
   `pyyaml` (the venue files) as dependencies of the package, not of an extra.
-* `Workspace.list_tree` must carry the digest of regular files (the protocol says it does).
+* `Workspace.list_tree(..., with_digest=True)` must carry the digest of regular files (the
+  protocol says it does).

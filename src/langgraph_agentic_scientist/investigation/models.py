@@ -338,11 +338,22 @@ class WorkerState(TypedDict, total=False):
 
 
 class InvestigationInput(TypedDict):
-    """Input of the investigation graph."""
+    """Input of the investigation graph.
+
+    Attributes:
+        task: The task.
+        run_id: The run id.
+        run_config: The recorded run configuration, when a parent graph recorded it.
+        incumbent: The validated baseline of a harness-evaluated campaign, when the caller holds
+            one (its ``combined_score`` and ``correct`` are used; ``source_attempt_id`` should be
+            ``"bootstrap"``). Without it the graph takes the score from the task's qualification
+            receipt or evaluates the baseline once.
+    """
 
     task: TaskRef
     run_id: str
     run_config: NotRequired[RunConfigRecord | None]
+    incumbent: NotRequired[BestManifest | None]
 
 
 class InvestigationOutput(TypedDict):
@@ -384,6 +395,9 @@ class InvestigationState(TypedDict, total=False):
     worker_result: Annotated[list[WorkerResult], collect_results]
     seeds: dict[str, ProgramRef]
     seed_bests: dict[str, BestManifest]
+    incumbent: BestManifest | None
+    baseline: EvaluationRecord | None
+    baseline_evaluated: bool
     stopped: bool
     investigation: InvestigationResult
 

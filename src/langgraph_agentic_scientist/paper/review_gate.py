@@ -28,6 +28,7 @@ from typing import Annotated, Any, NotRequired, TypedDict
 from langgraph.graph import END, START
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.runtime import Runtime
+from langgraph.types import Checkpointer
 
 from ..agents.runner import agent_node_retry_policy, run_structured_role
 from ..context import GraphOverrides, ScientistContext
@@ -534,9 +535,22 @@ def _after_finalize(state: ReviewGateState) -> str:
 
 
 def build_review_gate_graph(
-    *, overrides: GraphOverrides | None = None, name: str = "paper.review_gate"
+    *,
+    checkpointer: Checkpointer = None,
+    store: Any = None,
+    overrides: GraphOverrides | None = None,
+    name: str = "paper.review_gate",
 ) -> CompiledStateGraph[Any, Any, Any, Any]:
-    """Return the default ``paper.review_gate`` slot (at most two contract attempts)."""
+    """Return the default ``paper.review_gate`` slot (at most two contract attempts).
+
+    It runs mounted in the paper graph or alone (its input schema is the slot's input).
+
+    Args:
+        checkpointer: The caller's checkpointer when run alone; ``None`` inherits the parent's.
+        store: The caller's store when run alone.
+        overrides: Replacement slots (the steps carry hooks under the graph's phase name).
+        name: The compiled graph's name.
+    """
     graph = StepGraph(
         "paper.review_gate",
         ReviewGateState,
@@ -551,7 +565,7 @@ def build_review_gate_graph(
     graph.add_edge("prepare", "session")
     graph.add_edge("session", "finalize")
     graph.add_conditional_edges("finalize", _after_finalize, {"done": END, "retry": "prepare"})
-    return graph.compile(name=name)
+    return graph.compile(checkpointer=checkpointer, store=store, name=name)
 
 
 def review_json_text(review: ReviewPayload) -> str:

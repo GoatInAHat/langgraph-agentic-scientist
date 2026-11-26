@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 from posthoc_support import (
@@ -694,3 +695,42 @@ async def test_the_bootstrap_works_with_the_local_command_evaluator(
     assert await _read(workspace, f"{ready}/metrics.json") == {"combined_score": 2.0}
     assert await _read(workspace, f"{ready}/correct.json") == {"correct": True}
     assert await workspace.exists(".evaluations/r1/posthoc/bootstrap_01/invocation.json")
+
+
+class _StopBeforeAnalysis(Exception):
+    """Raised by the capturing slot once it has an analysis input."""
+
+
+async def test_the_analysis_graph_runs_alone_with_its_own_checkpointer(
+    make_context: Any, workspace: Any
+) -> None:
+    from langgraph_agentic_scientist import GraphOverrides
+    from langgraph_agentic_scientist.posthoc import ANALYSIS_SLOT, build_analysis_graph
+    from langgraph_agentic_scientist.posthoc.models import AnalysisInput
+
+    task, investigation = await finished_run(workspace)
+    captured: dict[str, Any] = {}
+
+    async def capture(state: Any, runtime: Any) -> Any:
+        captured.update({key: state[key] for key in AnalysisInput.__annotations__ if key in state})
+        raise _StopBeforeAnalysis
+
+    models = _models(
+        analysis_generator=generator(proposal(ANALYSIS)),
+        analysis_selector=selector((ANALYSIS, True, "good")),
+        analysis_executor=executor_script(ANALYSIS, valid_outputs(ANALYSIS, 1)),
+    )
+    ctx = make_context(models=models, evaluator=evaluator_with_score(), config=config())
+    phase = build_posthoc_graph(
+        checkpointer=InMemorySaver(), overrides=GraphOverrides(slots={ANALYSIS_SLOT: capture})
+    )
+    with pytest.raises(_StopBeforeAnalysis):
+        await phase.ainvoke(_input(task, investigation), _thread("capture"), context=ctx)
+    assert set(AnalysisInput.__annotations__) <= set(captured)
+
+    graph = build_analysis_graph(checkpointer=InMemorySaver())
+    out = await graph.ainvoke(captured, _thread("alone"), context=ctx)
+
+    (run,) = out["analysis_runs"]
+    assert run.analysis_id == ANALYSIS and run.status == "completed" and run.attempt_count == 1
+    assert (await graph.aget_state(_thread("alone"))).next == ()

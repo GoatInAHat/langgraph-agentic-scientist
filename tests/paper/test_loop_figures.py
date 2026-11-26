@@ -79,11 +79,19 @@ async def test_autoillustrate_command_and_availability() -> None:
     assert cwd == "p"
     assert argv[:4] == ["autoillustrate", "./paper.tex", "--output", "./figures/overview.png"]
     assert "--skip-enhance" in argv
-    prompt = argv[argv.index("--prompt") + 1]
-    assert prompt == (
-        "Methods diagram that will be the main figure of this scientific research paper. "
-        "Show the loop."
+    assert argv[argv.index("--prompt") + 1] == "Show the loop."  # upstream sends it unchanged
+    assert argv[argv.index("--workdir") + 1] == "./.autoillustrate/overview"
+    assert "--model" not in argv  # upstream pins no model for codex
+    assert "--effort" not in argv and "--profile" not in argv
+    claude = AutoillustrateRenderer(environment={}, effort="high")
+    calls.clear()
+    await claude.render(
+        ConceptFigureRequest(paper_dir="p", instructions="x", output_path="figures/overview.png"),
+        workspace=ws,
     )
+    argv, _ = calls[0]
+    assert argv[argv.index("--model") + 1] == "claude-opus-5-5"
+    assert argv[argv.index("--effort") + 1] == "high"
     keyed = AutoillustrateRenderer(environment={"OPENAI_API_KEY": "sk-test"})
     assert keyed.availability().openai_context.startswith("OPENAI_API_KEY is expected")
 

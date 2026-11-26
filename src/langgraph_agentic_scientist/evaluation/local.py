@@ -163,7 +163,7 @@ async def _make_dir(workspace: Workspace, path: str) -> None:
 
 async def _program_fingerprint(workspace: Workspace, program_dir: str) -> dict[str, str]:
     fingerprint: dict[str, str] = {}
-    for entry in await workspace.list_tree(program_dir):
+    for entry in await workspace.list_tree(program_dir, with_digest=True):
         root_name = entry.path.split("/", 1)[0]
         if root_name in _RESULT_FILES or root_name.startswith(".evaluation_stage_"):
             continue

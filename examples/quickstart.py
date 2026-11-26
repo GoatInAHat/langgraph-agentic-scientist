@@ -57,13 +57,17 @@ async def run(
     graph = build_pipeline_graph(checkpointer=InMemorySaver(), overrides=overrides)
     run_config: RunnableConfig = {"configurable": {"thread_id": "circpack-1"}}
 
+    # durability="sync" writes each step's checkpoint before the next step starts, so a crash
+    # loses no completed step (LangGraph's default writes it in the background).
     out: dict[str, Any] = await graph.ainvoke(
-        {"task_dir": "inputs/circpack"}, run_config, context=context
+        {"task_dir": "inputs/circpack"}, run_config, context=context, durability="sync"
     )
     # The graph stops with an interrupt wherever upstream would ask a person (its only question
     # is the prune warning). Resume with the same thread id; Command(resume=...) is the answer.
     while out.get("__interrupt__"):
-        out = await graph.ainvoke(Command(resume="proceed"), run_config, context=context)
+        out = await graph.ainvoke(
+            Command(resume="proceed"), run_config, context=context, durability="sync"
+        )
     return out
 
 

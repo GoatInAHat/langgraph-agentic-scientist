@@ -41,16 +41,18 @@ from the upstream source, and every difference is declared (see
 | `agsci run`, `src/pipeline/` (phase order, degradation, resume) | `build_pipeline_graph`; resume is the caller's checkpointer |
 | Task drafting: `task.sh`, `lib/task_design.sh`, `src/task_drafting/` | `build_task_drafting_graph`, with the design loop `build_task_design_graph`; gates behind `TaskGate` |
 | Investigation: `idea.sh`, `run.sh`, `src/investigation/`, parallel workers | `build_investigation_graph`, mounting `build_campaign_worker_graph`, `build_ideation_graph`, `build_attempt_graph` |
+| The harness incumbent: the task runtime's baseline record, `harness_incumbent.py` | `establish_incumbent`, once per campaign: the `incumbent` input, the task's qualification receipt, or one baseline evaluation |
 | No-winner fallback: `pipeline/downstream_selection.py` | `build_downstream_selection_graph` |
 | Ablations: `src/variants_pipeline/` | `build_variants_graph` |
 | Sealed final evaluation: `src/final_evaluation/` | `build_final_evaluation_graph` with a `FinalEvaluator` |
-| Post-hoc analysis: `src/posthoc_pipeline/` | `build_posthoc_graph` |
-| Paper: `paper.sh`, `paper_edit.sh`, `src/orchestrator/` | `build_paper_graph` (fresh, edit and revision modes), `build_references_graph` |
-| AI review: `src/aireview.py` | `build_review_graph` |
+| Post-hoc analysis: `src/posthoc_pipeline/` | `build_posthoc_graph`, mounting `build_analysis_graph` |
+| Paper: `paper.sh`, `paper_edit.sh`, `src/orchestrator/` | `build_paper_graph` (fresh, edit and revision modes), mounting `build_references_graph`, `build_postdraft_graph`, `build_audit_graph`, `build_review_gate_graph` |
+| Concept figures: `lib/concept_figure.sh` (Autoillustrate) | `AutoillustrateRenderer` behind `ConceptFigureRenderer`; the strategy's figure purpose is the `--prompt`, unchanged |
+| AI review: `src/aireview.py` | `build_review_graph`; the second attempt of a reviewer is a new node execution |
 | Revision: `src/pipeline/revision.py` | `build_revision_graph` |
-| Coding-agent CLIs with staged skills | Deep Agents agents over a `Workspace`; the same skills staged under `.agents/skills/` |
+| Coding-agent CLIs with staged skills | Deep Agents agents over a `Workspace`; the same skills staged under `.agents/skills/` (the harness-evaluated author gets a stage-specific `edit-program`) |
 | Prompts and skills: `src/prompts/`, `src/agents/skills/` | package data under `prompts/` and `skills/`, derived byte for byte by declared changes, through `PromptRegistry` |
-| Docker, the RPC broker, the evaluator wrapper | the `Workspace`, `Evaluator` and `FinalEvaluator` protocols (local defaults included) |
+| Docker, the RPC broker, the evaluator wrapper | the `Workspace` (`WorkspaceBase` derives all but six core operations), `Evaluator` and `FinalEvaluator` protocols (local defaults included) |
 | Hydra configuration and presets | `ScientistConfig`, `ScientistConfig.preset("paper")` |
 
 ## Install
@@ -99,13 +101,17 @@ async def run(
     graph = build_pipeline_graph(checkpointer=InMemorySaver(), overrides=overrides)
     run_config: RunnableConfig = {"configurable": {"thread_id": "circpack-1"}}
 
+    # durability="sync" writes each step's checkpoint before the next step starts, so a crash
+    # loses no completed step (LangGraph's default writes it in the background).
     out: dict[str, Any] = await graph.ainvoke(
-        {"task_dir": "inputs/circpack"}, run_config, context=context
+        {"task_dir": "inputs/circpack"}, run_config, context=context, durability="sync"
     )
     # The graph stops with an interrupt wherever upstream would ask a person (its only question
     # is the prune warning). Resume with the same thread id; Command(resume=...) is the answer.
     while out.get("__interrupt__"):
-        out = await graph.ainvoke(Command(resume="proceed"), run_config, context=context)
+        out = await graph.ainvoke(
+            Command(resume="proceed"), run_config, context=context, durability="sync"
+        )
     return out
 ```
 
@@ -121,10 +127,13 @@ each role is asked to produce. What the code shows:
   `ConfigurationMismatch` and changes nothing. Settings of the runtime only (`config.agents`,
   `config.review.sampling`) may change.
 - **The checkpointer is yours.** The package keeps no persistence of its own. A run resumes from its
-  checkpoint with the same thread id: `await graph.ainvoke(None, run_config, context=context)`
-  after a crash, `Command(resume=answer)` after an interrupt. No completed step runs twice, and an
-  evaluation is requested under a deterministic id so that an evaluator can answer a repeated
-  request from its record.
+  checkpoint with the same thread id: `await graph.ainvoke(None, run_config, context=context,
+  durability="sync")` after a crash, `Command(resume=answer)` after an interrupt. No completed step
+  is repeated once its checkpoint is written. Pass `durability="sync"` on every call whose crash
+  you mean to survive: LangGraph's default (`"async"`) writes a step's checkpoint while the next
+  step runs, so a hard crash can lose the last one and that step runs again. An evaluation is
+  requested under a deterministic id so that an evaluator can answer a repeated request from its
+  record.
 - **Questions to a person** are interrupts. Upstream asks one question, whether to prune the
   campaign's history, once per campaign. `InterruptPolicy` (the default) stops the run with the
   question; `AutoApprovePolicy` answers it as upstream does without a terminal; any object with a
@@ -201,7 +210,8 @@ to be forked.
 
 | Extension point | What it is for |
 |---|---|
-| `Workspace` (`LocalWorkspace`) | Where files live and commands run. Substitute a git worktree, a container or a remote sandbox; agents get a Deep Agents backend from `agent_backend`. |
+| `Workspace` (`LocalWorkspace`, `WorkspaceBase`) | Where files live and commands run. Substitute a git worktree, a container or a remote sandbox; agents get a Deep Agents backend from `agent_backend`. Subclass `WorkspaceBase` to implement only the core (`read_bytes`, `write_bytes`, `stat`, `list_tree`, `remove`, `run`, `agent_backend`); it derives `exists`, `digest`, `copy_tree`, `snapshot` and `restore`. |
+| The incumbent of a harness-evaluated campaign | Give `incumbent` (a `BestManifest` with a validated score) in the investigation's input when you hold a validated baseline; otherwise the task's qualification receipt or one evaluation supplies it. |
 | `Evaluator`, `FinalEvaluator` | Everything the candidate must not touch. Implementations answer a repeated `evaluation_id` from their record or re-attach to the evaluation still running, so an evaluation of hours survives a crash. `DeferredEvaluator` interrupts with the request and takes the result from `Command(resume=...)`, so your own executor can run evaluations. |
 | `GraphOverrides.phases` | Replace a whole phase with your own compiled graph. |
 | `GraphOverrides.slots` | Replace a step: `investigation.ideation`, `investigation.attempt`, `investigation.worker`, `variants.run_variant`, `variants.cross_task`, `final_evaluation.draw_inputs`, `posthoc.analysis`, `paper.data`, `paper.references`, `paper.postdraft_enrichment`, `paper.validation`, `paper.audit`, `paper.review_gate`, `paper.figures`, `review`, `revision.paper`, `revision.audit_input_hashes`, `revision.scope_audit` ([`docs/STEPS.md`](docs/STEPS.md) says what each replaces). A compiled graph or, where the slot is a single step, an async function. |
@@ -264,8 +274,10 @@ serde = JsonPlusSerializer(allowed_msgpack_modules=serde_allowlist())
 async with AsyncPostgresSaver.from_conn_string(url, serde=serde) as saver:
     await saver.setup()
     graph = build_pipeline_graph(checkpointer=saver)
-    out = await graph.ainvoke({"task_dir": "inputs/circpack"}, run_config, context=context)
-    # after a crash: await graph.ainvoke(None, run_config, context=context)
+    out = await graph.ainvoke(
+        {"task_dir": "inputs/circpack"}, run_config, context=context, durability="sync"
+    )
+    # after a crash: await graph.ainvoke(None, run_config, context=context, durability="sync")
 ```
 
 `serde_allowlist()` covers every record type the package stores, including the schemas of the
@@ -291,8 +303,11 @@ override by role; `pool` is upstream's multi-agent sampling (one model chosen pe
   model; choose `"json_schema"` (per role with `structured_output_by_role`) only when the server
   supports strict JSON schema.
 - **Retries.** Transient provider errors inside an agent session are retried with upstream's
-  15, 45 and 90 second schedule (`config.agents.model_retry`); a node's `RetryPolicy` is the outer
-  line, and a method retry that changes the prompt (a repair, a second attempt) is a graph loop.
+  15, 45 and 90 second schedule (`config.agents.model_retry`), repeating only the failed model
+  call; a node's `RetryPolicy` is the outer line and starts the session again, as upstream retries
+  a failed agent run. `model_retry.max_retries=0` leaves only the outer line. A method retry that
+  changes the prompt (a repair, a second attempt) is a graph loop, so each paid call is
+  checkpointed on its own.
 
 ## Concurrency
 
@@ -309,9 +324,10 @@ partly to avoid contention for the device, and the package does not partition de
 evaluator's executor's business). Parallel campaign workers that share memory (`workers > 1`
 without `isolate_worker_memory`) need a `store`, which is passed to `build_pipeline_graph`.
 
-Each variant and each analysis works on a copy of the task's files, and `LocalWorkspace.list_tree`
-hashes every file it lists, so keep environments, datasets and other large files outside the task
-directory (the evaluator can reach them where they are).
+Each variant and each analysis works on a copy of the task's files, and the steps that compare or
+fingerprint trees hash every file they list (`list_tree(..., with_digest=True)`), so keep
+environments, datasets and other large files outside the task directory (the evaluator can reach
+them where they are).
 
 A whole run takes many LangGraph supersteps (a drafting run with repairs takes hundreds). The
 default `recursion_limit` of LangGraph 1.2 (10,007) is enough; a run config that sets a lower one

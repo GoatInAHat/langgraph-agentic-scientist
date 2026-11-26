@@ -213,7 +213,7 @@ class SnapshotTree:
                 number of bytes to keep (``0`` to keep nothing but the listing, a large number
                 for the whole file), or ``None`` to skip the file.
         """
-        listing = await workspace.list_tree(root)
+        listing = await workspace.list_tree(root, with_digest=True)
         entries = {entry.path: entry for entry in listing}
         contents: dict[str, bytes] = {}
         for rel, entry in entries.items():

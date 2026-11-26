@@ -64,9 +64,9 @@ async def main(mode: str, url: str, thread_id: str, workspace: str, task_dir: st
         await saver.setup()
         graph = build_pipeline_graph(checkpointer=saver, overrides=GraphOverrides(phases=phases))
         if mode == "first":
-            await graph.ainvoke({"task_dir": task_dir}, config, context=context)
+            await graph.ainvoke({"task_dir": task_dir}, config, context=context, durability="sync")
             raise SystemExit("the first process was meant to be killed")
-        out = await graph.ainvoke(None, config, context=context)
+        out = await graph.ainvoke(None, config, context=context, durability="sync")
         summary = {
             "status": out["status"],
             "phases": {name: status.status for name, status in out["phase_status"].items()},

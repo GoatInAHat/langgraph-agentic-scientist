@@ -739,7 +739,7 @@ def build_variants_graph(
         overrides=overrides
     )
     cross_graph = _graph_slot(overrides, "variants.cross_task") or build_cross_task_graph(
-        run_graph, overrides=overrides
+        overrides=overrides, run_variant_graph=run_graph
     )
     graph = StepGraph(
         "variants",

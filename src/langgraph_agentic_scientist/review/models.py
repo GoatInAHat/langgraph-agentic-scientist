@@ -136,6 +136,10 @@ class ReviewState(ReviewInput):
     """The reviewers' reviews by reviewer number (``"1"`` ... ``"5"``)."""
     meta: AIReview | None
     """The area chair's answer as returned."""
+    meta_attempt: int
+    """The number of invalid answers of the area chair so far."""
+    meta_error: str | None
+    """Why the area chair's last answer was invalid."""
     aggregate: AIReview | None
     """The area chair's answer with the mean scores: what ``<stem>.json`` holds."""
     notes: Annotated[dict[str, list[str]], merge_dicts]
@@ -159,6 +163,10 @@ class ReviewerTask(TypedDict):
     index: int
     paper_text: str
     run_config: RunConfigRecord | None
+    attempt: NotRequired[int]
+    """The attempt number (0 for the first call); a later attempt adds the retry correction."""
+    notes: NotRequired[list[str]]
+    """The reviewer's log lines so far."""
 
 
 def sorted_reviews(reviews: Mapping[str, AIReview]) -> list[AIReview]:

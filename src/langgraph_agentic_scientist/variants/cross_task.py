@@ -86,10 +86,16 @@ async def find_best_program_dir(workspace: Workspace, task_bundle: str) -> str |
     return best
 
 
+def _universal_newlines(text: str | None) -> str | None:
+    return None if text is None else text.replace("\r\n", "\n").replace("\r", "\n")
+
+
 async def read_retrofitted_evaluator(workspace: Workspace, variants_run_dir: str) -> str:
     """Read the retrofitted ``evaluate.py`` of the original task (the extracted one as fallback)."""
     for bundle in (RETROFITTED_BUNDLE_DIR, "_extracted_bundle"):
-        text = await read_text_or_none(workspace, join(variants_run_dir, bundle, "evaluate.py"))
+        text = _universal_newlines(
+            await read_text_or_none(workspace, join(variants_run_dir, bundle, "evaluate.py"))
+        )
         if text is not None:
             return text
     return ""
@@ -98,7 +104,9 @@ async def read_retrofitted_evaluator(workspace: Workspace, variants_run_dir: str
 async def find_original_task_md(workspace: Workspace, variants_run_dir: str) -> str:
     """Retrieve the original ``task.md`` text from the bundles or a variant's workspace."""
     for bundle in (RETROFITTED_BUNDLE_DIR, "_extracted_bundle"):
-        text = await read_text_or_none(workspace, join(variants_run_dir, bundle, "task.md"))
+        text = _universal_newlines(
+            await read_text_or_none(workspace, join(variants_run_dir, bundle, "task.md"))
+        )
         if text is not None:
             return text
     variants_dir = join(variants_run_dir, VARIANTS_SUBDIR)
@@ -106,8 +114,10 @@ async def find_original_task_md(workspace: Workspace, variants_run_dir: str) -> 
         from .workspace_ops import list_child_dirs
 
         for name in await list_child_dirs(workspace, variants_dir):
-            text = await read_text_or_none(
-                workspace, join(variants_dir, name, "task_bundle", "original_task.md")
+            text = _universal_newlines(
+                await read_text_or_none(
+                    workspace, join(variants_dir, name, "task_bundle", "original_task.md")
+                )
             )
             if text is not None:
                 return text

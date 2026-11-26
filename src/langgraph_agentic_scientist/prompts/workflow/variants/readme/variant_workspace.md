@@ -1,0 +1,1 @@
+**Workspace**: `variants/{{VARIANT_ID}}/`

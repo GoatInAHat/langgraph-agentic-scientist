@@ -1,0 +1,16 @@
+# Venue specification consumed by langgraph_agentic_scientist.venues (upstream configs/venue/iclr.yaml).
+# Add a new venue by copying this file: the file stem is the paper format name.
+name: iclr
+brief: iclr.md                          # relative to this directory
+author_block: null                      # null: anonymous submission, no canonical author block
+template_dir: templates/iclr            # relative to the staged skill .agents/skills/write-paper
+latex_markers:                          # any match on paper.tex selects this venue
+  - '\\usepackage\{paper,times\}'
+  - '\\iclrfinalcopy'
+page_budget:
+  min_body_pages: 8
+  max_body_pages: 9
+  min_last_body_page_fill_ratio: 0.75
+  body_columns: 1
+  exclude_references: true
+checks: []

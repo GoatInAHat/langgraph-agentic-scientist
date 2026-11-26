@@ -1,0 +1,1 @@
+No reviewer feedback is present yet. A separate reviewer gate may write major and minor comments before validation is fully cleared or after it passes, and the manuscript will re-enter a text-only repair pass.

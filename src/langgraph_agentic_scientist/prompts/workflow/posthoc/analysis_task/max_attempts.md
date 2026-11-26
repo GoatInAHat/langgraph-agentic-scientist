@@ -1,0 +1,1 @@
+- **Max attempts:** {{MAX_ATTEMPTS}}

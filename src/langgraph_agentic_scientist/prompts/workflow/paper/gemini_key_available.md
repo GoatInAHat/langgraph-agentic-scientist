@@ -1,0 +1,1 @@
+GEMINI_API_KEY is available as the automatic concept-figure fallback when OPENAI_API_KEY is unavailable.

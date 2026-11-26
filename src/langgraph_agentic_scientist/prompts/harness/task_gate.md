@@ -1,0 +1,1 @@
+Harness-owned validation gate for the task scaffold. `check` is one of `acceptance-smoke` (the complete acceptance check), `contract`, `runtime`, `search-smoke`, `final-smoke` or `production-entry`. The harness runs the check on the current scaffold and returns its report. The number of checks per repair is bounded.

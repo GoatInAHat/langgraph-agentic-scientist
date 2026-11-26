@@ -1,0 +1,1 @@
+No canonical author-block file is provided for this run. Preserve author metadata from the selected template and venue guidance.

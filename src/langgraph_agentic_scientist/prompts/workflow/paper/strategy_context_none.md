@@ -1,0 +1,1 @@
+No precomputed paper strategy is provided for this run. Infer the framing directly from grounded inputs.

@@ -1,0 +1,3 @@
+Use paper_data.json plus aggregated/ and extra_tasks/ as the canonical map from evaluated results to task families and variant families.
+If a staged new-program input appears to implement the same method family as an evaluated variant family in the results bundle, treat that as grounded family-level evaluation evidence.
+Distinguish family-level evaluated evidence from exact file-level provenance. If the exact source file used for evaluation is not recoverable, say that provenance is indirect instead of claiming there are no evaluation results.

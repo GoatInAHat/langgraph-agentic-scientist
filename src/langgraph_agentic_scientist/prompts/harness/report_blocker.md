@@ -1,0 +1,1 @@
+Report the exact blocker that prevents you from completing the task, and stop. Use it where your instructions say to exit non-zero and report the blocker; the harness records the text as evidence and ends your session.

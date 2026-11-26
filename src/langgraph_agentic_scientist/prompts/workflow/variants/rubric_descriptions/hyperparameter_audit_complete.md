@@ -1,0 +1,1 @@
+A hyperparameter_comparison.md file was created listing all hyperparameters from both the reference and control programs, with each difference categorized as 'align' or 'preserve' with reasoning.

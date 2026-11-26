@@ -1,0 +1,175 @@
+# Declared changes of the task-scaffold drafting package: the five role prompts, the draft-task
+# skill, and the workflow texts that upstream keeps in code. Paths of `upstream` are relative to
+# third_party/ai-scientist-v3/, paths of `target` to src/langgraph_agentic_scientist/.
+# Kinds A1-A8 are the systematic adaptations described in docs/ADAPTATIONS.md.
+#
+# Texts of upstream's shell code (src/scripts/task.sh, src/scripts/lib/task_gate.sh) are written
+# under third_party/ai-scientist-v3/extracted/drafting_scaffold/ by the helper in
+# tests/drafting/test_scaffold_texts.py, which also re-extracts and compares them on every test
+# run. Texts of upstream's Python modules are extracted by tools/derive_prompts.py.
+
+# --- texts that live in upstream Python code ---------------------------------------------------
+
+[[extract]]
+upstream = "src/task_drafting/repair_context.py"
+lines = "232-237"
+output = "extracted/drafting_scaffold/repair_history_heading.md"
+reason = "The heading of the rejected-repair history is a string constant in upstream code; the history renderer prepends it from package data."
+
+[[extract]]
+upstream = "src/task_drafting/alignment_history.py"
+lines = "180-185"
+output = "extracted/drafting_scaffold/alignment_history_heading.md"
+reason = "The heading of the prior alignment findings is a string constant in upstream code; the history renderer prepends it from package data."
+
+[[file]]
+upstream = "extracted/drafting_scaffold/repair_history_heading.md"
+target = "prompts/workflow/drafting/repair_history_heading.md"
+reason = "Verbatim value of the upstream constant (repair_context.py:232-237)."
+
+[[file]]
+upstream = "extracted/drafting_scaffold/alignment_history_heading.md"
+target = "prompts/workflow/drafting/alignment_history_heading.md"
+reason = "Verbatim value of the upstream constant (alignment_history.py:180-185)."
+
+# --- texts that live in upstream shell code ----------------------------------------------------
+
+[[file]]
+upstream = "extracted/drafting_scaffold/draft_retry_feedback.md"
+target = "prompts/workflow/drafting/draft_retry_feedback.md"
+reason = "The harness retry feedback appended to the draft prompt after an incomplete scaffold (task.sh:1221-1229), verbatim; its field is {{DIAGNOSTIC}}."
+
+[[file]]
+upstream = "extracted/drafting_scaffold/continue_provisional_repair.md"
+target = "prompts/workflow/drafting/continue_provisional_repair.md"
+reason = "The text appended to an alignment repair prompt when the provisional tree failed validation (task.sh:2202-2209), verbatim; its field is {{DIAGNOSTIC_BASE64}}."
+
+[[file]]
+upstream = "extracted/drafting_scaffold/alignment_report_correction.md"
+target = "prompts/workflow/drafting/alignment_report_correction.md"
+reason = "The output-contract correction appended to the judge prompt for the report retry (task.sh:2472-2479); its field is {{DIAGNOSTIC_BASE64}}."
+
+[[file.change]]
+kind = "A3"
+old = "then replace only the requested report with strict JSON."
+new = "then return only the corrected report as your structured response."
+count = 1
+reason = "The alignment judge answers through structured output; the host writes the report file, so the sentence that told the agent to write the file names the structured response instead."
+
+[[file]]
+upstream = "extracted/drafting_scaffold/candidate_boundary_repair.md"
+target = "prompts/workflow/drafting/candidate_boundary_repair.md"
+reason = "The text appended to an alignment repair prompt when the canonical candidate boundary is invalid (task.sh:2595-2602), verbatim; its field is {{DIAGNOSTIC_BASE64}}."
+
+[[file]]
+upstream = "extracted/drafting_scaffold/qualification_repair.md"
+target = "prompts/workflow/drafting/qualification_repair.md"
+reason = "The qualification repair prompt (task.sh:2856-2874): the paragraph, the five labelled base64 blocks and the heading of the shared repair policy, verbatim. Code fills the blocks with their upstream byte bounds and the two policy parts of repair_task.md."
+
+[[file]]
+upstream = "extracted/drafting_scaffold/task_gate.md"
+target = "prompts/workflow/drafting/task_gate.md"
+reason = "The harness-owned validation gate text appended to every repair prompt (task_gate.sh:3-18)."
+
+[[file.change]]
+kind = "A1"
+old = '''After each edit, run the complete acceptance check. Invoke:
+
+    python "$TASK_GATE_CLIENT" acceptance-smoke
+'''
+new = '''After each edit, run the complete acceptance check. Call the `task_gate` tool:
+
+    task_gate(check="acceptance-smoke")
+'''
+count = 1
+reason = "The gate client is a program of upstream's own package and must stay outside the candidate's reach; the gate is the `task_gate` tool, with the same operation and the same per-repair request budget."
+
+# --- role prompts ------------------------------------------------------------------------------
+
+[[file]]
+upstream = "src/prompts/draft_task.md"
+target = "prompts/drafting/draft_task.md"
+reason = "Task drafter (R7). Everything else is verbatim, including the sentences that name the wrapper that materializes program_spec.toml (the host does) and the broker contract."
+
+[[file.change]]
+kind = "A2"
+old = "If blocked, exit non-zero and report the exact blocker."
+new = "If blocked, call the `report_blocker` tool with the exact blocker and stop."
+count = 1
+reason = "An agent has no exit status; the blocker is reported through the tool and the graph's budgets decide what follows, as upstream's non-zero exit did."
+
+[[file]]
+upstream = "src/prompts/repair_task_preflight.md"
+target = "prompts/drafting/repair_task_preflight.md"
+reason = "Preflight repairer (R8)."
+
+[[file.change]]
+kind = "A2"
+old = "Finish non-zero if the error cannot be repaired faithfully."
+new = "If the error cannot be repaired faithfully, call the `report_blocker` tool with the exact blocker and stop."
+count = 1
+reason = "An agent has no exit status; the blocker is reported through the tool."
+
+[[file]]
+upstream = "src/prompts/repair_task_smoke.md"
+target = "prompts/drafting/repair_task_smoke.md"
+reason = "Smoke repairer (R9)."
+
+[[file.change]]
+kind = "A1"
+old = "the failure with the harness-owned gate client when available."
+new = "the failure with the `task_gate` tool when available."
+count = 1
+reason = "The gate client is the `task_gate` tool."
+
+[[file.change]]
+kind = "A2"
+old = "Finish non-zero if a faithful repair\n  requires changing that contract budget."
+new = "If a faithful repair\n  requires changing that contract budget, call the `report_blocker` tool with the exact blocker and stop."
+count = 1
+reason = "An agent has no exit status; the blocker is reported through the tool."
+
+[[file.change]]
+kind = "A2"
+old = "- Finish non-zero when the diagnostic is operational rather than authored, or cannot be repaired\n  without weakening the task."
+new = "- Call the `report_blocker` tool with the exact blocker and stop when the diagnostic is operational rather than authored, or cannot be repaired\n  without weakening the task."
+count = 1
+reason = "An agent has no exit status; the blocker is reported through the tool."
+
+[[file]]
+upstream = "src/prompts/validate_task.md"
+target = "prompts/drafting/validate_task.md"
+reason = "Alignment judge (R10). The judge's read of `nl -ba` is the read-only `nl` tool (A7), so those sentences are unchanged."
+
+[[file.change]]
+kind = "A3"
+old = "Write only `{{TASK_ALIGNMENT_REPORT_PATH}}` as strict JSON with:"
+new = "Return only the report as your structured response; the harness writes it to `{{TASK_ALIGNMENT_REPORT_PATH}}`. It is strict JSON with:"
+count = 1
+reason = "The alignment judge answers through structured output; the host writes the report file. The field list and every rule about content stay."
+
+[[file.change]]
+kind = "A3"
+old = "Do not modify anything except the report path."
+new = "Do not modify anything."
+count = 1
+reason = "The judge writes no file; the host writes the report from the structured response, so the exception for the report path has no object."
+
+[[file]]
+upstream = "src/prompts/repair_task.md"
+target = "prompts/drafting/repair_task.md"
+reason = "Alignment repairer (R11); its preamble and its text from `# Repair policy` also form the qualification repairer's shared policy (R12). The headings `# Role` and `# Repair policy` stay byte-identical, because the qualification repair prompt splits on them."
+
+[[file.change]]
+kind = "A2"
+old = "Finish non-zero if a requested repair cannot be made faithfully."
+new = "If a requested repair cannot be made faithfully, call the `report_blocker` tool with the exact blocker and stop."
+count = 1
+reason = "An agent has no exit status; the blocker is reported through the tool."
+
+# --- skill ---------------------------------------------------------------------------------------
+
+[[file]]
+upstream = "src/agents/skills/draft-task/SKILL.md"
+target = "skills/draft-task/SKILL.md"
+reason = "Staged for the task drafter only (upstream stages it under the draft directory, which the repair and judge roles never work in); verbatim, rendered with the drafter's placeholder values when staged."

@@ -1,0 +1,41 @@
+# Context blocks of the idea and attempt prompts. {{NAME}} fields are filled by investigation/context.py.
+
+[counts]
+recent_ideas = 10             # idea.sh:565-568 tail_jsonl(ideas_history, max_lines=10)
+recent_attempts = 20          # idea.sh:569-572 tail_jsonl(attempts_history, max_lines=20)
+idea_memory_lines = 30        # idea.sh:581 tail_jsonl(global_memory_jsonl, max_lines=30)
+attempt_memory_lines = 40     # run.sh:896 tail_jsonl(global_memory_jsonl, max_lines=40)
+items_shown = 5               # idea.sh:617, run.sh:923 entries[-5:]
+
+[jsonl_summary]
+# summarize_jsonl_entries (idea.sh:613-632, run.sh:919-938)
+empty = "- none"
+item = "- item {{INDEX}}: {{PARTS}}"
+non_object = "- item {{INDEX}}: <non-object entry>"
+no_fields = "<no summarized fields>"
+part = "{{KEY}}={{VALUE}}"
+separator = "; "
+idea_keys = ["cycle_index", "idea_id", "title"]
+memory_keys = ["step", "idea_id", "summary", "next_action"]
+
+[best_manifest]
+# summarize_best_manifest (idea.sh:634-644)
+none = "- no best program selected yet"
+empty = "- best manifest present but empty"
+prefix = "- "
+part = "{{KEY}}={{VALUE}}"
+separator = "; "
+keys = ["program_dir", "entrypoint_path", "combined_score", "correct", "source_attempt_id"]
+
+[recent_attempts]
+# summarize_recent_attempts (harness_feedback.py:17-50)
+empty = "- no recent attempts"
+prefix = "- "
+keys = ["cycle_index", "idea_id", "attempt_id", "attempt_status", "run_exit_code", "rubric_overall_pass"]
+
+[conclusions]
+# idea.sh:587-607, run.sh:902-917, state.py:39-40
+own_fallback = "_No conclusions yet._"
+other_workers_fallback = "_No conclusions from other workers yet._"
+other_workers_placeholder = "_No conclusions from other workers yet._"
+other_workers_section = "\n### From other workers\n\n{{BODY}}\n"

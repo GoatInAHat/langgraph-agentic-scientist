@@ -1,0 +1,1 @@
+Fresh-paper mode is enabled for this run; there is no prior manuscript to compare against.

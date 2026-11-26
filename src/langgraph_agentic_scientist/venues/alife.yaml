@@ -1,0 +1,14 @@
+# Venue specification consumed by langgraph_agentic_scientist.venues (upstream configs/venue/alife.yaml).
+name: alife
+brief: alife.md                         # relative to this directory
+author_block: authors/alife.tex         # relative to this directory
+template_dir: templates/alife           # relative to the staged skill .agents/skills/write-paper
+latex_markers:
+  - '\\usepackage\{[^}]*alifeconf[^}]*\}'
+page_budget:
+  min_body_pages: 8
+  max_body_pages: 8
+  min_last_body_page_fill_ratio: 0.75
+  body_columns: 2
+  exclude_references: true
+checks: [alife_framing]

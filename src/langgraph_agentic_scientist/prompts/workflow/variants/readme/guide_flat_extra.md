@@ -1,0 +1,1 @@
+| `extra_tasks/{task}/{variant}/` | Per-variant results for manually added tasks |

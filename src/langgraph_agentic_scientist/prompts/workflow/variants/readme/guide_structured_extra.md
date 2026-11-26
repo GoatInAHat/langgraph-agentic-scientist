@@ -1,0 +1,1 @@
+| `extra_tasks/{task}/variants/{id}/` | Per-variant workspace for extra tasks |

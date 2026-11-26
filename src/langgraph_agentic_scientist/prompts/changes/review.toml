@@ -1,0 +1,154 @@
+# Declared changes of the review and revision package: the automated reviewer's texts (upstream
+# src/aireview.py) and the revision writer's prompt (upstream src/prompts/paper_revision.md).
+# Paths of `upstream` are relative to third_party/ai-scientist-v3/, paths of `target` to
+# src/langgraph_agentic_scientist/. Kinds A1-A8 are the systematic adaptations described in
+# docs/ADAPTATIONS.md.
+
+# --- texts that live in upstream code (src/aireview.py) ------------------------------------------
+
+[[extract]]
+upstream = "src/aireview.py"
+lines = "45-47"
+output = "extracted/review/retry_correction.md"
+reason = "REVIEW_RETRY_CORRECTION is a string constant in upstream code; it is appended to the prompt of the second attempt."
+
+[[extract]]
+upstream = "src/aireview.py"
+lines = "51-52"
+output = "extracted/review/reviewer_system.md"
+reason = "REVIEWER_SYSTEM_PROMPT is a string constant in upstream code; it is the system message of every reviewer call."
+
+[[extract]]
+upstream = "src/aireview.py"
+lines = "55-91"
+output = "extracted/review/template_instructions.md"
+reason = "TEMPLATE_INSTRUCTIONS is a string constant in upstream code; it ends the review form and the area chair's form."
+
+[[extract]]
+upstream = "src/aireview.py"
+lines = "94-149"
+output = "extracted/review/neurips_form.md"
+reason = "The NeurIPS review form is a string constant in upstream code (upstream appends TEMPLATE_INSTRUCTIONS to it in the same expression; the package keeps the two texts apart)."
+
+[[extract]]
+upstream = "src/aireview.py"
+lines = "153-156"
+output = "extracted/review/area_chair_system.md"
+reason = "META_REVIEWER_SYSTEM_PROMPT is a string constant in upstream code; upstream fills {reviewer_count} with str.format."
+
+[[extract]]
+upstream = "src/aireview.py"
+lines = "245-260"
+output = "extracted/review/fewshot_wrapper.md"
+names = { "review_payload['review']" = "REVIEW" }
+reason = "The f-string that wraps the few-shot paper and review in upstream's _fewshot_prompt()."
+
+[[extract]]
+upstream = "src/aireview.py"
+lines = "387-391"
+output = "extracted/review/review_request.md"
+names = { "text" = "PAPER_TEXT" }
+reason = "The f-string that ends the reviewer's user message in upstream's _review_prompt()."
+
+[[extract]]
+upstream = "src/aireview.py"
+lines = "398-403"
+output = "extracted/review/meta_review_request.md"
+names = { "index + 1" = "INDEX", "len(reviews)" = "COUNT", "json.dumps(review)" = "REVIEW_JSON" }
+reason = "The f-string of one review block in upstream's _meta_review_prompt(); upstream concatenates one block per reviewer after the form."
+
+# The few-shot paper and review (aireview.py:163-199) are bz2-compressed and Base85-encoded in
+# upstream. Their decoded texts are in extracted/review/fewshot_paper.md and fewshot_review.md; a
+# test decodes the upstream constants again and compares them with these files.
+
+# --- package files derived from them -------------------------------------------------------------
+
+[[file]]
+upstream = "extracted/review/reviewer_system.md"
+target = "prompts/review/reviewer_system.md"
+reason = "System message of every reviewer call, verbatim (the missing space after 'venue.' is upstream's)."
+
+[[file]]
+upstream = "extracted/review/retry_correction.md"
+target = "prompts/review/retry_correction.md"
+reason = "Appended to the prompt of the second attempt of a reviewer or area chair call, verbatim; upstream does not add the validation error."
+
+[[file]]
+upstream = "extracted/review/neurips_form.md"
+target = "prompts/review/neurips_form.md"
+reason = "The NeurIPS review form, verbatim (its typos and the 'Weak Accept' wording are upstream's)."
+
+[[file]]
+upstream = "extracted/review/template_instructions.md"
+target = "prompts/review/template_instructions.md"
+reason = "The answer format of the reviewer and the area chair. The reviewer answers through structured output (two fields, thought and review); the field descriptions, scales and the Decision rule stay."
+
+[[file.change]]
+kind = "A6"
+old = '''Respond in the following format:
+
+THOUGHT:
+<THOUGHT>
+
+REVIEW JSON:
+```json
+<JSON>
+```
+
+In <THOUGHT>, first briefly discuss'''
+new = '''Respond with a structured answer that has two fields, "thought" and "review".
+
+In "thought", first briefly discuss'''
+count = 1
+reason = "Upstream asks for the text 'THOUGHT:' followed by a fenced 'REVIEW JSON' block and parses it by hand; the port receives the two parts as the fields of a structured answer, so the format block that names the fences becomes one sentence naming the two fields."
+
+[[file.change]]
+kind = "A6"
+old = "In <JSON>, provide the review in JSON format with the following fields in the order:"
+new = 'In "review", provide the review in JSON format with the following fields in the order:'
+count = 1
+reason = "The review is the second field of the structured answer; its fields, their order and their descriptions are unchanged."
+
+[[file]]
+upstream = "extracted/review/area_chair_system.md"
+target = "prompts/review/area_chair_system.md"
+reason = "System message of the area chair call, verbatim except for the placeholder of the reviewer count."
+
+[[file.change]]
+kind = "other"
+old = "{reviewer_count}"
+new = "{{REVIEWER_COUNT}}"
+count = 1
+reason = "Upstream fills the field with str.format; the package fills registry placeholders in one pass."
+
+[[file]]
+upstream = "extracted/review/fewshot_paper.md"
+target = "prompts/review/fewshot_paper.md"
+reason = "The few-shot paper of upstream's reviewer (decoded from the compressed constant), verbatim."
+
+[[file]]
+upstream = "extracted/review/fewshot_review.md"
+target = "prompts/review/fewshot_review.md"
+reason = "The review of the few-shot paper (decoded from the compressed constant; the value of the 'review' key of upstream's example document), verbatim."
+
+[[file]]
+upstream = "extracted/review/fewshot_wrapper.md"
+target = "prompts/review/fewshot_wrapper.md"
+reason = "The text that introduces the few-shot paper and review in the reviewer's user message, verbatim; the paper and the review are filled by {{PAPER_TEXT}} and {{REVIEW}}."
+
+[[file]]
+upstream = "extracted/review/review_request.md"
+target = "prompts/review/review_request.md"
+reason = "The end of the reviewer's user message that carries the paper under review, verbatim; the text is filled by {{PAPER_TEXT}}."
+
+[[file]]
+upstream = "extracted/review/meta_review_request.md"
+target = "prompts/review/meta_review_request.md"
+reason = "One review block of the area chair's user message, verbatim; code renders one block per reviewer with {{INDEX}}, {{COUNT}} and {{REVIEW_JSON}}."
+
+# --- the revision writer (src/prompts/paper_revision.md) ------------------------------------------
+
+[[file]]
+upstream = "src/prompts/paper_revision.md"
+target = "prompts/paper/paper_revision.md"
+reason = "The revision writer's prompt, verbatim: the revision runs the paper graph in revision mode, which fills its placeholders as the edit prompts' are filled."

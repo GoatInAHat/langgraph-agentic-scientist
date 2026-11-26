@@ -1,0 +1,1 @@
+| `aggregated/{task}/timeseries.csv` | Per-task epoch-level training curves |

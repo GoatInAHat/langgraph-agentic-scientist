@@ -1,0 +1,187 @@
+# Declared changes of the post-hoc package: the four post-hoc prompts and the texts of the generated
+# analysis task.md that live in upstream code (src/posthoc_pipeline/materialize.py). Paths of
+# `upstream` are relative to third_party/ai-scientist-v3/, paths of `target` to
+# src/langgraph_agentic_scientist/. Kinds A1-A8 are the systematic adaptations described in
+# docs/ADAPTATIONS.md.
+
+# --- the four prompts --------------------------------------------------------------------------
+
+[[file]]
+upstream = "src/prompts/posthoc_bootstrap.md"
+target = "prompts/posthoc/posthoc_bootstrap.md"
+reason = "Role R23 (bootstrap agent), verbatim. The harness fills {{TASK_MD}}, {{EVALUATOR_SOURCE}}, {{PROGRAM_SOURCE}} and {{RESULTS_JSON}}."
+
+[[file]]
+upstream = "src/prompts/posthoc_generate.md"
+target = "prompts/posthoc/posthoc_generate.md"
+reason = "Role R24 (analysis generator), a structured role: the answer is returned as the structured response and the harness writes posthoc_bundle.json."
+
+[[file.change]]
+kind = "A3"
+old = "Write `posthoc_bundle.json` with:"
+new = "Return your structured response (the harness writes it to `./posthoc_bundle.json`) with:"
+count = 1
+reason = "The agent no longer writes the JSON file itself; the field list that follows is unchanged because it carries the meaning of each field."
+
+[[file]]
+upstream = "src/prompts/posthoc_select.md"
+target = "prompts/posthoc/posthoc_select.md"
+reason = "Role R25 (analysis selector), a structured role: the decisions are returned as the structured response and the harness writes posthoc_selection.json."
+
+[[file.change]]
+kind = "A3"
+old = "Review the proposed post-hoc analyses and write `posthoc_selection.json`."
+new = "Review the proposed post-hoc analyses and return your decisions as your structured response (the harness writes them to `./posthoc_selection.json`)."
+count = 1
+reason = "The agent no longer writes the JSON file itself; the schema block that follows is unchanged."
+
+[[file]]
+upstream = "src/prompts/posthoc_agent.md"
+target = "prompts/posthoc/posthoc_agent.md"
+reason = "Role R26 (analysis executor), verbatim. The harness fills {{ANALYSIS_SPEC}}, {{RUBRIC_CONTRACT}}, {{ATTEMPT_NUMBER}} and {{ERROR_CONTEXT}}."
+
+# --- texts of the generated analysis task.md (upstream materialize.py:161-214) -------------------
+
+[[extract]]
+upstream = "src/posthoc_pipeline/materialize.py"
+lines = "173"
+output = "extracted/posthoc/analysis_task_title.md"
+names = { "spec.title" = "TITLE" }
+reason = "The heading line of the generated analysis task.md."
+
+[[file]]
+upstream = "extracted/posthoc/analysis_task_title.md"
+target = "prompts/workflow/posthoc/analysis_task/title.md"
+reason = "Verbatim value of the upstream string; the heading line of the generated analysis task.md."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/materialize.py"
+lines = "174"
+output = "extracted/posthoc/analysis_task_analysis_id.md"
+names = { "spec.analysis_id" = "ANALYSIS_ID" }
+reason = "The analysis id line of the generated analysis task.md."
+
+[[file]]
+upstream = "extracted/posthoc/analysis_task_analysis_id.md"
+target = "prompts/workflow/posthoc/analysis_task/analysis_id.md"
+reason = "Verbatim value of the upstream string; the analysis id line of the generated analysis task.md."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/materialize.py"
+lines = "175"
+output = "extracted/posthoc/analysis_task_family.md"
+names = { "spec.family" = "FAMILY" }
+reason = "The family line of the generated analysis task.md."
+
+[[file]]
+upstream = "extracted/posthoc/analysis_task_family.md"
+target = "prompts/workflow/posthoc/analysis_task/family.md"
+reason = "Verbatim value of the upstream string; the family line of the generated analysis task.md."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/materialize.py"
+lines = "176"
+output = "extracted/posthoc/analysis_task_max_attempts.md"
+names = { "max_attempts_per_analysis" = "MAX_ATTEMPTS" }
+reason = "The attempt limit line of the generated analysis task.md."
+
+[[file]]
+upstream = "extracted/posthoc/analysis_task_max_attempts.md"
+target = "prompts/workflow/posthoc/analysis_task/max_attempts.md"
+reason = "Verbatim value of the upstream string; the attempt limit line of the generated analysis task.md."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/materialize.py"
+lines = "177"
+output = "extracted/posthoc/analysis_task_requires_retrain.md"
+names = { "spec.requires_retrain" = "REQUIRES_RETRAIN" }
+reason = "The retrain flag line of the generated analysis task.md."
+
+[[file]]
+upstream = "extracted/posthoc/analysis_task_requires_retrain.md"
+target = "prompts/workflow/posthoc/analysis_task/requires_retrain.md"
+reason = "Verbatim value of the upstream string; the retrain flag line of the generated analysis task.md."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/materialize.py"
+lines = "180"
+output = "extracted/posthoc/analysis_task_hypothesis.md"
+names = { "spec.hypothesis" = "HYPOTHESIS" }
+reason = "The hypothesis section of the generated analysis task.md."
+
+[[file]]
+upstream = "extracted/posthoc/analysis_task_hypothesis.md"
+target = "prompts/workflow/posthoc/analysis_task/hypothesis.md"
+reason = "Verbatim value of the upstream string; the hypothesis section of the generated analysis task.md."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/materialize.py"
+lines = "182"
+output = "extracted/posthoc/analysis_task_expected_claim.md"
+names = { "spec.expected_claim" = "EXPECTED_CLAIM" }
+reason = "The expected claim section of the generated analysis task.md."
+
+[[file]]
+upstream = "extracted/posthoc/analysis_task_expected_claim.md"
+target = "prompts/workflow/posthoc/analysis_task/expected_claim.md"
+reason = "Verbatim value of the upstream string; the expected claim section of the generated analysis task.md."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/materialize.py"
+lines = "185"
+output = "extracted/posthoc/analysis_task_required_artifacts_heading.md"
+names = {}
+reason = "The heading of the required artifacts section of the generated analysis task.md; the bullet list is rendered by code."
+
+[[file]]
+upstream = "extracted/posthoc/analysis_task_required_artifacts_heading.md"
+target = "prompts/workflow/posthoc/analysis_task/required_artifacts_heading.md"
+reason = "Verbatim value of the upstream string; the heading of the required artifacts section of the generated analysis task.md; the bullet list is rendered by code."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/materialize.py"
+lines = "191"
+output = "extracted/posthoc/analysis_task_expected_outputs_heading.md"
+names = {}
+reason = "The heading of the expected outputs section of the generated analysis task.md; the bullet list is rendered by code."
+
+[[file]]
+upstream = "extracted/posthoc/analysis_task_expected_outputs_heading.md"
+target = "prompts/workflow/posthoc/analysis_task/expected_outputs_heading.md"
+reason = "Verbatim value of the upstream string; the heading of the expected outputs section of the generated analysis task.md; the bullet list is rendered by code."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/materialize.py"
+lines = "197"
+output = "extracted/posthoc/analysis_task_implementation_plan_heading.md"
+names = {}
+reason = "The heading of the implementation plan section of the generated analysis task.md; the numbered list is rendered by code."
+
+[[file]]
+upstream = "extracted/posthoc/analysis_task_implementation_plan_heading.md"
+target = "prompts/workflow/posthoc/analysis_task/implementation_plan_heading.md"
+reason = "Verbatim value of the upstream string; the heading of the implementation plan section of the generated analysis task.md; the numbered list is rendered by code."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/materialize.py"
+lines = "202-206"
+output = "extracted/posthoc/analysis_task_execution_rules.md"
+names = {}
+reason = "The execution rules section of the generated analysis task.md."
+
+[[file]]
+upstream = "extracted/posthoc/analysis_task_execution_rules.md"
+target = "prompts/workflow/posthoc/analysis_task/execution_rules.md"
+reason = "Verbatim value of the upstream string; the execution rules section of the generated analysis task.md."
+
+[[extract]]
+upstream = "src/posthoc_pipeline/materialize.py"
+lines = "210-211"
+output = "extracted/posthoc/analysis_task_original_task_context.md"
+names = {}
+reason = "The original task context section, added when the bundle held a task.md."
+
+[[file]]
+upstream = "extracted/posthoc/analysis_task_original_task_context.md"
+target = "prompts/workflow/posthoc/analysis_task/original_task_context.md"
+reason = "Verbatim value of the upstream string; the original task context section, added when the bundle held a task.md."

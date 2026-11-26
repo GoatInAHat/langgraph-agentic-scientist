@@ -1,0 +1,2 @@
+- Interpret these task/variant directories as the grounded map from results to settings.
+- When a staged input appears to implement the same evaluated method family, say so explicitly and distinguish direct file provenance from indirect family-level linkage.

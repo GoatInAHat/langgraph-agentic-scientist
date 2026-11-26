@@ -1,0 +1,1 @@
+No venue-specific brief is provided for this run. Rely on the selected paper format, grounded artifacts, and references only.

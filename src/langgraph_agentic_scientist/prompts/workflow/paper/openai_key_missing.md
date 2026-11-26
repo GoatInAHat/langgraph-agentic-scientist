@@ -1,0 +1,1 @@
+OPENAI_API_KEY was not detected from the current shell or configured container env file before launch. Re-check inside the active workspace or process environment before deciding it is unavailable; the orchestrator will use Gemini when available or otherwise ship the deterministic export with --skip-enhance.

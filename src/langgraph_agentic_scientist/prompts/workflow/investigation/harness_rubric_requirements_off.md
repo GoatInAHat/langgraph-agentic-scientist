@@ -1,0 +1,1 @@
+Harness mode is disabled. Omit `verification` from every rubric; static source verification is not used in this mode.

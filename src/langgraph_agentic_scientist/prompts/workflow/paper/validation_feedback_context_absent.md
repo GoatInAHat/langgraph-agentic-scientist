@@ -1,0 +1,1 @@
+No prior validation feedback is present. Produce a fresh grounded draft, run validation, and fix any hard errors before finishing.

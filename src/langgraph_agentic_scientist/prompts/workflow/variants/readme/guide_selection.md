@@ -1,0 +1,1 @@
+| `generation/variant_selection.json` | Accepted/rejected proposals with reasons |

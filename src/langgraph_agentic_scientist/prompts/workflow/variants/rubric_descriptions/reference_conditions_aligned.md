@@ -1,0 +1,1 @@
+Experimental conditions (e.g. training budget) are aligned with the control program so the reference implementation has no unfair advantage or disadvantage on factors outside its core contribution.

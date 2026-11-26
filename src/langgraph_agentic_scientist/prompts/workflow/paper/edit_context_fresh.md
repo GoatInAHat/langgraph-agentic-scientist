@@ -1,0 +1,1 @@
+Fresh-paper mode is enabled for this run; there is no seeded prior manuscript to preserve.

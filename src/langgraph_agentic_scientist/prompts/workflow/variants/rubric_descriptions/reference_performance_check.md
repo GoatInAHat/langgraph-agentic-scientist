@@ -1,0 +1,1 @@
+Compare the adapted program's performance against the expected performance documented in program_0/ (e.g. README). If there is a large degradation, investigate which adaptation changes caused it and revert any that are not strictly required for evaluate.py to run.

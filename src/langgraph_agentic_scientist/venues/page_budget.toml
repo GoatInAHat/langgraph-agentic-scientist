@@ -1,0 +1,10 @@
+# The sentence that fills {{PAPER_PAGE_BUDGET}} in a venue brief, from the enforced page budget of
+# the venue (upstream `page_budget_sentence`, src/orchestrator/paper_venues.py). The pieces are
+# joined as upstream joins them: `<span>[<excluding>].[<fill_rule>]`.
+no_budget = "no enforced page budget; follow the venue guidance below."
+up_to = "up to {max} pages"
+exactly = "exactly {max} pages"
+between = "{min} to {max} pages"
+exclude_references = ", excluding references"
+end = "."
+fill_rule = " A body of {min} pages counts only when its final page is at least {ratio} full; a shorter or sparser body fails validation."

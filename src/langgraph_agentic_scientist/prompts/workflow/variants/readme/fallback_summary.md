@@ -1,0 +1,1 @@
+{{TITLE}} ({{KIND}} variant).

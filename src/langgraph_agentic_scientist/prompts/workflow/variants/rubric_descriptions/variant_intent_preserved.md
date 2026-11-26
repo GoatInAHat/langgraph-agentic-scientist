@@ -1,0 +1,1 @@
+The implementation matches the declared baseline/ablation intent described in variant_spec.json.

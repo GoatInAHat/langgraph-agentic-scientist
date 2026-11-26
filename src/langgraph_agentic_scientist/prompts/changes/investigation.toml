@@ -1,0 +1,306 @@
+# Declared changes of the investigation package: the idea, search and candidate-author prompts, the
+# create-idea skill, and the workflow texts of the campaign. Paths of `upstream` are relative to
+# third_party/ai-scientist-v3/, paths of `target` to src/langgraph_agentic_scientist/.
+# Kinds A1-A8 are the systematic adaptations described in docs/ADAPTATIONS.md.
+
+# --- texts that live in upstream code ---------------------------------------------------------
+
+[[extract]]
+upstream = "src/investigation/idea_retry_feedback.py"
+lines = "36-38"
+output = "extracted/investigation/idea_validation_feedback.md"
+reason = "The validation-feedback text of an idea retry is a string literal in upstream code; the untrusted diagnostic is appended by code as JSON data, as upstream does."
+
+[[extract]]
+upstream = "src/investigation/public_task_contract.py"
+lines = "75-79"
+output = "extracted/investigation/public_search_contract.md"
+names = { "indented_payload" = "INDENTED_PAYLOAD" }
+reason = "The framing text of the public search contract is an f-string in upstream code."
+
+[[extract]]
+upstream = "src/investigation/files.py"
+lines = "39-49"
+output = "extracted/investigation/prune_warning.md"
+reason = "The prune warning banner is a string literal in upstream code."
+
+[[file]]
+upstream = "extracted/investigation/idea_validation_feedback.md"
+target = "prompts/workflow/investigation/idea_validation_feedback.md"
+reason = "Verbatim value of the upstream string; appended to the ideator's prompt on a retry, followed by the diagnostic (redacted, at most 2048 bytes) as a JSON object."
+
+[[file]]
+upstream = "extracted/investigation/public_search_contract.md"
+target = "prompts/workflow/investigation/public_search_contract.md"
+reason = "Verbatim value of the upstream f-string; {{INDENTED_PAYLOAD}} is the candidate-visible subset of the task contract, filled by investigation/context.py."
+
+[[file]]
+upstream = "extracted/investigation/prune_warning.md"
+target = "prompts/workflow/investigation/prune_warning.md"
+reason = "Verbatim banner of upstream's prune warning; it is the text of the prune_confirmation question."
+
+[[file]]
+upstream = "extracted/investigation/harness_rubric_requirements_on.md"
+target = "prompts/workflow/investigation/harness_rubric_requirements_on.md"
+reason = "Verbatim value of upstream's HARNESS_RUBRIC_REQUIREMENTS for harness-evaluated attempts; {{MAX_SOURCE_PATTERN_CHARS}} is filled by investigation/context.py."
+
+[[file]]
+upstream = "extracted/investigation/harness_rubric_requirements_off.md"
+target = "prompts/workflow/investigation/harness_rubric_requirements_off.md"
+reason = "Verbatim value of upstream's HARNESS_RUBRIC_REQUIREMENTS for self-evaluated attempts."
+
+[[file]]
+upstream = "extracted/investigation/context_blocks.toml"
+target = "prompts/workflow/investigation/context_blocks.toml"
+reason = "Format strings, keys and counts of the recent-ideas, recent-attempts, memory, best-manifest and conclusions blocks of the idea and attempt prompts, verbatim from upstream's driver scripts."
+
+[[file]]
+upstream = "extracted/investigation/harness_feedback.toml"
+target = "prompts/workflow/investigation/harness_feedback.toml"
+reason = "Evidence and feedback strings of the harness-owned evaluation (rubric status and memory entry), verbatim from upstream."
+
+# --- the idea prompt -----------------------------------------------------------------------------
+
+[[file]]
+upstream = "src/prompts/idea.md"
+target = "prompts/investigation/idea.md"
+reason = "Prompt of the ideator (R13). It answers through structured output, so the sentences that told the agent to write the two JSON files name the structured response instead."
+
+[[file.change]]
+kind = "A3"
+old = '''# Required Output Files
+Write exactly these files:
+- `{{IDEA_BUNDLE_FILE}}`
+- `{{TARGET_RUBRICS_FILE}}`
+
+`idea_bundle.json` must be a JSON object with keys:
+'''
+new = '''# Required Output
+Return the idea bundle as your structured response. The harness writes these files from it:
+- `{{IDEA_BUNDLE_FILE}}`
+- `{{TARGET_RUBRICS_FILE}}`
+
+The structured response must be an object with keys:
+'''
+count = 1
+reason = "The ideator returns the bundle as its structured response; the harness writes both files, so no file is written by the agent."
+
+[[file.change]]
+kind = "A3"
+old = "- `target_rubrics.json` must be exactly the same rubric array as `idea_bundle.json.target_rubrics`."
+new = "- The harness writes `target_rubrics.json` as exactly the rubric array of `idea_bundle.json.target_rubrics`."
+count = 1
+reason = "The two files are written by the harness from one structured response, so they cannot differ."
+
+[[file.change]]
+kind = "A3"
+old = "- Your only outputs are the required JSON files and required memory entries."
+new = "- Your only outputs are the structured response and required memory entries."
+count = 1
+reason = "The JSON files are no longer outputs of the agent."
+
+[[file.change]]
+kind = "other"
+old = "- Do not write local memory to `./memory.md` in this staging workspace (for example `_idea_generation/...`)."
+new = "- Do not write local memory to `{{IDEA_OUTPUT_DIR}}/memory.md` in this staging workspace (for example `_idea_generation/...`)."
+count = 1
+reason = "The ideator works from the worker's results root, where `./memory.md` is the campaign-level memory file; the rule forbids a stray local file in the staging directory, which the placeholder names."
+
+[[file.change]]
+kind = "A3"
+old = "- After writing `idea_bundle.json` and `target_rubrics.json`, append an entry with:"
+new = "- Before returning the structured response, append an entry with:"
+count = 1
+reason = "Returning the structured response ends the session, so the memory entry is appended before it."
+
+# --- the search agent prompt ----------------------------------------------------------------------
+
+[[file]]
+upstream = "src/prompts/general.md"
+target = "prompts/investigation/general.md"
+reason = "Prompt of the self-evaluated search agent (R14). The trusted clone and the evaluation wrapper are tools (A1); every rule about budget, order and refusal is kept."
+
+[[file.change]]
+kind = "A1"
+old = "2. `evaluate-program`: run `{{TASK_DIR}}/evaluate.py` and collect `metrics.json`, `correct.json`, logs."
+new = "2. `evaluate-program`: call the `evaluate_program` tool and collect `metrics.json`, `correct.json`, logs."
+count = 1
+reason = "The official evaluation is the evaluate_program tool, not a command."
+
+[[file.change]]
+kind = "A1"
+old = "- Use `src.investigation.program_clone` for every candidate clone."
+new = "- Use the `clone_program` tool for every candidate clone."
+count = 1
+reason = "The trusted clone is a tool; the rule that no other copy creates a candidate stays on the next line."
+
+[[file.change]]
+kind = "A1"
+old = "each command that runs `evaluate.py` consumes one evaluation, including `program_0`"
+new = "each `evaluate_program` call consumes one evaluation, including `program_0`"
+count = 1
+reason = "The budget counts the tool's calls, as it counted the wrapper's commands."
+
+[[file.change]]
+kind = "A1"
+old = "total `evaluate.py` calls in a single attempt."
+new = "total `evaluate_program` calls in a single attempt."
+count = 1
+reason = "The budget counts the tool's calls."
+
+[[file.change]]
+kind = "A1"
+old = "run `evaluate.py` exactly once on `program_1`"
+new = "call `evaluate_program` exactly once on `program_1`"
+count = 1
+reason = "The evaluation is the tool call."
+
+[[file.change]]
+kind = "A1"
+old = "- Do not re-run `evaluate.py` for the same program."
+new = "- Do not call `evaluate_program` again for the same program."
+count = 1
+reason = "The no-rerun rule names the tool."
+
+[[file.change]]
+kind = "A1"
+old = "outside the official `evaluate.py` call."
+new = "outside the official `evaluate_program` call."
+count = 1
+reason = "The prohibition of exploratory computation names the official evaluation as the tool call."
+
+[[file.change]]
+kind = "A1"
+old = "- The only allowed Python execution is the single official `evaluate.py` command, subject to the evaluation budget."
+new = "- The only allowed Python execution is the official evaluation through the `evaluate_program` tool, subject to the evaluation budget."
+count = 1
+reason = "The one allowed execution is the tool call; the prohibitions around it are unchanged."
+
+[[file.change]]
+kind = "A1"
+old = '''- Use the task runtime for every official evaluator call so the evaluator and candidate retain the task's installed dependencies:
+
+```bash
+"${TASK_PYTHON:-$WRAPPER_PYTHON}" -I -m src.investigation.evaluate_program \
+    --evaluator "{{TASK_DIR}}/evaluate.py" \
+    --program-dir "{{RESULTS_DIR}}/program_<idx>" \
+    --timeout-seconds "${EVALUATION_TIMEOUT_SECONDS:-21600}"
+```
+'''
+new = '''- The `evaluate_program` tool runs the official evaluator in the task runtime, so the evaluator and candidate retain the task's installed dependencies. Call it with the program directory:
+
+```
+evaluate_program(program_dir="{{RESULTS_DIR}}/program_<idx>")
+```
+'''
+count = 1
+reason = "The wrapper command block becomes the tool call with the same program directory; the task runtime and the evaluator timeout belong to the tool."
+
+[[file.change]]
+kind = "A1"
+old = "- Always use this wrapper command; do not invoke `evaluate.py` directly."
+new = "- Always use this tool; do not invoke `evaluate.py` directly."
+count = 1
+reason = "The sentence about evaluator-owned logs and the published summaries stays after it."
+
+[[file.change]]
+kind = "A1"
+old = '''- Do not wrap the command with the shell `timeout` utility. If the shell tool supports an unlimited/omitted timeout, omit its optional timeout. Otherwise, configure it longer than the effective evaluator timeout plus its cleanup margin. Never choose a shell-tool timeout shorter than the evaluator timeout.
+'''
+new = ""
+count = 1
+reason = "The advice concerns the shell command that ran the evaluator; the tool call is blocking and owns the evaluator timeout, so no shell timeout is involved."
+
+[[file.change]]
+kind = "A1"
+old = "- Never invoke `evaluate.py` with bare `python`, `python3`, or its shebang. The container's wrapper interpreter is intentionally separate from the task runtime and may not contain task dependencies."
+new = "- Never run `evaluate.py` outside the `evaluate_program` tool, with `python`, `python3` or its shebang. The tool's interpreter is the task runtime; a shell interpreter may not contain task dependencies."
+count = 1
+reason = "The rule that the evaluator is not started any other way stays, stated for the tool."
+
+[[file.change]]
+kind = "A1"
+old = "if you do, it consumes one `evaluate.py` call from the same budget."
+new = "if you do, it consumes one `evaluate_program` call from the same budget."
+count = 1
+reason = "The budget counts the tool's calls."
+
+[[file.change]]
+kind = "A1"
+old = "- Before any command containing `evaluate.py`, check whether the total evaluation budget has already been consumed. If no budget remains, do not run the command."
+new = "- Before any `evaluate_program` call, check whether the total evaluation budget has already been consumed. If no budget remains, do not make the call."
+count = 1
+reason = "The budget check before any evaluation names the tool call."
+
+[[file.change]]
+kind = "A1"
+old = "7. Confirm no more than `{{MAX_PROGRAM_EVALS_PER_ATTEMPT}}` total `evaluate.py` calls were made"
+new = "7. Confirm no more than `{{MAX_PROGRAM_EVALS_PER_ATTEMPT}}` total `evaluate_program` calls were made"
+count = 1
+reason = "The exit checklist counts the tool's calls."
+
+# --- the candidate author prompt --------------------------------------------------------------------
+
+[[file]]
+upstream = "src/prompts/harness_edit.md"
+target = "prompts/investigation/harness_edit.md"
+reason = "Prompt of the candidate author (R15) of a harness-evaluated attempt, verbatim: it restricts the role to plain filesystem operations and forbids the clone and memory helpers, so the role is given no package tools."
+
+# --- the create-idea skill -------------------------------------------------------------------------
+
+[[file]]
+upstream = "src/agents/skills/create-idea/SKILL.md"
+target = "skills/create-idea/SKILL.md"
+reason = "Staged for the ideator. The ideator returns the bundle as a structured response, so the file-writing and placeholder-script instructions become the structured response; the placeholder script is not carried. The rubric and verification rules stay."
+
+[[file.change]]
+kind = "A3"
+old = '''# Output creation
+Write both required JSON files directly with the available file-writing tools.
+Do not depend on command execution. When command execution is explicitly available,
+this optional helper can create starter files:
+```bash
+# the script path is relative to the skill file
+python ./scripts/create_idea_placeholder.py <working_dir> [--cycle-index N]
+```
+- `<working_dir>`: the agent's current working directory (idea output directory).
+- `--cycle-index N`: cycle index for the `idea_id` prefix (falls back to `CYCLE_INDEX` env var, then defaults to 1).
+
+The optional script creates `idea_bundle.json` and `target_rubrics.json` with TODO
+placeholders for every required field.  Replace each TODO value with the
+actual content.
+'''
+new = '''# Output creation
+Return the idea bundle as your structured response. Do not write the JSON files yourself:
+the harness writes both required JSON files from the structured response.
+'''
+count = 1
+reason = "No file is written by the agent, so the file-writing instruction and the starter-file helper (not carried) have no use."
+
+[[file.change]]
+kind = "A3"
+old = "3. Write exactly these files directly (or use the optional placeholder helper when execution is allowed):"
+new = "3. Return one idea bundle as your structured response; the harness writes exactly these files from it:"
+count = 1
+reason = "The files are written by the harness."
+
+[[file.change]]
+kind = "A3"
+old = "4. `{{IDEA_BUNDLE_FILE}}` must be a JSON object with keys:"
+new = "4. The structured response must be an object with keys:"
+count = 1
+reason = "The field list describes the structured response."
+
+[[file.change]]
+kind = "A3"
+old = "6. Ensure `{{TARGET_RUBRICS_FILE}}` is exactly equal to `idea_bundle.json.target_rubrics`."
+new = "6. The harness writes `{{TARGET_RUBRICS_FILE}}` as exactly `idea_bundle.json.target_rubrics`."
+count = 1
+reason = "The two files are written from one structured response."
+
+[[file.change]]
+kind = "A3"
+old = "8. Before finishing, reread both files and confirm every implementation rubric satisfies the active harness rules."
+new = "8. Before returning, reread your bundle and confirm every implementation rubric satisfies the active harness rules."
+count = 1
+reason = "There are no files to reread before the harness writes them."

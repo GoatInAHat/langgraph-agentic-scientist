@@ -1,0 +1,1732 @@
+# Declared changes of the variants package (ablations and baselines): the six variant prompts,
+# the two inline prompts of execute.py, and the texts that upstream's variants pipeline builds in
+# code (variant task.md files, cross-task task.md files, rubric descriptions, README pieces).
+# Paths of `upstream` are relative to third_party/ai-scientist-v3/, paths of `target` to
+# src/langgraph_agentic_scientist/. Kinds A1-A8 are the systematic adaptations described in
+# docs/ADAPTATIONS.md. variant_agent.md is not built: no upstream code loads it.
+#
+# A text assembled in code is carried one string expression at a time (tools/derive_prompts.py
+# extracts exactly one string expression per entry); variants/materialize.py, cross_task.py and
+# readme.py compose the pieces in upstream's order and with upstream's conditions.
+
+# --- the live prompts (src/prompts/) ------------------------------------------------------------
+
+[[file]]
+upstream = "src/prompts/variant_retrofit.md"
+target = "prompts/variants/variant_retrofit.md"
+reason = "Prompt of the retrofit agent (R16); no skills. Verbatim."
+
+[[file]]
+upstream = "src/prompts/variant_generate.md"
+target = "prompts/variants/variant_generate.md"
+reason = "Prompt of the variant generator (R17), a structured role; no skills."
+
+[[file.change]]
+kind = "A3"
+old = "Write your output to `variant_bundle.json` in the current working directory."
+new = "Return your output as your structured response; the harness writes it to `./variant_bundle.json`."
+count = 1
+reason = "The generator answers through structured output, and the host writes the file upstream's pipeline reads. The schema below the sentence stays: it carries the meaning of each field."
+
+[[file]]
+upstream = "src/prompts/variant_select.md"
+target = "prompts/variants/variant_select.md"
+reason = "Prompt of the variant reviewer (R18), a structured role; no skills."
+
+[[file.change]]
+kind = "A3"
+old = "Evaluate each candidate and write `variant_selection.json` in the current working directory with your decisions."
+new = "Evaluate each candidate and return your decisions as your structured response; the harness writes the final selection to `./variant_selection.json`."
+count = 1
+reason = "The reviewer answers through structured output; the host applies the hard caps and writes the file. The schema stays."
+
+[[file]]
+upstream = "src/prompts/variant_readme.md"
+target = "prompts/variants/variant_readme.md"
+reason = "Prompt of the README summariser (R22), a structured role; no skills."
+
+[[file.change]]
+kind = "A3"
+old = "Write a JSON file `variant_summaries.json` to your working directory with this exact structure:"
+new = "Return your answer as your structured response; the harness writes it to `./variant_summaries.json`. It has this exact structure:"
+count = 1
+reason = "The summariser answers through structured output. The structure and the rules stay."
+
+# --- the two inline prompts of execute.py --------------------------------------------------------
+
+[[extract]]
+upstream = "src/variants_pipeline/execute.py"
+lines = "643-656"
+output = "extracted/variants/variant_edit.md"
+reason = "The edit prompt of the variant editor (R19) is an f-string in execute.py:_build_host_edit_prompt."
+
+[extract.names]
+"json.dumps(spec.to_dict(), indent=2)" = "VARIANT_SPEC_JSON"
+program_index = "PROGRAM_INDEX"
+previous_index = "PREVIOUS_INDEX"
+edit_attempt = "EDIT_ATTEMPT"
+"previous_status or '(none; first candidate)'" = "PREVIOUS_STATUS"
+
+[[file]]
+upstream = "extracted/variants/variant_edit.md"
+target = "prompts/variants/variant_edit.md"
+reason = "Verbatim value of the f-string. {{PREVIOUS_STATUS}} receives the previous rubric summary, or upstream's default `(none; first candidate)` when there is none."
+
+[[extract]]
+upstream = "src/variants_pipeline/execute.py"
+lines = "667-687"
+output = "extracted/variants/variant_verify.md"
+reason = "The verify prompt of the variant verifier (R20) is an f-string in execute.py:_build_host_verify_prompt."
+
+[extract.names]
+"json.dumps(target_rubric_ids, indent=2)" = "REQUIRED_RUBRIC_IDS"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "VARIANT_KIND"
+evaluation_correct = "EVALUATION_CORRECT"
+program_index = "PROGRAM_INDEX"
+"previous_error or '(none; first verification attempt)'" = "PREVIOUS_ERROR"
+
+[[file]]
+upstream = "extracted/variants/variant_verify.md"
+target = "prompts/variants/variant_verify.md"
+reason = "Verbatim value of the f-string. {{PREVIOUS_ERROR}} receives the previous host validation error, or upstream's default `(none; first verification attempt)`."
+
+# --- texts that live in code ---------------------------------------------------------------------
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "470"
+output = "extracted/variants/variant_task_title.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_title.md"
+target = "prompts/workflow/variants/variant_task/title.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "471"
+output = "extracted/variants/variant_task_variant_id.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_variant_id.md"
+target = "prompts/workflow/variants/variant_task/variant_id.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "472"
+output = "extracted/variants/variant_task_kind.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_kind.md"
+target = "prompts/workflow/variants/variant_task/kind.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "473"
+output = "extracted/variants/variant_task_base_program.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_base_program.md"
+target = "prompts/workflow/variants/variant_task/base_program.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "474"
+output = "extracted/variants/variant_task_max_attempts.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_max_attempts.md"
+target = "prompts/workflow/variants/variant_task/max_attempts.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "477"
+output = "extracted/variants/variant_task_description.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_description.md"
+target = "prompts/workflow/variants/variant_task/description.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "480"
+output = "extracted/variants/variant_task_hypothesis.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_hypothesis.md"
+target = "prompts/workflow/variants/variant_task/hypothesis.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "482"
+output = "extracted/variants/variant_task_expected_effect.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_expected_effect.md"
+target = "prompts/workflow/variants/variant_task/expected_effect.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "485"
+output = "extracted/variants/variant_task_target_components.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_target_components.md"
+target = "prompts/workflow/variants/variant_task/target_components.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "488"
+output = "extracted/variants/variant_task_implementation_plan.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_implementation_plan.md"
+target = "prompts/workflow/variants/variant_task/implementation_plan.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order."
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "492-493"
+output = "extracted/variants/variant_task_what_control.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order. Selected when the kind is control."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_what_control.md"
+target = "prompts/workflow/variants/variant_task/what_control.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order. Selected when the kind is control."
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "497-505"
+output = "extracted/variants/variant_task_what_ablation.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order. Selected when the kind is ablation."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_what_ablation.md"
+target = "prompts/workflow/variants/variant_task/what_ablation.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order. Selected when the kind is ablation."
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "509-514"
+output = "extracted/variants/variant_task_what_baseline_reference.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order. Selected for the reserved baseline_reference variant."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_what_baseline_reference.md"
+target = "prompts/workflow/variants/variant_task/what_baseline_reference.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order. Selected for the reserved baseline_reference variant."
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "519-566"
+output = "extracted/variants/variant_task_what_reference_baseline.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order. Selected for a baseline whose base program is a reference implementation (folder baselines)."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_what_reference_baseline.md"
+target = "prompts/workflow/variants/variant_task/what_reference_baseline.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order. Selected for a baseline whose base program is a reference implementation (folder baselines)."
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "570-578"
+output = "extracted/variants/variant_task_what_baseline.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order. Selected for any other baseline."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_what_baseline.md"
+target = "prompts/workflow/variants/variant_task/what_baseline.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order. Selected for any other baseline."
+
+[[extract]]
+upstream = "src/variants_pipeline/materialize.py"
+lines = "583-584"
+output = "extracted/variants/variant_task_original_task_context.md"
+reason = "A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order. Appended when the original task.md was kept as original_task.md."
+[extract.names]
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"spec.base_program" = "BASE_PROGRAM"
+"spec.description_body" = "DESCRIPTION_BODY"
+"spec.hypothesis" = "HYPOTHESIS"
+"spec.expected_effect" = "EXPECTED_EFFECT"
+"max_evals" = "MAX_EVALS"
+"components" = "COMPONENTS"
+"steps" = "STEPS"
+
+[[file]]
+upstream = "extracted/variants/variant_task_original_task_context.md"
+target = "prompts/workflow/variants/variant_task/original_task_context.md"
+reason = "Verbatim value of the extracted string. A piece of the variant-specific task.md that materialize.py:_write_variant_task_md assembles; the code composes the pieces in upstream's order. Appended when the original task.md was kept as original_task.md."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "118-130"
+output = "extracted/variants/reference_evaluator.md"
+reason = "The reference-evaluator section that cross_task.py hands to the retrofit agent of an extra task."
+[extract.names]
+"reference_evaluator_raw" = "REFERENCE_EVALUATOR_RAW"
+
+[[file]]
+upstream = "extracted/variants/reference_evaluator.md"
+target = "prompts/workflow/variants/reference_evaluator.md"
+reason = "Verbatim value of the extracted string. The reference-evaluator section that cross_task.py hands to the retrofit agent of an extra task."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "657"
+output = "extracted/variants/cross_task_control_title.md"
+reason = "A piece of the control_best cross-task task.md that cross_task.py:_write_control_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_control_title.md"
+target = "prompts/workflow/variants/cross_task_control/title.md"
+reason = "Verbatim value of the extracted string. A piece of the control_best cross-task task.md that cross_task.py:_write_control_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "658"
+output = "extracted/variants/cross_task_control_variant_id.md"
+reason = "A piece of the control_best cross-task task.md that cross_task.py:_write_control_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_control_variant_id.md"
+target = "prompts/workflow/variants/cross_task_control/variant_id.md"
+reason = "Verbatim value of the extracted string. A piece of the control_best cross-task task.md that cross_task.py:_write_control_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "659"
+output = "extracted/variants/cross_task_control_target_task.md"
+reason = "A piece of the control_best cross-task task.md that cross_task.py:_write_control_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_control_target_task.md"
+target = "prompts/workflow/variants/cross_task_control/target_task.md"
+reason = "Verbatim value of the extracted string. A piece of the control_best cross-task task.md that cross_task.py:_write_control_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "660"
+output = "extracted/variants/cross_task_control_max_attempts.md"
+reason = "A piece of the control_best cross-task task.md that cross_task.py:_write_control_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_control_max_attempts.md"
+target = "prompts/workflow/variants/cross_task_control/max_attempts.md"
+reason = "Verbatim value of the extracted string. A piece of the control_best cross-task task.md that cross_task.py:_write_control_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "661-667"
+output = "extracted/variants/cross_task_control_context.md"
+reason = "A piece of the control_best cross-task task.md that cross_task.py:_write_control_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_control_context.md"
+target = "prompts/workflow/variants/cross_task_control/context.md"
+reason = "Verbatim value of the extracted string. A piece of the control_best cross-task task.md that cross_task.py:_write_control_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "668-680"
+output = "extracted/variants/cross_task_control_what_to_do.md"
+reason = "A piece of the control_best cross-task task.md that cross_task.py:_write_control_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_control_what_to_do.md"
+target = "prompts/workflow/variants/cross_task_control/what_to_do.md"
+reason = "Verbatim value of the extracted string. A piece of the control_best cross-task task.md that cross_task.py:_write_control_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "681-683"
+output = "extracted/variants/cross_task_control_task_references.md"
+reason = "A piece of the control_best cross-task task.md that cross_task.py:_write_control_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_control_task_references.md"
+target = "prompts/workflow/variants/cross_task_control/task_references.md"
+reason = "Verbatim value of the extracted string. A piece of the control_best cross-task task.md that cross_task.py:_write_control_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "699"
+output = "extracted/variants/cross_task_variant_title.md"
+reason = "A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_variant_title.md"
+target = "prompts/workflow/variants/cross_task_variant/title.md"
+reason = "Verbatim value of the extracted string. A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "700"
+output = "extracted/variants/cross_task_variant_variant_id.md"
+reason = "A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_variant_variant_id.md"
+target = "prompts/workflow/variants/cross_task_variant/variant_id.md"
+reason = "Verbatim value of the extracted string. A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "701"
+output = "extracted/variants/cross_task_variant_original_kind.md"
+reason = "A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_variant_original_kind.md"
+target = "prompts/workflow/variants/cross_task_variant/original_kind.md"
+reason = "Verbatim value of the extracted string. A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "702"
+output = "extracted/variants/cross_task_variant_target_task.md"
+reason = "A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_variant_target_task.md"
+target = "prompts/workflow/variants/cross_task_variant/target_task.md"
+reason = "Verbatim value of the extracted string. A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "703"
+output = "extracted/variants/cross_task_variant_max_attempts.md"
+reason = "A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_variant_max_attempts.md"
+target = "prompts/workflow/variants/cross_task_variant/max_attempts.md"
+reason = "Verbatim value of the extracted string. A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "708-718"
+output = "extracted/variants/cross_task_variant_context.md"
+reason = "A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles. Used when an adapted control exists (the only case the pipeline reaches)."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_variant_context.md"
+target = "prompts/workflow/variants/cross_task_variant/context.md"
+reason = "Verbatim value of the extracted string. A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles. Used when an adapted control exists (the only case the pipeline reaches)."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "721-737"
+output = "extracted/variants/cross_task_variant_what_to_do.md"
+reason = "A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles. Used when an adapted control exists."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_variant_what_to_do.md"
+target = "prompts/workflow/variants/cross_task_variant/what_to_do.md"
+reason = "Verbatim value of the extracted string. A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles. Used when an adapted control exists."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "742-747"
+output = "extracted/variants/cross_task_variant_fallback_context.md"
+reason = "A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles. Used only by a caller that passes has_adapted_control=False; upstream's pipeline never does."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_variant_fallback_context.md"
+target = "prompts/workflow/variants/cross_task_variant/fallback_context.md"
+reason = "Verbatim value of the extracted string. A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles. Used only by a caller that passes has_adapted_control=False; upstream's pipeline never does."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "750-755"
+output = "extracted/variants/cross_task_variant_fallback_what_to_do.md"
+reason = "A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles. Used only by a caller that passes has_adapted_control=False."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_variant_fallback_what_to_do.md"
+target = "prompts/workflow/variants/cross_task_variant/fallback_what_to_do.md"
+reason = "Verbatim value of the extracted string. A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles. Used only by a caller that passes has_adapted_control=False."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "760-761"
+output = "extracted/variants/cross_task_variant_hypothesis.md"
+reason = "A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_variant_hypothesis.md"
+target = "prompts/workflow/variants/cross_task_variant/hypothesis.md"
+reason = "Verbatim value of the extracted string. A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "764"
+output = "extracted/variants/cross_task_variant_expected_effect.md"
+reason = "A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_variant_expected_effect.md"
+target = "prompts/workflow/variants/cross_task_variant/expected_effect.md"
+reason = "Verbatim value of the extracted string. A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "766"
+output = "extracted/variants/cross_task_variant_description.md"
+reason = "A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_variant_description.md"
+target = "prompts/workflow/variants/cross_task_variant/description.md"
+reason = "Verbatim value of the extracted string. A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/cross_task.py"
+lines = "769-771"
+output = "extracted/variants/cross_task_variant_task_references.md"
+reason = "A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+[extract.names]
+"_CONTROL_BEST_ID" = "VARIANT_ID"
+"task_name" = "TASK_NAME"
+"max_evals" = "MAX_EVALS"
+"orig_spec.title" = "TITLE"
+"orig_spec.variant_id" = "VARIANT_ID"
+"orig_spec.kind" = "KIND"
+"orig_spec.hypothesis" = "HYPOTHESIS"
+"orig_spec.expected_effect" = "EXPECTED_EFFECT"
+"orig_spec.description_body" = "DESCRIPTION_BODY"
+
+[[file]]
+upstream = "extracted/variants/cross_task_variant_task_references.md"
+target = "prompts/workflow/variants/cross_task_variant/task_references.md"
+reason = "Verbatim value of the extracted string. A piece of the non-control cross-task task.md that cross_task.py:_write_variant_cross_task_md assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/rubric_contract.py"
+lines = "21-22"
+output = "extracted/variants/rubric_descriptions_analysis_files_present.md"
+reason = "Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[file]]
+upstream = "extracted/variants/rubric_descriptions_analysis_files_present.md"
+target = "prompts/workflow/variants/rubric_descriptions/analysis_files_present.md"
+reason = "Verbatim value of the extracted string. Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[extract]]
+upstream = "src/variants_pipeline/rubric_contract.py"
+lines = "25"
+output = "extracted/variants/rubric_descriptions_run_summary_schema_valid.md"
+reason = "Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[file]]
+upstream = "extracted/variants/rubric_descriptions_run_summary_schema_valid.md"
+target = "prompts/workflow/variants/rubric_descriptions/run_summary_schema_valid.md"
+reason = "Verbatim value of the extracted string. Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[extract]]
+upstream = "src/variants_pipeline/rubric_contract.py"
+lines = "28"
+output = "extracted/variants/rubric_descriptions_metric_values_schema_valid.md"
+reason = "Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[file]]
+upstream = "extracted/variants/rubric_descriptions_metric_values_schema_valid.md"
+target = "prompts/workflow/variants/rubric_descriptions/metric_values_schema_valid.md"
+reason = "Verbatim value of the extracted string. Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[extract]]
+upstream = "src/variants_pipeline/rubric_contract.py"
+lines = "31-32"
+output = "extracted/variants/rubric_descriptions_timeseries_schema_valid.md"
+reason = "Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[file]]
+upstream = "extracted/variants/rubric_descriptions_timeseries_schema_valid.md"
+target = "prompts/workflow/variants/rubric_descriptions/timeseries_schema_valid.md"
+reason = "Verbatim value of the extracted string. Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[extract]]
+upstream = "src/variants_pipeline/rubric_contract.py"
+lines = "35-36"
+output = "extracted/variants/rubric_descriptions_metrics_consistent_with_metrics_json.md"
+reason = "Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[file]]
+upstream = "extracted/variants/rubric_descriptions_metrics_consistent_with_metrics_json.md"
+target = "prompts/workflow/variants/rubric_descriptions/metrics_consistent_with_metrics_json.md"
+reason = "Verbatim value of the extracted string. Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[extract]]
+upstream = "src/variants_pipeline/rubric_contract.py"
+lines = "39-40"
+output = "extracted/variants/rubric_descriptions_correctness_recorded.md"
+reason = "Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[file]]
+upstream = "extracted/variants/rubric_descriptions_correctness_recorded.md"
+target = "prompts/workflow/variants/rubric_descriptions/correctness_recorded.md"
+reason = "Verbatim value of the extracted string. Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[extract]]
+upstream = "src/variants_pipeline/rubric_contract.py"
+lines = "43-44"
+output = "extracted/variants/rubric_descriptions_variant_intent_preserved.md"
+reason = "Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[file]]
+upstream = "extracted/variants/rubric_descriptions_variant_intent_preserved.md"
+target = "prompts/workflow/variants/rubric_descriptions/variant_intent_preserved.md"
+reason = "Verbatim value of the extracted string. Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[extract]]
+upstream = "src/variants_pipeline/rubric_contract.py"
+lines = "47-48"
+output = "extracted/variants/rubric_descriptions_single_change_scope.md"
+reason = "Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[file]]
+upstream = "extracted/variants/rubric_descriptions_single_change_scope.md"
+target = "prompts/workflow/variants/rubric_descriptions/single_change_scope.md"
+reason = "Verbatim value of the extracted string. Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[extract]]
+upstream = "src/variants_pipeline/rubric_contract.py"
+lines = "51-55"
+output = "extracted/variants/rubric_descriptions_paper_analysis_ready.md"
+reason = "Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[file]]
+upstream = "extracted/variants/rubric_descriptions_paper_analysis_ready.md"
+target = "prompts/workflow/variants/rubric_descriptions/paper_analysis_ready.md"
+reason = "Verbatim value of the extracted string. Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[extract]]
+upstream = "src/variants_pipeline/rubric_contract.py"
+lines = "92-95"
+output = "extracted/variants/rubric_descriptions_hyperparameter_audit_complete.md"
+reason = "Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[file]]
+upstream = "extracted/variants/rubric_descriptions_hyperparameter_audit_complete.md"
+target = "prompts/workflow/variants/rubric_descriptions/hyperparameter_audit_complete.md"
+reason = "Verbatim value of the extracted string. Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[extract]]
+upstream = "src/variants_pipeline/rubric_contract.py"
+lines = "104-107"
+output = "extracted/variants/rubric_descriptions_reference_conditions_aligned.md"
+reason = "Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[file]]
+upstream = "extracted/variants/rubric_descriptions_reference_conditions_aligned.md"
+target = "prompts/workflow/variants/rubric_descriptions/reference_conditions_aligned.md"
+reason = "Verbatim value of the extracted string. Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[extract]]
+upstream = "src/variants_pipeline/rubric_contract.py"
+lines = "116-120"
+output = "extracted/variants/rubric_descriptions_reference_performance_check.md"
+reason = "Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[file]]
+upstream = "extracted/variants/rubric_descriptions_reference_performance_check.md"
+target = "prompts/workflow/variants/rubric_descriptions/reference_performance_check.md"
+reason = "Verbatim value of the extracted string. Description of one rubric of the variants rubric contract (rubric_contract.py)."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "414"
+output = "extracted/variants/readme_title.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_title.md"
+target = "prompts/workflow/variants/readme/title.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "421"
+output = "extracted/variants/readme_evaluated_tasks.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_evaluated_tasks.md"
+target = "prompts/workflow/variants/readme/evaluated_tasks.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "426"
+output = "extracted/variants/readme_role_primary.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_role_primary.md"
+target = "prompts/workflow/variants/readme/role_primary.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "428"
+output = "extracted/variants/readme_role_extra.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_role_extra.md"
+target = "prompts/workflow/variants/readme/role_extra.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "430"
+output = "extracted/variants/readme_role_cross_task.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_role_cross_task.md"
+target = "prompts/workflow/variants/readme/role_cross_task.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "431"
+output = "extracted/variants/readme_task_header.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_task_header.md"
+target = "prompts/workflow/variants/readme/task_header.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "435"
+output = "extracted/variants/readme_task_results.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_task_results.md"
+target = "prompts/workflow/variants/readme/task_results.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "438"
+output = "extracted/variants/readme_variants_heading.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_variants_heading.md"
+target = "prompts/workflow/variants/readme/variants_heading.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "451"
+output = "extracted/variants/readme_variant_header.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_variant_header.md"
+target = "prompts/workflow/variants/readme/variant_header.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "452"
+output = "extracted/variants/readme_variant_meta.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_variant_meta.md"
+target = "prompts/workflow/variants/readme/variant_meta.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "456"
+output = "extracted/variants/readme_variant_workspace.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_variant_workspace.md"
+target = "prompts/workflow/variants/readme/variant_workspace.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "465"
+output = "extracted/variants/readme_extra_task_heading.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_extra_task_heading.md"
+target = "prompts/workflow/variants/readme/extra_task_heading.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "375"
+output = "extracted/variants/readme_fallback_summary.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_fallback_summary.md"
+target = "prompts/workflow/variants/readme/fallback_summary.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "336"
+output = "extracted/variants/readme_flat_prompt_section.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_flat_prompt_section.md"
+target = "prompts/workflow/variants/readme/flat_prompt_section.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "385"
+output = "extracted/variants/readme_fallback_task_summary.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_fallback_task_summary.md"
+target = "prompts/workflow/variants/readme/fallback_task_summary.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "480"
+output = "extracted/variants/readme_flat_header.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_flat_header.md"
+target = "prompts/workflow/variants/readme/flat_header.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "481"
+output = "extracted/variants/readme_flat_kind.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_flat_kind.md"
+target = "prompts/workflow/variants/readme/flat_kind.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "485"
+output = "extracted/variants/readme_flat_workspace.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_flat_workspace.md"
+target = "prompts/workflow/variants/readme/flat_workspace.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "491"
+output = "extracted/variants/readme_guide_heading.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_guide_heading.md"
+target = "prompts/workflow/variants/readme/guide_heading.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "493"
+output = "extracted/variants/readme_guide_table_header.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_guide_table_header.md"
+target = "prompts/workflow/variants/readme/guide_table_header.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "494"
+output = "extracted/variants/readme_guide_table_rule.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_guide_table_rule.md"
+target = "prompts/workflow/variants/readme/guide_table_rule.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "496"
+output = "extracted/variants/readme_guide_run_summary.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_guide_run_summary.md"
+target = "prompts/workflow/variants/readme/guide_run_summary.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "498"
+output = "extracted/variants/readme_guide_metric_values.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_guide_metric_values.md"
+target = "prompts/workflow/variants/readme/guide_metric_values.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "499"
+output = "extracted/variants/readme_guide_timeseries.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_guide_timeseries.md"
+target = "prompts/workflow/variants/readme/guide_timeseries.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "501"
+output = "extracted/variants/readme_guide_selection.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_guide_selection.md"
+target = "prompts/workflow/variants/readme/guide_selection.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "503"
+output = "extracted/variants/readme_guide_pipeline_summary.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_guide_pipeline_summary.md"
+target = "prompts/workflow/variants/readme/guide_pipeline_summary.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "504"
+output = "extracted/variants/readme_guide_variant_spec.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_guide_variant_spec.md"
+target = "prompts/workflow/variants/readme/guide_variant_spec.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "506"
+output = "extracted/variants/readme_guide_task_bundle.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_guide_task_bundle.md"
+target = "prompts/workflow/variants/readme/guide_task_bundle.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "512"
+output = "extracted/variants/readme_guide_structured_extra.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_guide_structured_extra.md"
+target = "prompts/workflow/variants/readme/guide_structured_extra.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+
+[[extract]]
+upstream = "src/variants_pipeline/readme.py"
+lines = "516"
+output = "extracted/variants/readme_guide_flat_extra.md"
+reason = "A text of the variants README that readme.py:_assemble_readme assembles."
+[extract.names]
+"t['name']" = "NAME"
+"role_label" = "ROLE_LABEL"
+"t['data_path']" = "DATA_PATH"
+"spec.title" = "TITLE"
+"spec.variant_id" = "VARIANT_ID"
+"spec.kind" = "KIND"
+"status" = "STATUS"
+"rubric" = "RUBRIC"
+"task_name" = "TASK_NAME"
+"title" = "TITLE"
+"kind" = "KIND"
+"vid" = "VARIANT_ID"
+
+[[file]]
+upstream = "extracted/variants/readme_guide_flat_extra.md"
+target = "prompts/workflow/variants/readme/guide_flat_extra.md"
+reason = "Verbatim value of the extracted string. A text of the variants README that readme.py:_assemble_readme assembles."
+

@@ -1,0 +1,1 @@
+timeseries.csv exists and contains all required columns, even if the file contains only headers.

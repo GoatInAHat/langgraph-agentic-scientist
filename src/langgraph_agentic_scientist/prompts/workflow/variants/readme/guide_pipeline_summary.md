@@ -1,0 +1,1 @@
+| `pipeline_summary.json` | Per-variant execution status and rubric results |

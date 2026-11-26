@@ -1,0 +1,1 @@
+OPENAI_API_KEY is expected to be available in this run environment. Do not claim it is unavailable unless you re-check inside the active workspace or process environment.

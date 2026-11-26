@@ -1,0 +1,1 @@
+Draft reference gap artifact is unreadable; ignore it unless the file is repaired.

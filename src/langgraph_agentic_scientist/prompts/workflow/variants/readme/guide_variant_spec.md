@@ -1,0 +1,1 @@
+| `variants/{id}/variant_spec.json` | Hypothesis, target components, plan |

@@ -1,0 +1,625 @@
+# Declared changes of the paper writing loop (WP7): the writer, strategy, ranking, gap, post-draft
+# planning, figure-quality, evidence-audit and in-loop review prompts, the review-paper skill, and
+# the workflow texts of paper.sh and paper_edit.sh. Paths of `upstream` are relative to
+# third_party/ai-scientist-v3/, paths of `target` to src/langgraph_agentic_scientist/.
+# Texts extracted from shell code and from lists of lines are verified by
+# tests/paper/test_loop_provenance.py; single Python string expressions by [[extract]] below.
+
+# --- writer families (R30) -------------------------------------------------------------
+
+[[file]]
+upstream = "src/prompts/paper.md"
+target = "prompts/paper/paper.md"
+reason = "Writer prompt of family `paper`. {{PAPER_OPENAI_API_KEY_CONTEXT}} and {{PAPER_GEMINI_API_KEY_CONTEXT}} are filled from the configured concept-figure renderer (A8, no text change)."
+
+[[file.change]]
+kind = "A4"
+old = '''
+src/agents/skills/validate-paper/templates/figure_manifest.schema.json'''
+new = '''
+.agents/skills/validate-paper/templates/figure_manifest.schema.json'''
+count = 1
+reason = "Skills are staged under ./.agents/skills/ of the paper workspace; the schema path names the staged copy."
+
+[[file]]
+upstream = "src/prompts/paper_standalone.md"
+target = "prompts/paper/paper_standalone.md"
+reason = "Writer prompt of family `paper_standalone`; A8 fills the key contexts without a text change."
+
+[[file.change]]
+kind = "A4"
+old = '''
+src/agents/skills/validate-paper/templates/figure_manifest.schema.json'''
+new = '''
+.agents/skills/validate-paper/templates/figure_manifest.schema.json'''
+count = 2
+reason = "Skills are staged under ./.agents/skills/ of the paper workspace; the schema path names the staged copy."
+
+[[file]]
+upstream = "src/prompts/paper_detailed_grouped.md"
+target = "prompts/paper/paper_detailed_grouped.md"
+reason = "Writer prompt of family `paper_detailed_grouped`, verbatim; A8 fills the key contexts without a text change."
+
+[[file]]
+upstream = "src/prompts/paper_edit.md"
+target = "prompts/paper/paper_edit.md"
+reason = "Writer prompt of edit mode (default profile). The task-specific line about classification and RL/PPO is kept as upstream wrote it (see docs/adaptations/paper_loop.md)."
+
+[[file.change]]
+kind = "A4"
+old = '''
+src/agents/skills/validate-paper/templates/figure_manifest.schema.json'''
+new = '''
+.agents/skills/validate-paper/templates/figure_manifest.schema.json'''
+count = 1
+reason = "Skills are staged under ./.agents/skills/ of the paper workspace; the schema path names the staged copy."
+
+[[file]]
+upstream = "src/prompts/paper_edit_standalone.md"
+target = "prompts/paper/paper_edit_standalone.md"
+reason = "Writer prompt of edit mode (standalone profile); the task-specific line is kept as upstream wrote it."
+
+[[file.change]]
+kind = "A4"
+old = '''
+src/agents/skills/validate-paper/templates/figure_manifest.schema.json'''
+new = '''
+.agents/skills/validate-paper/templates/figure_manifest.schema.json'''
+count = 2
+reason = "Skills are staged under ./.agents/skills/ of the paper workspace; the schema path names the staged copy."
+
+[[file]]
+upstream = "src/prompts/paper_figure_quality_repair.md"
+target = "prompts/paper/paper_figure_quality_repair.md"
+reason = "Figure-quality repairer (R35), verbatim."
+
+# --- strategy (R28) ---------------------------------------------------------------------
+
+[[file]]
+upstream = "src/prompts/paper_strategy.md"
+target = "prompts/paper/paper_strategy.md"
+reason = "Paper strategist (R28). It answers through structured output; it keeps a writable workspace because its memory protocol appends to the memory files."
+
+[[file.change]]
+kind = "A3"
+old = '''
+Must write both:
+- `{{PAPER_STRATEGY_PATH}}`
+- `{{PAPER_STRATEGY_JSON_PATH}}`'''
+new = '''
+Return both as your structured response, the markdown memo as `memo` and the strategy object as `strategy`; the harness writes them to:
+- `{{PAPER_STRATEGY_PATH}}`
+- `{{PAPER_STRATEGY_JSON_PATH}}`'''
+count = 1
+reason = "The strategist answers through structured output; the harness writes both files under upstream's names."
+
+[[file.change]]
+kind = "A3"
+old = '''
+Write `{{PAPER_STRATEGY_JSON_PATH}}` as JSON with this shape:'''
+new = '''
+Return the strategy object (the harness writes it to `{{PAPER_STRATEGY_JSON_PATH}}`) with this shape:'''
+count = 1
+reason = "Structured answer instead of a file the agent writes."
+
+[[file.change]]
+kind = "A3"
+old = '''
+If the selected prompt family is not supportable from the grounded artifacts, write:'''
+new = '''
+If the selected prompt family is not supportable from the grounded artifacts, return:'''
+count = 1
+reason = "Structured answer instead of a file the agent writes."
+
+[[file.change]]
+kind = "A3"
+old = '''
+Write `{{PAPER_STRATEGY_PATH}}` as a readable markdown memo that mirrors the same decisions in prose.'''
+new = '''
+Return the memo (the harness writes it to `{{PAPER_STRATEGY_PATH}}`) as a readable markdown memo that mirrors the same decisions in prose.'''
+count = 1
+reason = "Structured answer instead of a file the agent writes."
+
+# --- post-hoc ranking (R29) ---------------------------------------------------------------
+
+[[file]]
+upstream = "src/prompts/paper_posthoc_ranking.md"
+target = "prompts/paper/paper_posthoc_ranking.md"
+reason = "Post-hoc ranker (R29), read-only, structured answer."
+
+[[file.change]]
+kind = "A3"
+old = '''
+Write `./posthoc_ranking.json` as JSON with this shape:'''
+new = '''
+Return the ranking as your structured response (the harness writes it to `./posthoc_ranking.json`) with this shape:'''
+count = 1
+reason = "The ranker answers through structured output."
+
+[[file.change]]
+kind = "A3"
+old = '''
+- Do not modify any existing files other than writing `./posthoc_ranking.json`.'''
+new = '''
+- Do not modify any existing files; return the ranking as your structured response (the harness writes `./posthoc_ranking.json`).'''
+count = 1
+reason = "The ranker is read-only and answers through structured output; the rule against modifying files stays."
+
+# --- draft-gap analysis (R31) -------------------------------------------------------------
+
+[[file]]
+upstream = "src/prompts/paper_reference_gaps.md"
+target = "prompts/paper/paper_reference_gaps.md"
+reason = "Draft-gap analyst (R31), read-only, memo plus JSON as one structured answer."
+
+[[file.change]]
+kind = "A3"
+old = '''
+Must write both:
+- `{{DRAFT_REFERENCE_GAPS_PATH}}`
+- `{{DRAFT_REFERENCE_GAPS_JSON_PATH}}`'''
+new = '''
+Return both as your structured response, the markdown memo as `memo` and the gap object as `gaps`; the harness writes them to:
+- `{{DRAFT_REFERENCE_GAPS_PATH}}`
+- `{{DRAFT_REFERENCE_GAPS_JSON_PATH}}`'''
+count = 1
+reason = "Memo-plus-JSON role answers as one structured object; the harness writes both files."
+
+[[file.change]]
+kind = "A3"
+old = '''
+Write `{{DRAFT_REFERENCE_GAPS_JSON_PATH}}` as JSON with this shape:'''
+new = '''
+Return the gap object (the harness writes it to `{{DRAFT_REFERENCE_GAPS_JSON_PATH}}`) with this shape:'''
+count = 1
+reason = "Structured answer instead of a file the agent writes."
+
+[[file.change]]
+kind = "A3"
+old = '''
+If the draft already has adequate citation coverage, write:'''
+new = '''
+If the draft already has adequate citation coverage, return:'''
+count = 1
+reason = "Structured answer instead of a file the agent writes."
+
+[[file.change]]
+kind = "A3"
+old = '''
+If the draft cannot be analyzed coherently, write:'''
+new = '''
+If the draft cannot be analyzed coherently, return:'''
+count = 1
+reason = "Structured answer instead of a file the agent writes."
+
+[[file.change]]
+kind = "A3"
+old = '''
+Write `{{DRAFT_REFERENCE_GAPS_PATH}}` as a readable markdown memo that mirrors the same decisions in prose.'''
+new = '''
+Return the memo (the harness writes it to `{{DRAFT_REFERENCE_GAPS_PATH}}`) as a readable markdown memo that mirrors the same decisions in prose.'''
+count = 1
+reason = "Structured answer instead of a file the agent writes."
+
+# --- post-draft reference planning (R32) ----------------------------------------------------
+
+[[file]]
+upstream = "src/prompts/reference_query_plan_postdraft.md"
+target = "prompts/paper/reference_query_plan_postdraft.md"
+reason = "Post-draft reference planner (R32), read-only, memo plus plan as one structured answer."
+
+[[file.change]]
+kind = "A3"
+old = '''
+Must write both:
+- `{{POSTDRAFT_REFERENCE_QUERY_PLAN_PATH}}`
+- `{{POSTDRAFT_REFERENCE_QUERY_PLAN_JSON_PATH}}`'''
+new = '''
+Return both as your structured response, the markdown memo as `memo` and the plan object as `plan`; the harness writes them to:
+- `{{POSTDRAFT_REFERENCE_QUERY_PLAN_PATH}}`
+- `{{POSTDRAFT_REFERENCE_QUERY_PLAN_JSON_PATH}}`'''
+count = 1
+reason = "Memo-plus-JSON role answers as one structured object; the harness writes both files."
+
+[[file.change]]
+kind = "A3"
+old = '''
+Write `{{POSTDRAFT_REFERENCE_QUERY_PLAN_JSON_PATH}}` with the same schema as `{{REFERENCE_QUERY_PLAN_JSON_PATH}}`.
+Write `{{POSTDRAFT_REFERENCE_QUERY_PLAN_PATH}}` as a readable markdown memo that mirrors the same decisions in prose.'''
+new = '''
+Return the plan object (the harness writes it to `{{POSTDRAFT_REFERENCE_QUERY_PLAN_JSON_PATH}}`) with the same schema as `{{REFERENCE_QUERY_PLAN_JSON_PATH}}`.
+Return the memo (the harness writes it to `{{POSTDRAFT_REFERENCE_QUERY_PLAN_PATH}}`) as a readable markdown memo that mirrors the same decisions in prose.'''
+count = 1
+reason = "Structured answer instead of files the agent writes."
+
+# --- evidence audit (R33) --------------------------------------------------------------------
+
+[[file]]
+upstream = "src/prompts/paper_review/evidence_audit.md"
+target = "prompts/paper/evidence_audit.md"
+reason = "Evidence auditor (R33): read-only, on a disposable copy of the paper, answers with the structured AuditPayload."
+
+[[file.change]]
+kind = "A5"
+old = '''
+# Output contract
+Output raw text only. Do not write files. Do not include markdown fences.
+Use this exact line-oriented contract so downstream regex parsing is stable:
+
+```text
+AUDIT_VERDICT: PASS|FAIL
+AUDIT_SUMMARY: one-line overall assessment
+AUDIT_FINDING_COUNT: N
+AUDIT_FINDING: id=<stable-id> || section=<paper section> || claim=<claim text or short quote> || issue=<what is inconsistent> || evidence=<artifact-backed evidence> || fix=<specific manuscript-only fix>
+```
+
+Rules:
+- `AUDIT_VERDICT` must be `PASS` or `FAIL`.
+- `AUDIT_SUMMARY` must be one line.
+- `AUDIT_FINDING_COUNT` must be an integer.
+- Emit exactly `N` `AUDIT_FINDING:` lines.
+- If the verdict is `PASS`, `N` must be `0` and you must emit no `AUDIT_FINDING:` lines.
+- If the verdict is `FAIL`, `N` must be at least `1`.
+- Keep each `AUDIT_FINDING:` on a single line.
+- Use the literal separator ` || ` between fields.
+- Do not include the separator string ` || ` inside field values.
+- `fix` must be a manuscript-only repair request.
+
+Good pass example:
+```text
+AUDIT_VERDICT: PASS
+AUDIT_SUMMARY: The manuscript claims are consistent with claims_grounding.json and the current scientific-evidence trail.
+AUDIT_FINDING_COUNT: 0
+```
+
+Good fail example:
+```text
+AUDIT_VERDICT: FAIL
+AUDIT_SUMMARY: One visible results claim overstates what the grounded evidence currently supports.
+AUDIT_FINDING_COUNT: 1
+AUDIT_FINDING: id=results-overclaim-1 || section=Results || claim=The paper says the method consistently outperforms all baselines across tasks. || issue=claims_grounding.json only supports one benchmark-specific improvement and does not justify the across-tasks wording. || evidence=paper.tex Results paragraph 2; claims_grounding.json claim[3]; paper_data.json grounding_sources for the cited result ids. || fix=Narrow the sentence to the supported benchmark or add an explicit limitation.
+```'''
+new = '''
+# Output contract
+Do not write files. Return the audit as your structured response; the harness writes it to `./paper_evidence_audit.json` and derives the audit feedback from it.
+The structured response has these fields:
+
+- `verdict`: `pass` or `fail`.
+- `summary`: one-line overall assessment.
+- `findings`: the list of findings. Each finding has the fields `id` (a stable id), `section` (the paper section), `claim` (the claim text or a short quote), `issue` (what is inconsistent), `evidence` (artifact-backed evidence) and `fix` (a specific manuscript-only fix).
+
+Rules:
+- `verdict` must be `pass` or `fail`.
+- `summary` must be one line.
+- If the verdict is `pass`, `findings` must be empty.
+- If the verdict is `fail`, `findings` must contain at least one finding.
+- Every field of a finding must be non-empty.
+- `fix` must be a manuscript-only repair request.
+
+Good pass example:
+```json
+{"verdict": "pass", "summary": "The manuscript claims are consistent with claims_grounding.json and the current scientific-evidence trail.", "findings": []}
+```
+
+Good fail example:
+```json
+{"verdict": "fail", "summary": "One visible results claim overstates what the grounded evidence currently supports.", "findings": [{"id": "results-overclaim-1", "section": "Results", "claim": "The paper says the method consistently outperforms all baselines across tasks.", "issue": "claims_grounding.json only supports one benchmark-specific improvement and does not justify the across-tasks wording.", "evidence": "paper.tex Results paragraph 2; claims_grounding.json claim[3]; paper_data.json grounding_sources for the cited result ids.", "fix": "Narrow the sentence to the supported benchmark or add an explicit limitation."}]}
+```'''
+count = 1
+reason = "The line protocol existed to parse an answer out of an agent log; the answer is the structured AuditPayload. Fields, rules and both examples are kept in the same words; the count line and the separator rules have no object any more."
+
+# --- in-loop review (R34) ---------------------------------------------------------------------
+
+[[file]]
+upstream = "src/prompts/paper_review/review_json.md"
+target = "prompts/paper/review_json.md"
+reason = "In-loop paper reviewer (R34), read-only, structured answer; the JSON example stays."
+
+[[file.change]]
+kind = "A3"
+old = '''
+Must write:
+- `{{PAPER_REVIEW_JSON_PATH}}`'''
+new = '''
+Return the review as your structured response; the harness writes it to:
+- `{{PAPER_REVIEW_JSON_PATH}}`'''
+count = 1
+reason = "The reviewer answers through structured output."
+
+[[file.change]]
+kind = "A3"
+old = '''
+Write valid JSON only, with this exact top-level shape:'''
+new = '''
+Return a structured response with this exact top-level shape:'''
+count = 1
+reason = "The JSON shape is the structured response's schema."
+
+[[file.change]]
+kind = "A3"
+old = '''
+Output raw JSON only. Do not include markdown fences, commentary, or any text outside the JSON object.'''
+new = '''
+Return the review object only, as your structured response; the harness writes it to `{{PAPER_REVIEW_JSON_PATH}}`.'''
+count = 1
+reason = "The raw-JSON-only rule becomes the structured-answer sentence."
+
+[[file]]
+upstream = "src/agents/skills/review-paper/SKILL.md"
+target = "skills/review-paper/SKILL.md"
+reason = "Skill of the in-loop reviewer; the contract (lines 26-55) stays."
+
+[[file.change]]
+kind = "A3"
+old = '''
+Review the current paper workspace and write a strict JSON review artifact.'''
+new = '''
+Review the current paper workspace and return a strict JSON review as your structured response.'''
+count = 1
+reason = "The reviewer answers through structured output."
+
+[[file.change]]
+kind = "A3"
+old = '''
+5. Write only `paper_review.json`.'''
+new = '''
+5. Return only the review, as your structured response; the harness writes it to `paper_review.json`.'''
+count = 1
+reason = "The reviewer is read-only; the harness writes the file."
+
+[[file.change]]
+kind = "A3"
+old = '''
+14. Output raw JSON only. Do not wrap it in markdown fences.'''
+new = '''
+14. Return the review object only, as your structured response.'''
+count = 1
+reason = "The raw-JSON-only rule becomes the structured-answer sentence."
+
+# --- context strings of paper_prompt_context.py ----------------------------------------------
+
+[[extract]]
+upstream = "src/investigation/paper_prompt_context.py"
+lines = "16-16"
+output = "extracted/paper_loop/posthoc_context_none.md"
+reason = "POSTHOC_ANALYSES_CONTEXT when no analyses exist."
+
+[[extract]]
+upstream = "src/investigation/paper_prompt_context.py"
+lines = "40-40"
+output = "extracted/paper_loop/draft_gaps_context_none.md"
+reason = "DRAFT_REFERENCE_GAPS_CONTEXT before gap analysis."
+
+[[extract]]
+upstream = "src/investigation/paper_prompt_context.py"
+lines = "45-45"
+output = "extracted/paper_loop/draft_gaps_context_unreadable.md"
+reason = "DRAFT_REFERENCE_GAPS_CONTEXT for an unreadable gap artifact."
+
+[[extract]]
+upstream = "src/investigation/paper_prompt_context.py"
+lines = "112-112"
+output = "extracted/paper_loop/results_readme_missing.md"
+reason = "RESULTS_README when no campaign README exists."
+
+[[extract]]
+upstream = "src/investigation/paper_prompt_context.py"
+lines = "120-123"
+output = "extracted/paper_loop/venue_context_absent.md"
+reason = "VENUE_CONTEXT without a venue brief."
+
+[[extract]]
+upstream = "src/investigation/paper_prompt_context.py"
+lines = "126-132"
+output = "extracted/paper_loop/venue_context_present.md"
+reason = "VENUE_CONTEXT with a venue brief ({{VENUE_PATH}})."
+
+[[extract]]
+upstream = "src/investigation/paper_prompt_context.py"
+lines = "138-141"
+output = "extracted/paper_loop/contributions_context_absent.md"
+reason = "CONTRIBUTIONS_CONTEXT without a scaffold."
+
+[[extract]]
+upstream = "src/investigation/paper_prompt_context.py"
+lines = "148-155"
+output = "extracted/paper_loop/contributions_context_present.md"
+reason = "CONTRIBUTIONS_CONTEXT with a scaffold ({{CONTRIBUTIONS_PATH}})."
+
+[[extract]]
+upstream = "src/investigation/paper_prompt_context.py"
+lines = "161-164"
+output = "extracted/paper_loop/author_block_context_absent.md"
+reason = "PAPER_AUTHOR_BLOCK_CONTEXT without an author block."
+
+[[extract]]
+upstream = "src/investigation/paper_prompt_context.py"
+lines = "169-176"
+output = "extracted/paper_loop/author_block_context_present.md"
+reason = "PAPER_AUTHOR_BLOCK_CONTEXT with an author block ({{AUTHOR_PATH}})."
+
+# --- workflow texts: package files from the extracted texts ---------------------------------------
+
+[[file]]
+upstream = "extracted/paper_loop/posthoc_context_none.md"
+target = "prompts/workflow/paper/posthoc_context_none.md"
+reason = "Verbatim string of paper_prompt_context.py."
+
+[[file]]
+upstream = "extracted/paper_loop/draft_gaps_context_none.md"
+target = "prompts/workflow/paper/draft_gaps_context_none.md"
+reason = "Verbatim string of paper_prompt_context.py."
+
+[[file]]
+upstream = "extracted/paper_loop/draft_gaps_context_unreadable.md"
+target = "prompts/workflow/paper/draft_gaps_context_unreadable.md"
+reason = "Verbatim string of paper_prompt_context.py."
+
+[[file]]
+upstream = "extracted/paper_loop/results_readme_missing.md"
+target = "prompts/workflow/paper/results_readme_missing.md"
+reason = "Verbatim string of paper_prompt_context.py."
+
+[[file]]
+upstream = "extracted/paper_loop/venue_context_absent.md"
+target = "prompts/workflow/paper/venue_context_absent.md"
+reason = "Verbatim string of paper_prompt_context.py."
+
+[[file]]
+upstream = "extracted/paper_loop/venue_context_present.md"
+target = "prompts/workflow/paper/venue_context_present.md"
+reason = "Verbatim f-string of paper_prompt_context.py; its field is {{VENUE_PATH}}."
+
+[[file]]
+upstream = "extracted/paper_loop/contributions_context_absent.md"
+target = "prompts/workflow/paper/contributions_context_absent.md"
+reason = "Verbatim string of paper_prompt_context.py."
+
+[[file]]
+upstream = "extracted/paper_loop/contributions_context_present.md"
+target = "prompts/workflow/paper/contributions_context_present.md"
+reason = "Verbatim f-string of paper_prompt_context.py; its field is {{CONTRIBUTIONS_PATH}}."
+
+[[file]]
+upstream = "extracted/paper_loop/author_block_context_absent.md"
+target = "prompts/workflow/paper/author_block_context_absent.md"
+reason = "Verbatim string of paper_prompt_context.py."
+
+[[file]]
+upstream = "extracted/paper_loop/author_block_context_present.md"
+target = "prompts/workflow/paper/author_block_context_present.md"
+reason = "Verbatim f-string of paper_prompt_context.py; its field is {{AUTHOR_PATH}}."
+
+[[file]]
+upstream = "extracted/paper_loop/strategy_context_ready.md"
+target = "prompts/workflow/paper/strategy_context_ready.md"
+reason = "PAPER_STRATEGY_CONTEXT when the strategy artifacts exist (paper.sh render_prompt), verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/strategy_context_pending.md"
+target = "prompts/workflow/paper/strategy_context_pending.md"
+reason = "PAPER_STRATEGY_CONTEXT before the strategy artifacts exist, verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/strategy_context_none.md"
+target = "prompts/workflow/paper/strategy_context_none.md"
+reason = "PAPER_STRATEGY_CONTEXT of a single-stage run, verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/validation_feedback_context_present.md"
+target = "prompts/workflow/paper/validation_feedback_context_present.md"
+reason = "PAPER_VALIDATION_FEEDBACK_CONTEXT with feedback files; fields {{FEEDBACK_JSON_NAME}} and {{FEEDBACK_MD_NAME}}, verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/validation_feedback_context_absent.md"
+target = "prompts/workflow/paper/validation_feedback_context_absent.md"
+reason = "PAPER_VALIDATION_FEEDBACK_CONTEXT without feedback, verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/review_feedback_context_present.md"
+target = "prompts/workflow/paper/review_feedback_context_present.md"
+reason = "PAPER_REVIEW_CONTEXT with reviewer feedback, verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/review_feedback_context_pending.md"
+target = "prompts/workflow/paper/review_feedback_context_pending.md"
+reason = "PAPER_REVIEW_CONTEXT before the first review, verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/review_feedback_context_disabled.md"
+target = "prompts/workflow/paper/review_feedback_context_disabled.md"
+reason = "PAPER_REVIEW_CONTEXT when the review gate is off, verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/openai_key_available.md"
+target = "prompts/workflow/paper/openai_key_available.md"
+reason = "AutoillustrateRenderer.availability() text when an OpenAI key is present (A8), verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/openai_key_missing.md"
+target = "prompts/workflow/paper/openai_key_missing.md"
+reason = "AutoillustrateRenderer.availability() text when no OpenAI key is present (A8), verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/gemini_key_available.md"
+target = "prompts/workflow/paper/gemini_key_available.md"
+reason = "AutoillustrateRenderer.availability() text when a Gemini key is present (A8), verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/gemini_key_missing.md"
+target = "prompts/workflow/paper/gemini_key_missing.md"
+reason = "AutoillustrateRenderer.availability() text when no Gemini key is present (A8), verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/global_memory_summary_header.md"
+target = "prompts/workflow/paper/global_memory_summary_header.md"
+reason = "Header of global_memory_summary.md (paper.sh grounding step), verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/edit_strategy_context_edit.md"
+target = "prompts/workflow/paper/edit_strategy_context_edit.md"
+reason = "PAPER_EDIT_STRATEGY_CONTEXT in edit mode (paper_edit.sh render_prompt), verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/edit_strategy_context_fresh.md"
+target = "prompts/workflow/paper/edit_strategy_context_fresh.md"
+reason = "PAPER_EDIT_STRATEGY_CONTEXT in fresh mode, verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/edit_context_edit.md"
+target = "prompts/workflow/paper/edit_context_edit.md"
+reason = "PAPER_EDIT_CONTEXT in edit mode, verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/edit_context_fresh.md"
+target = "prompts/workflow/paper/edit_context_fresh.md"
+reason = "PAPER_EDIT_CONTEXT in fresh mode, verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/paper_edit_contract.md"
+target = "prompts/workflow/paper/paper_edit_contract.md"
+reason = "The editing-contract section of paper_edit_context.md (seed_edit_workspace), verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/audit_packet_intro.md"
+target = "prompts/workflow/paper/audit_packet_intro.md"
+reason = "Instruction lines of the evidence-audit packet (build_audit_packet), verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/review_packet_intro.md"
+target = "prompts/workflow/paper/review_packet_intro.md"
+reason = "Instruction lines of the review packet (build_review_packet), verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/edit_interpretation_guidance.md"
+target = "prompts/workflow/paper/edit_interpretation_guidance.md"
+reason = "interpretation_guidance of paper_edit_context.json (seed_edit_workspace), verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/edit_results_linkage_intro.md"
+target = "prompts/workflow/paper/edit_results_linkage_intro.md"
+reason = "First line of the Results Linkage section of paper_edit_context.md, verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/edit_results_linkage_outro.md"
+target = "prompts/workflow/paper/edit_results_linkage_outro.md"
+reason = "Closing lines of the Results Linkage section of paper_edit_context.md, verbatim."
+
+[[file]]
+upstream = "extracted/paper_loop/concept_figure.md"
+target = "prompts/workflow/paper/concept_figure.md"
+reason = "The Autoillustrate --prompt prefix of the generate-concept-figure skill, verbatim; AutoillustrateRenderer appends the strategy's figure purpose."
+
+[[file]]
+upstream = "extracted/paper_loop/ranking_repair.md"
+target = "prompts/workflow/paper/ranking_repair.md"
+reason = "Contract-repair suffix of the post-hoc ranking repair rounds (paper.sh), appended after a blank line."
+
+[[file.change]]
+kind = "A3"
+old = '''
+replace ./posthoc_ranking.json with a corrected artifact.'''
+new = '''
+return a corrected ranking as your structured response (the harness replaces ./posthoc_ranking.json).'''
+count = 1
+reason = "The ranker answers through structured output; it does not write the file itself."

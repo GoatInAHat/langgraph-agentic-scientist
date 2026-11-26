@@ -1,0 +1,1 @@
+GEMINI_API_KEY was not detected before launch. This is not a blocker: OpenAI remains the default, and a no-key run can still ship the deterministic export.

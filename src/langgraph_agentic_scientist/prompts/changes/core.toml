@@ -1,0 +1,154 @@
+# Declared changes of the core package: the six shared fragments, the four core skills with their
+# helper scripts, and the reset-sequence diagnostic. Paths of `upstream` are relative to
+# third_party/ai-scientist-v3/, paths of `target` to src/langgraph_agentic_scientist/.
+# Kinds A1-A8 are the systematic adaptations described in docs/ADAPTATIONS.md.
+
+# --- texts that live in upstream code ---------------------------------------------------------
+
+[[extract]]
+upstream = "src/investigation/reset_sequence.py"
+lines = "47-51"
+output = "extracted/core/reset_sequence_diagnostic.md"
+names = { "len(observed_reset_seeds)" = "COUNT" }
+reason = "The reset-mismatch diagnostic is an f-string in upstream code; evaluators and the final verification render it from package data."
+
+[[file]]
+upstream = "extracted/core/reset_sequence_diagnostic.md"
+target = "prompts/workflow/evaluation/reset_sequence_diagnostic.md"
+reason = "Verbatim value of the upstream f-string; its fields are {{CONTEXT}}, {{EXPECTED}}, {{OBSERVED}}, {{COUNT}} and {{REPLAY_SEED}}."
+
+# --- the six shared recipes (upstream src/prompts/shared/) --------------------------------------
+
+[[file]]
+upstream = "src/prompts/shared/evaluator_evidence.md"
+target = "prompts/fragments/evaluator_evidence.md"
+reason = "Fragment {{EVALUATOR_EVIDENCE_CONTRACT}}, verbatim (the circle-packing sentence is an example, not a task assumption)."
+
+[[file]]
+upstream = "src/prompts/shared/candidate_environment.md"
+target = "prompts/fragments/candidate_environment.md"
+reason = "Fragment {{CANDIDATE_ENVIRONMENT_RECIPE}}, verbatim."
+
+[[file]]
+upstream = "src/prompts/shared/baseline_failures.md"
+target = "prompts/fragments/baseline_failures.md"
+reason = "Fragment {{BASELINE_FAILURE_RECIPE}}, verbatim."
+
+[[file]]
+upstream = "src/prompts/shared/evaluator_feasibility.md"
+target = "prompts/fragments/evaluator_feasibility.md"
+reason = "Fragment {{EVALUATOR_FEASIBILITY_RECIPE}}, verbatim."
+
+[[file]]
+upstream = "src/prompts/shared/worker_diagnostics.md"
+target = "prompts/fragments/worker_diagnostics.md"
+reason = "Fragment {{WORKER_DIAGNOSTICS_RECIPE}}, verbatim."
+
+[[file]]
+upstream = "src/prompts/shared/repair_diagnostics.md"
+target = "prompts/fragments/repair_diagnostics.md"
+reason = "Fragment {{REPAIR_DIAGNOSTICS_POLICY}}, verbatim."
+
+# --- skill memory-log ----------------------------------------------------------------------------
+
+[[file]]
+upstream = "src/agents/skills/memory-log/SKILL.md"
+target = "skills/memory-log/SKILL.md"
+reason = "Staged for every role upstream stages it for; changed only where it names the directory the helper is staged under."
+
+[[file.change]]
+kind = "A4"
+old = "- script: detect the active agent config directory first, then use `<that-dir>/skills/memory-log/scripts/append_memory.py`"
+new = "- script: detect the active agent config directory (`./.agents`) first, then use `<that-dir>/skills/memory-log/scripts/append_memory.py`"
+count = 1
+reason = "Skills are staged under ./.agents/skills/ of the role's workspace instead of a coding-agent CLI's configuration directory."
+
+[[file.change]]
+kind = "A4"
+old = "find ./.claude ./.codex ./.cursor ./.opencode ./.gemini ./.pi -path '*/skills/memory-log/scripts/append_memory.py'"
+new = "find ./.agents -path '*/skills/memory-log/scripts/append_memory.py'"
+count = 1
+reason = "The helper's discovery command searches the one directory the port stages skills under."
+
+[[file]]
+upstream = "src/agents/skills/memory-log/scripts/append_memory.py"
+target = "skills/memory-log/scripts/append_memory.py"
+reason = "Self-contained helper the skill tells the agent to run; vendored unchanged and staged with the skill."
+
+# --- skill edit-program --------------------------------------------------------------------------
+
+[[file]]
+upstream = "src/agents/skills/edit-program/SKILL.md"
+target = "skills/edit-program/SKILL.md"
+reason = "The trusted clone crosses the trust boundary and becomes the clone_program tool; every rule about it stays."
+
+[[file.change]]
+kind = "A1"
+old = '''   - `${TASK_PYTHON:-$WRAPPER_PYTHON} -I -m src.investigation.program_clone --from "{{RESULTS_DIR}}/program_<idx-1>" --to "{{RESULTS_DIR}}/program_<idx>"`'''
+new = '''   - call the `clone_program` tool: `clone_program(from_dir="{{RESULTS_DIR}}/program_<idx-1>", to_dir="{{RESULTS_DIR}}/program_<idx>")`'''
+count = 1
+reason = "upstream's clone module is part of upstream's own package and is not staged; the tool runs the same clone with the same arguments and refusal rules."
+
+[[file.change]]
+kind = "A1"
+old = '''${TASK_PYTHON:-$WRAPPER_PYTHON} -I -m src.investigation.program_clone --from "{{RESULTS_DIR}}/program_2" --to "{{RESULTS_DIR}}/program_3"'''
+new = '''# call the clone_program tool: clone_program(from_dir="{{RESULTS_DIR}}/program_2", to_dir="{{RESULTS_DIR}}/program_3")'''
+count = 1
+reason = "The example names the tool call; written as a shell comment so that the example block stays valid shell."
+
+# --- skill evaluate-program ----------------------------------------------------------------------
+
+[[file]]
+upstream = "src/agents/skills/evaluate-program/SKILL.md"
+target = "skills/evaluate-program/SKILL.md"
+reason = "The evaluation wrapper crosses the trust boundary and becomes the evaluate_program tool; the budget and no-re-run rules stay verbatim."
+
+[[file.change]]
+kind = "A1"
+old = '''```bash
+${TASK_PYTHON:-$WRAPPER_PYTHON} -I -m src.investigation.evaluate_program \
+    --evaluator {{TASK_DIR}}/evaluate.py \
+    --program-dir {{RESULTS_DIR}}/program_<idx> \
+    --timeout-seconds "${EVALUATION_TIMEOUT_SECONDS:-21600}"
+```'''
+new = '''```text
+evaluate_program(program_dir="{{RESULTS_DIR}}/program_<idx>")
+```'''
+count = 1
+reason = "The wrapper command becomes the evaluate_program tool call on the same program directory; the tool runs the task's official evaluate.py with the configured evaluation timeout."
+
+[[file.change]]
+kind = "A1"
+old = "- Always use `src.investigation.evaluate_program`; do not invoke `evaluate.py` directly."
+new = "- Always use the `evaluate_program` tool; do not invoke `evaluate.py` directly."
+count = 1
+reason = "Names the tool instead of the wrapper module; the sentence about evaluator-owned logs that follows stays."
+
+[[file.change]]
+kind = "A1"
+old = "- **Never** run `evaluate.py` as a background task/process or wrap it with the shell `timeout` utility. Run it as a foreground Bash command. If the shell tool supports an unlimited/omitted timeout, omit its optional timeout. Otherwise, configure it longer than the effective evaluator timeout plus its cleanup margin. Never choose a shell-tool timeout shorter than the evaluator timeout."
+new = "- The `evaluate_program` tool call is blocking: it returns when the evaluation has finished. **Never** start `evaluate.py` any other way: not as a background task/process, not through the shell, and not wrapped with the shell `timeout` utility."
+count = 1
+reason = "The shell-tool timeout advice concerned the wrapper command and is false for a tool call; the rule it carries (one blocking call, never another way of starting the evaluator) stays."
+
+[[file.change]]
+kind = "A1"
+old = '''${TASK_PYTHON:-$WRAPPER_PYTHON} -I -m src.investigation.evaluate_program \
+    --evaluator {{TASK_DIR}}/evaluate.py \
+    --program-dir {{RESULTS_DIR}}/program_3 \
+    --timeout-seconds "${EVALUATION_TIMEOUT_SECONDS:-21600}"'''
+new = '''# call the evaluate_program tool: evaluate_program(program_dir="{{RESULTS_DIR}}/program_3")'''
+count = 1
+reason = "The example names the tool call; written as a shell comment so that the example block, which goes on to cat the results, stays valid shell."
+
+# --- skill verify-rubrics ------------------------------------------------------------------------
+
+[[file]]
+upstream = "src/agents/skills/verify-rubrics/SKILL.md"
+target = "skills/verify-rubrics/SKILL.md"
+reason = "Verbatim; it names its helper by the path relative to the skill directory, which the sibling staging keeps true."
+
+[[file]]
+upstream = "src/agents/skills/verify-rubrics/scripts/create_rubric_status_placeholder.py"
+target = "skills/verify-rubrics/scripts/create_rubric_status_placeholder.py"
+reason = "Self-contained helper the skill tells the agent to run; vendored unchanged and staged with the skill."

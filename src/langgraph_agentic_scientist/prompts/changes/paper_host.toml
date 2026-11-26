@@ -1,0 +1,328 @@
+# Declared changes of the paper host side (WP6): the reference query plan prompts, the reference
+# repair context, and the six paper skills with their scripts and templates. Paths of `upstream` are
+# relative to third_party/ai-scientist-v3/, paths of `target` to src/langgraph_agentic_scientist/.
+# Kinds A1-A8 are the systematic adaptations described in docs/ADAPTATIONS.md.
+
+[[file]]
+upstream = "src/prompts/reference_query_plan.md"
+target = "prompts/paper/reference_query_plan.md"
+reason = 'Role R27, the reference planner of a fresh paper (`paper.sh`, phase initial). Only the sentences that told the agent to write the memo and the plan files change (A3).'
+
+[[file.change]]
+kind = "A3"
+old = '''
+Must write both:
+- `{{REFERENCE_QUERY_PLAN_PATH}}`
+- `{{REFERENCE_QUERY_PLAN_JSON_PATH}}`
+'''
+new = '''
+Return your answer as a structured response with two fields: `memo`, a readable markdown memo that mirrors the same decisions in prose, and `plan`, the plan object described in the Output Contract below. The harness writes the memo to `{{REFERENCE_QUERY_PLAN_PATH}}` and the plan to `{{REFERENCE_QUERY_PLAN_JSON_PATH}}`.
+'''
+count = 1
+reason = 'Structured answer (D2): the planner answers through structured output with a memo and a plan, and the harness writes `{{REFERENCE_QUERY_PLAN_PATH}}` and `{{REFERENCE_QUERY_PLAN_JSON_PATH}}`; the schema text and every rule about content stay. This sentence names the two files the agent was to write.'
+
+[[file.change]]
+kind = "A3"
+old = '''
+Write `{{REFERENCE_QUERY_PLAN_JSON_PATH}}` as JSON with this shape:
+'''
+new = '''
+Return the `plan` field as an object with this shape:
+'''
+count = 1
+reason = 'Structured answer (D2): the planner answers through structured output with a memo and a plan, and the harness writes `{{REFERENCE_QUERY_PLAN_PATH}}` and `{{REFERENCE_QUERY_PLAN_JSON_PATH}}`; the schema text and every rule about content stay. This sentence told the agent to write the JSON file.'
+
+[[file.change]]
+kind = "A3"
+old = '''
+If the grounded artifacts do not support a coherent literature neighborhood, write:
+'''
+new = '''
+If the grounded artifacts do not support a coherent literature neighborhood, return the `plan` field as:
+'''
+count = 1
+reason = 'Structured answer (D2): the planner answers through structured output with a memo and a plan, and the harness writes `{{REFERENCE_QUERY_PLAN_PATH}}` and `{{REFERENCE_QUERY_PLAN_JSON_PATH}}`; the schema text and every rule about content stay. This sentence introduces the failure plan, which is returned in the same field.'
+
+[[file.change]]
+kind = "A3"
+old = '''
+Write `{{REFERENCE_QUERY_PLAN_PATH}}` as a readable markdown memo that mirrors the same decisions in prose.
+'''
+new = '''
+Return the `memo` field as a readable markdown memo that mirrors the same decisions in prose.
+'''
+count = 1
+reason = 'Structured answer (D2): the planner answers through structured output with a memo and a plan, and the harness writes `{{REFERENCE_QUERY_PLAN_PATH}}` and `{{REFERENCE_QUERY_PLAN_JSON_PATH}}`; the schema text and every rule about content stay. This sentence told the agent to write the memo file.'
+
+[[file]]
+upstream = "src/prompts/reference_query_plan_edit.md"
+target = "prompts/paper/reference_query_plan_edit.md"
+reason = 'Role R27 in edit mode with reference mode `refresh` (`paper_edit.sh`). Only the sentences that told the agent to write the memo and the plan files change (A3).'
+
+[[file.change]]
+kind = "A3"
+old = '''
+Must write both:
+- `{{REFERENCE_QUERY_PLAN_PATH}}`
+- `{{REFERENCE_QUERY_PLAN_JSON_PATH}}`
+'''
+new = '''
+Return your answer as a structured response with two fields: `memo`, a readable markdown memo that mirrors the same decisions in prose, and `plan`, the plan object described in the Output Contract below. The harness writes the memo to `{{REFERENCE_QUERY_PLAN_PATH}}` and the plan to `{{REFERENCE_QUERY_PLAN_JSON_PATH}}`.
+'''
+count = 1
+reason = 'Structured answer (D2): the planner answers through structured output with a memo and a plan, and the harness writes `{{REFERENCE_QUERY_PLAN_PATH}}` and `{{REFERENCE_QUERY_PLAN_JSON_PATH}}`; the schema text and every rule about content stay. This sentence names the two files the agent was to write.'
+
+[[file.change]]
+kind = "A3"
+old = '''
+Write `{{REFERENCE_QUERY_PLAN_JSON_PATH}}` as JSON with this shape:
+'''
+new = '''
+Return the `plan` field as an object with this shape:
+'''
+count = 1
+reason = 'Structured answer (D2): the planner answers through structured output with a memo and a plan, and the harness writes `{{REFERENCE_QUERY_PLAN_PATH}}` and `{{REFERENCE_QUERY_PLAN_JSON_PATH}}`; the schema text and every rule about content stay. This sentence told the agent to write the JSON file.'
+
+[[file.change]]
+kind = "A3"
+old = '''
+If the grounded artifacts do not support a coherent literature neighborhood, write:
+'''
+new = '''
+If the grounded artifacts do not support a coherent literature neighborhood, return the `plan` field as:
+'''
+count = 1
+reason = 'Structured answer (D2): the planner answers through structured output with a memo and a plan, and the harness writes `{{REFERENCE_QUERY_PLAN_PATH}}` and `{{REFERENCE_QUERY_PLAN_JSON_PATH}}`; the schema text and every rule about content stay. This sentence introduces the failure plan, which is returned in the same field.'
+
+[[file.change]]
+kind = "A3"
+old = '''
+Write `{{REFERENCE_QUERY_PLAN_PATH}}` as a readable markdown memo that mirrors the same decisions in prose.
+'''
+new = '''
+Return the `memo` field as a readable markdown memo that mirrors the same decisions in prose.
+'''
+count = 1
+reason = 'Structured answer (D2): the planner answers through structured output with a memo and a plan, and the harness writes `{{REFERENCE_QUERY_PLAN_PATH}}` and `{{REFERENCE_QUERY_PLAN_JSON_PATH}}`; the schema text and every rule about content stay. This sentence told the agent to write the memo file.'
+
+[[file]]
+upstream = "extracted/paper_host/reference_repair_context.md"
+target = "prompts/workflow/paper/reference_repair_context.md"
+reason = 'The fixed text of upstream `reference_repair_context` (`paper_diagnostics.py`), appended to the reference planner prompt in repair rounds. The extracted file was written by hand because the text is assembled from several expressions (see docs/adaptations/paper_host.md); the allowed query categories and the previous artifacts are added by code.'
+
+[[file]]
+upstream = "src/agents/skills/write-paper/SKILL.md"
+target = "skills/write-paper/SKILL.md"
+reason = 'Skill of the writer families `paper`, `paper_detailed_grouped` and edit; verbatim (its relative links stay true under the sibling staging).'
+
+[[file]]
+upstream = "src/agents/skills/write-paper/scripts/validate_claims.py"
+target = "skills/write-paper/scripts/validate_claims.py"
+reason = 'Helper the skill tells the agent to run. Vendored with one declared change: the staged-skill directory of the port is added to the directories it excludes.'
+
+[[file.change]]
+kind = "A4"
+old = '''
+    (".pi", "agent", "skills"),
+'''
+new = '''
+    (".pi", "agent", "skills"),
+    (".agents", "skills"),
+'''
+count = 1
+reason = "Skills are staged under ./.agents/skills/ of the role's workspace (A4). The script excludes the staged skill directories of coding-agent CLIs when it scans or validates a paper workspace; without this entry it would scan the staged skills of the port (whose documentation contains evidence-link examples) and would not refuse TeX inputs that enter them."
+
+[[file]]
+upstream = "src/agents/skills/write-paper/templates/references.bib"
+target = "skills/write-paper/templates/references.bib"
+reason = 'Template of the writer skill, vendored unchanged.'
+
+[[file]]
+upstream = "src/agents/skills/write-paper/templates/claims_grounding.schema.json"
+target = "skills/write-paper/templates/claims_grounding.schema.json"
+reason = 'Template of the writer skill, vendored unchanged.'
+
+[[file]]
+upstream = "src/agents/skills/write-paper/templates/iclr/paper.tex"
+target = "skills/write-paper/templates/iclr/paper.tex"
+reason = 'Template of the writer skill, vendored unchanged.'
+
+[[file]]
+upstream = "src/agents/skills/write-paper/templates/iclr/paper.sty"
+target = "skills/write-paper/templates/iclr/paper.sty"
+reason = 'Template of the writer skill, vendored unchanged.'
+
+[[file]]
+upstream = "src/agents/skills/write-paper/templates/iclr/paper.bst"
+target = "skills/write-paper/templates/iclr/paper.bst"
+reason = 'Template of the writer skill, vendored unchanged.'
+
+[[file]]
+upstream = "src/agents/skills/write-paper/templates/alife/paper.tex"
+target = "skills/write-paper/templates/alife/paper.tex"
+reason = 'Template of the writer skill, vendored unchanged.'
+
+[[file]]
+upstream = "src/agents/skills/write-paper/templates/alife/alifeconf.sty"
+target = "skills/write-paper/templates/alife/alifeconf.sty"
+reason = 'Template of the writer skill, vendored unchanged.'
+
+[[file]]
+upstream = "src/agents/skills/write-paper-standalone/SKILL.md"
+target = "skills/write-paper-standalone/SKILL.md"
+reason = 'Skill of the standalone writer families; verbatim (relative links only).'
+
+[[file]]
+upstream = "src/agents/skills/write-paper-standalone/scripts/validate_claims.py"
+target = "skills/write-paper-standalone/scripts/validate_claims.py"
+reason = "Upstream's own copy, byte-identical to the write-paper copy; vendored with the same declared change."
+
+[[file.change]]
+kind = "A4"
+old = '''
+    (".pi", "agent", "skills"),
+'''
+new = '''
+    (".pi", "agent", "skills"),
+    (".agents", "skills"),
+'''
+count = 1
+reason = "Skills are staged under ./.agents/skills/ of the role's workspace (A4). The script excludes the staged skill directories of coding-agent CLIs when it scans or validates a paper workspace; without this entry it would scan the staged skills of the port (whose documentation contains evidence-link examples) and would not refuse TeX inputs that enter them."
+
+[[file]]
+upstream = "src/agents/skills/validate-paper/SKILL.md"
+target = "skills/validate-paper/SKILL.md"
+reason = 'Skill staged for the paper writers and repairers. The path of the figure validator names the staged location (A4); line 25 (`../write-paper/...`) stays true under the sibling staging.'
+
+[[file.change]]
+kind = "A4"
+old = '''
+python .claude/skills/validate-paper/scripts/validate_figures.py \
+'''
+new = '''
+python .agents/skills/validate-paper/scripts/validate_figures.py \
+'''
+count = 1
+reason = "Skills are staged under ./.agents/skills/ of the role's workspace instead of a coding-agent CLI's configuration directory."
+
+[[file]]
+upstream = "src/agents/skills/validate-paper/scripts/validate_figures.py"
+target = "skills/validate-paper/scripts/validate_figures.py"
+reason = "Helper the skill tells the agent to run. Upstream imports its figure validator from its own orchestrator package, which does not exist in a port workspace; the imports name the package's validator, which keeps upstream's function names and signatures."
+
+[[file.change]]
+kind = "other"
+old = '''
+from src.orchestrator.paper_step import read_json, validate_figure_manifest
+from src.orchestrator.tex_graphics import read_tex_file_bounded
+'''
+new = '''
+from langgraph_agentic_scientist.paper.validation.figures import (
+    read_json,
+    read_tex_file_bounded,
+    validate_figure_manifest,
+)
+'''
+count = 1
+reason = "The script is not self-contained upstream: it imports `src.orchestrator.paper_step` and `src.orchestrator.tex_graphics`. The package ships the same functions (`read_json`, `read_tex_file_bounded`, `validate_figure_manifest`) with upstream's signatures for a directory path."
+
+[[file]]
+upstream = "src/agents/skills/validate-paper/scripts/validate_tex_refs.py"
+target = "skills/validate-paper/scripts/validate_tex_refs.py"
+reason = 'Self-contained helper, vendored unchanged.'
+
+[[file]]
+upstream = "src/agents/skills/validate-paper/scripts/validate_compile_inputs.py"
+target = "skills/validate-paper/scripts/validate_compile_inputs.py"
+reason = 'Self-contained helper of the compile script. Vendored with one declared change: the staged-skill directory of the port is added to the directories it refuses as TeX inputs.'
+
+[[file.change]]
+kind = "A4"
+old = '''
+    (".pi", "agent", "skills"),
+'''
+new = '''
+    (".pi", "agent", "skills"),
+    (".agents", "skills"),
+'''
+count = 1
+reason = "Skills are staged under ./.agents/skills/ of the role's workspace (A4). The script excludes the staged skill directories of coding-agent CLIs when it scans or validates a paper workspace; without this entry it would scan the staged skills of the port (whose documentation contains evidence-link examples) and would not refuse TeX inputs that enter them."
+
+[[file]]
+upstream = "src/agents/skills/validate-paper/scripts/validate_rendered_si.py"
+target = "skills/validate-paper/scripts/validate_rendered_si.py"
+reason = 'Self-contained helper, vendored unchanged.'
+
+[[file]]
+upstream = "src/agents/skills/validate-paper/scripts/compile_latex.sh"
+target = "skills/validate-paper/scripts/compile_latex.sh"
+reason = 'Compile script the skill names by its relative path, vendored unchanged.'
+
+[[file]]
+upstream = "src/agents/skills/validate-paper/templates/figure_manifest.schema.json"
+target = "skills/validate-paper/templates/figure_manifest.schema.json"
+reason = 'Canonical schema of the figure manifest, vendored unchanged.'
+
+[[file]]
+upstream = "src/agents/skills/scientific-evidence/SKILL.md"
+target = "skills/scientific-evidence/SKILL.md"
+reason = "Skill of the writer families `paper` and `paper_standalone`. The helper's command lines name the staged location (A4)."
+
+[[file.change]]
+kind = "A4"
+old = 'bash src/agents/skills/scientific-evidence/scripts/scientific_evidence.sh'
+new = 'bash .agents/skills/scientific-evidence/scripts/scientific_evidence.sh'
+count = 6
+reason = "Skills are staged under ./.agents/skills/ of the role's workspace instead of the upstream repository's `src/agents/skills/` (lines 31, 32, 44, 157, 158 and 159)."
+
+[[file]]
+upstream = "src/agents/skills/scientific-evidence/scripts/scientific_evidence.py"
+target = "skills/scientific-evidence/scripts/scientific_evidence.py"
+reason = 'Self-contained evidence tool the skill tells the agent to run, and the verifier of the validation gate. Vendored with one declared change: the staged-skill directory of the port is added to the directories it excludes from scans.'
+
+[[file.change]]
+kind = "A4"
+old = '''
+    (".pi", "agent", "skills"),
+'''
+new = '''
+    (".pi", "agent", "skills"),
+    (".agents", "skills"),
+'''
+count = 1
+reason = "Skills are staged under ./.agents/skills/ of the role's workspace (A4). The script excludes the staged skill directories of coding-agent CLIs when it scans or validates a paper workspace; without this entry it would scan the staged skills of the port (whose documentation contains evidence-link examples) and would not refuse TeX inputs that enter them."
+
+[[file]]
+upstream = "src/agents/skills/scientific-evidence/scripts/scientific_evidence.sh"
+target = "skills/scientific-evidence/scripts/scientific_evidence.sh"
+reason = 'Wrapper the skill names by its relative path, vendored unchanged.'
+
+[[file]]
+upstream = "src/agents/skills/retrieve-references/SKILL.md"
+target = "skills/retrieve-references/SKILL.md"
+reason = 'Skill staged for the paper writers and repairers; verbatim (it names no staged path).'
+
+[[file]]
+upstream = "src/agents/skills/retrieve-references/scripts/s2_fetch.py"
+target = "skills/retrieve-references/scripts/s2_fetch.py"
+reason = "Self-contained retrieval helper or template, vendored unchanged; the fallback scripts also serve the package's reference retriever."
+
+[[file]]
+upstream = "src/agents/skills/retrieve-references/scripts/openalex_fetch.py"
+target = "skills/retrieve-references/scripts/openalex_fetch.py"
+reason = "Self-contained retrieval helper or template, vendored unchanged; the fallback scripts also serve the package's reference retriever."
+
+[[file]]
+upstream = "src/agents/skills/retrieve-references/scripts/scholarly_fetch.py"
+target = "skills/retrieve-references/scripts/scholarly_fetch.py"
+reason = "Self-contained retrieval helper or template, vendored unchanged; the fallback scripts also serve the package's reference retriever."
+
+[[file]]
+upstream = "src/agents/skills/retrieve-references/templates/provenance.schema.json"
+target = "skills/retrieve-references/templates/provenance.schema.json"
+reason = "Self-contained retrieval helper or template, vendored unchanged; the fallback scripts also serve the package's reference retriever."
+
+[[file]]
+upstream = "src/agents/skills/generate-concept-figure/SKILL.md"
+target = "skills/generate-concept-figure/SKILL.md"
+reason = 'Documentation of the concept-figure pipeline for the paper writers (they must not run it); verbatim.'

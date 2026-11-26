@@ -1,0 +1,1 @@
+(No campaign README available — rely on paper_data.json for variant and task metadata.)

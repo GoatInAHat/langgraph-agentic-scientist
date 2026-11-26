@@ -1,0 +1,106 @@
+# Declared changes of the task design loop (upstream phase A1): the five role prompts and the four
+# texts the shell driver `lib/task_design.sh` appends to them. Paths of `upstream` are relative to
+# third_party/ai-scientist-v3/, paths of `target` to src/langgraph_agentic_scientist/.
+# Kinds A1-A8 are the systematic adaptations described in docs/ADAPTATIONS.md.
+#
+# The design roles answer through structured output (A3): the sentences that told the agent to
+# write a JSON file now tell it to return that JSON as its structured response, and the harness
+# writes the file that the prompt names. Everything else, including the examples, the field lists
+# and every rule learned from failures, is upstream's text.
+#
+# The three-judge quorum and its adjudicator are dormant upstream (the driver runs one judge), so
+# upstream's `adjudicate_task_design.md` is vendored and carried nowhere else.
+
+# --- the five role prompts --------------------------------------------------------------------
+
+[[file]]
+upstream = "src/prompts/design_task.md"
+target = "prompts/drafting/design_task.md"
+reason = "Role R1, the task designer. Answers with a TaskDesign v1 object; the SHA-256 of task.md is computed with the read-only file_sha256 tool (A7, no text change)."
+
+[[file.change]]
+kind = "A3"
+old = "Write only `{{TASK_DESIGN_PATH}}` as strict JSON. Use exactly these top-level fields:"
+new = "Return the design as your structured response (strict JSON; the harness writes it to `{{TASK_DESIGN_PATH}}`). Use exactly these top-level fields:"
+count = 1
+reason = "The designer returns the design as its structured answer; the host writes ./task_design.json, the file the later roles read."
+
+[[file]]
+upstream = "src/prompts/validate_task_design.md"
+target = "prompts/drafting/validate_task_design.md"
+reason = "Role R3, the design judge. Answers with a schema-3 review object. The input sentence about not modifying the inputs stays: the judge's workspace is read-only."
+
+[[file.change]]
+kind = "A3"
+old = "Write only `{{TASK_DESIGN_REVIEW_PATH}}` as strict JSON with `schema_version: 3`"
+new = "Return as your structured response (the harness writes it to `{{TASK_DESIGN_REVIEW_PATH}}`) strict JSON with `schema_version: 3`"
+count = 1
+reason = "The judge returns the review as its structured answer; the host writes the review file."
+
+[[file]]
+upstream = "src/prompts/repair_task_design.md"
+target = "prompts/drafting/repair_task_design.md"
+reason = "Role R4, the design patch repairer. Answers with a replace-only patch object."
+
+[[file.change]]
+kind = "A3"
+old = "Write only `{{TASK_DESIGN_PATCH_PATH}}`. Do not modify the"
+new = "Return only the patch, as your structured response (the harness writes it to `{{TASK_DESIGN_PATCH_PATH}}`). Do not modify the"
+count = 1
+reason = "The repairer returns the patch as its structured answer; the host writes the patch file and applies it."
+
+[[file]]
+upstream = "src/prompts/repair_task_design_structure.md"
+target = "prompts/drafting/repair_task_design_structure.md"
+reason = "Role R2, the design structure repairer. Returns the repaired TaskDesign v1 object; the SHA-256 of task.md is computed with the read-only file_sha256 tool (A7, no text change)."
+
+[[file.change]]
+kind = "A3"
+old = "Modify only `{{TASK_DESIGN_PATH}}`."
+new = "Return only the repaired design, as your structured response (the harness writes it to `{{TASK_DESIGN_PATH}}`)."
+count = 1
+reason = "The structural repairer returns the repaired design instead of editing the file in place."
+
+[[file.change]]
+kind = "other"
+old = "Validate\nthe JSON before exiting."
+new = "Validate\nthe JSON before you answer."
+count = 1
+reason = "The role has no process that exits; the instruction to check the JSON before finishing is kept."
+
+[[file]]
+upstream = "src/prompts/audit_task_design_delta.md"
+target = "prompts/drafting/audit_task_design_delta.md"
+reason = "Role R5, the design delta auditor. Answers with a schema-2 delta audit object."
+
+[[file.change]]
+kind = "A3"
+old = "Write strict JSON with exactly `schema_version: 2`,"
+new = "Return as your structured response (the harness writes it to `{{TASK_DESIGN_REVIEW_PATH}}`) strict JSON with exactly `schema_version: 2`,"
+count = 1
+reason = "The auditor returns the delta audit as its structured answer; the host writes the file."
+
+# --- texts that live in the shell driver ---------------------------------------------------------
+# The driver appends them to a rendered prompt. They are shell strings, so they are extracted by
+# hand into third_party/ai-scientist-v3/extracted/drafting_design/ and a test re-extracts them
+# from the vendored driver and compares bytes.
+
+[[file]]
+upstream = "extracted/drafting_design/focused_repair_verification.md"
+target = "prompts/workflow/drafting/focused_repair_verification.md"
+reason = "The section appended to the judge prompt for a focused review of a repair candidate; verbatim. The shell variable of the target dimension identifiers is {{TARGET_DIMENSIONS}}."
+
+[[file]]
+upstream = "extracted/drafting_design/review_retry_feedback.md"
+target = "prompts/workflow/drafting/review_retry_feedback.md"
+reason = "The section appended to the judge prompt after a review that failed its contract; verbatim. The shell variable of the failure data is {{DIAGNOSTIC}}. Upstream appends one such section per failed attempt."
+
+[[file]]
+upstream = "extracted/drafting_design/delta_retry_feedback.md"
+target = "prompts/workflow/drafting/delta_retry_feedback.md"
+reason = "The section appended to the delta auditor prompt after an audit that failed its contract; verbatim. It differs from the judge's in two sentences, so it is its own file. The shell variable of the failure data is {{DIAGNOSTIC}}."
+
+[[file]]
+upstream = "extracted/drafting_design/patch_format_retry_feedback.md"
+target = "prompts/workflow/drafting/patch_format_retry_feedback.md"
+reason = "The section appended to the repairer prompt after a patch that failed its format; verbatim. The shell variable of the failure data is {{DIAGNOSTIC}} (upstream passes its first 8192 characters)."

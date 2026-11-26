@@ -1,0 +1,1 @@
+Analysis files contain the declared evaluator metrics, correctness, and variant identity. State which evidence is available and missing in the rubric evidence, including per-seed observations, geometry, runtime, and timeseries. A header-only timeseries is valid; do not require undeclared diagnostics or infer support for claims whose evidence is unavailable.

@@ -101,6 +101,7 @@ EXTRA_TASKS_SUBDIR = "extra_tasks"
 AGGREGATED_SUBDIR = "aggregated"
 README_WORK_DIR = "_readme_work"
 PIPELINE_SUMMARY_FILENAME = "pipeline_summary.json"
+TASK_SNAPSHOT_METADATA_FILENAME = ".agentic_task_snapshot.json"
 
 TASK_COPY_EXCLUDE_DIRS: frozenset[str] = frozenset(
     {
@@ -201,6 +202,7 @@ __all__ = [
     "TASK_COPY_EXCLUDE_FILES",
     "TASK_COPY_EXCLUDE_SUFFIXES",
     "TASK_ROOT_EXCLUDE_FILES",
+    "TASK_SNAPSHOT_METADATA_FILENAME",
     "TIMESERIES_COLUMNS",
     "VALID_VARIANT_KINDS",
     "VARIANTS_SUBDIR",

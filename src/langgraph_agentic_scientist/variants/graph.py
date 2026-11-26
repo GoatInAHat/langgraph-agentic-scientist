@@ -120,6 +120,7 @@ from .select import (
     fail_open_decisions,
     selection_json,
 )
+from .tasks import primary_task_name
 from .workspace_ops import make_dir, read_json_object, write_json
 
 logger = logging.getLogger(__name__)
@@ -628,7 +629,7 @@ async def cross_result(state: VariantsState, runtime: Runtime[ScientistContext])
 async def aggregate(state: VariantsState, runtime: Runtime[ScientistContext]) -> dict[str, Any]:
     """Stage 7: aggregate the analysis CSVs."""
     ctx = runtime.context
-    original = state["task"].root.rstrip("/").rsplit("/", 1)[-1] or "original"
+    original = await primary_task_name(ctx.workspace, state["task"].root)
     results = await aggregate_variant_csvs(
         ctx.workspace,
         ctx.prompts,
@@ -653,7 +654,9 @@ async def readme(state: VariantsState, runtime: Runtime[ScientistContext]) -> di
     out = _out(state)
     specs = list(state["specs"])
     task_md = await read_task_md(ws, state["task"].root)
-    task_info = await discover_tasks(ws, out, state["task"].root, None)
+    task_info = await discover_tasks(
+        ws, out, state["task"].root, await primary_task_name(ws, state["task"].root)
+    )
     flat: dict[str, list[dict[str, Any]]] = {}
     for info in task_info:
         if info.get("role") == "flat":

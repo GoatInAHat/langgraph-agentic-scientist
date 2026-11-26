@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 
 from ..core.contract import load_task_contract
 from ..core.errors import ProgramSpecError, TaskContractError
@@ -11,6 +12,7 @@ from ..core.state import ProgramRef, TaskRef
 from ..evaluation.program_spec import resolve_entrypoint
 from ..workspace.paths import join, safe_relpath
 from ..workspace.protocol import Workspace, is_dir
+from .constants import TASK_SNAPSHOT_METADATA_FILENAME
 from .workspace_ops import read_text_or_none
 
 
@@ -56,4 +58,23 @@ async def task_ref_for(workspace: Workspace, root: str) -> TaskRef:
     )
 
 
-__all__ = ["TaskContractError", "task_ref_for"]
+async def primary_task_name(workspace: Workspace, root: str) -> str:
+    """Return the name of the primary task: the source's name a run-local snapshot records.
+
+    Upstream's pipeline passes the source directory's name as ``paths.task_name``; a snapshot
+    directory (``<run>/task``) records it in its metadata. Without one the name is the last
+    component of ``root``, then ``original``.
+    """
+    text = await read_text_or_none(workspace, join(root, TASK_SNAPSHOT_METADATA_FILENAME))
+    if text is not None:
+        try:
+            recorded = json.loads(text)
+        except json.JSONDecodeError:
+            recorded = None
+        name = recorded.get("task_name") if isinstance(recorded, dict) else None
+        if isinstance(name, str) and name and "/" not in name and "\\" not in name:
+            return name
+    return root.rstrip("/").rsplit("/", 1)[-1] or "original"
+
+
+__all__ = ["TaskContractError", "primary_task_name", "task_ref_for"]

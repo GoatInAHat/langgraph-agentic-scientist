@@ -511,9 +511,7 @@ async def publish_evaluation(
     await workspace.remove(join(program_dir, EVALUATION_PENDING_FILENAME))
 
 
-async def check_analysis_files(
-    workspace: Workspace, task_bundle: str
-) -> dict[str, bool]:
+async def check_analysis_files(workspace: Workspace, task_bundle: str) -> dict[str, bool]:
     """Report which analysis files exist across the ``program_<n>`` directories."""
     result: dict[str, bool] = {}
     for name in await program_dirs(workspace, task_bundle):
@@ -1014,7 +1012,6 @@ async def finish_variant(
     """Record the variant's run (upstream's ``VariantRunResult``) and update its manifest."""
     ws = runtime.context.workspace
     spec = state["spec"]
-    cfg = _cfg(state)
     timed_out = bool(state.get("timed_out"))
     rubric_passed = bool(state.get("rubric_passed"))
     status: Literal["completed", "failed", "timeout"] = (

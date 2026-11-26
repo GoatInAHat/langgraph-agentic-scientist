@@ -558,7 +558,6 @@ async def after_control(
 ) -> dict[str, Any]:
     """Require a verified adapted control and find its best program."""
     ws = runtime.context.workspace
-    cfg = method_config(state).variants
     current = _current(state)
     spec = state.get("cross_control")
     if spec is None:
@@ -566,7 +565,9 @@ async def after_control(
     runs = [
         run for run in state.get("variant_runs", []) if run.spec.variant_dir == spec.variant_dir
     ]
-    infrastructure = next((run.infrastructure_failure for run in runs if run.infrastructure_failure), None)
+    infrastructure = next(
+        (run.infrastructure_failure for run in runs if run.infrastructure_failure), None
+    )
     if infrastructure is not None:
         return {"cross_failure": infrastructure}
     if len(runs) != 1 or not runs[0].rubric_passed:

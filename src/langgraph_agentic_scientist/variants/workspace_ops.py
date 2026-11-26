@@ -112,9 +112,7 @@ async def program_dirs(workspace: Workspace, bundle: str) -> list[str]:
     bundle; equal indices keep name order.
     """
     names = [
-        name
-        for name in await list_child_dirs(workspace, bundle)
-        if PROGRAM_DIR_RE.match(name)
+        name for name in await list_child_dirs(workspace, bundle) if PROGRAM_DIR_RE.match(name)
     ]
     return sorted(names, key=lambda name: (int(name.split("_", 1)[1]), name))
 

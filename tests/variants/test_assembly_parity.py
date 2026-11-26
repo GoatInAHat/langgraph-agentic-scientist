@@ -161,3 +161,35 @@ async def test_the_canonical_control_must_be_based_on_the_best_program(
     result = await _run(ctx, task, best)
     assert result.failure is not None
     assert "canonical control_best" in result.failure.detail
+
+
+async def test_the_primary_task_is_named_by_its_snapshot_metadata(
+    workspace: LocalWorkspace,
+) -> None:
+    from langgraph_agentic_scientist.variants.tasks import primary_task_name
+
+    await workspace.write_bytes(
+        "task/.agentic_task_snapshot.json",
+        b'{"source_digest":"x","task_name":"circpack","version":2}\n',
+    )
+    assert await primary_task_name(workspace, "task") == "circpack"
+    assert await primary_task_name(workspace, "runs/mytask") == "mytask"
+    await workspace.write_bytes("bad/.agentic_task_snapshot.json", b'{"task_name":"a/b"}')
+    assert await primary_task_name(workspace, "bad") == "bad"
+
+
+async def test_the_aggregated_directory_and_readme_use_the_snapshot_name(
+    workspace: LocalWorkspace, study: Any, phase_context: Any
+) -> None:
+    from .test_cross_task import _run, _scripts
+
+    task, best = study
+    await workspace.write_bytes(
+        "task/.agentic_task_snapshot.json",
+        b'{"source_digest":"x","task_name":"circpack","version":2}',
+    )
+    ctx = phase_context(_scripts())
+    result = await _run(ctx, task, best)
+    assert result.status == "completed", result.failure
+    assert "circpack/run_summary.csv" in result.aggregates
+    assert "circpack" in (workspace.root / "variants/README.md").read_text()

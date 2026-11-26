@@ -20,3 +20,43 @@ async def test_best_program_with_a_gap_beyond_the_attempts(workspace: LocalWorks
     await workspace.write_bytes("g/program_0/x", b"x")
     await workspace.write_bytes("g/program_007/metrics.json", b"{}")
     assert await find_best_program_dir(workspace, "g") == "g/program_007"
+
+
+async def test_a_directory_named_like_a_csv_makes_a_flat_task(workspace: LocalWorkspace) -> None:
+    from langgraph_agentic_scientist.variants import aggregate, readme
+
+    await workspace.write_bytes("t/v/results.csv/keep", b"x")
+    assert await aggregate._is_flat_extra_task(workspace, "t")
+    assert await readme._is_flat_extra_task(workspace, "t")
+
+
+def test_a_json_null_in_a_flat_task_reads_none() -> None:
+    from langgraph_agentic_scientist import PromptRegistry
+    from langgraph_agentic_scientist.variants.readme import assemble_readme
+
+    text = assemble_readme(
+        PromptRegistry.default(),
+        "summary",
+        [],
+        {},
+        {},
+        None,
+        {"t": [{"variant_id": "a", "title": None, "kind": None}]},
+    )
+    assert "### None (`a`)" in text
+    assert "**Kind**: None" in text
+    assert "None (None variant)." in text
+    assert "{{" not in text
+
+
+async def test_a_bare_carriage_return_summary_is_unknown(workspace: LocalWorkspace) -> None:
+    from langgraph_agentic_scientist import PromptRegistry
+    from langgraph_agentic_scientist.variants.analysis import summary_qualification
+
+    from .test_analysis_and_aggregate import _qualified_program
+
+    program = await _qualified_program(workspace, overall=True)
+    path = workspace.root / program / "analysis" / "run_summary.csv"
+    path.write_bytes(path.read_bytes().replace(b"\r\n", b"\r"))
+    result = await summary_qualification(workspace, program, prompts=PromptRegistry.default())
+    assert result == {"overall_pass": ""}

@@ -371,7 +371,7 @@ async def summary_qualification(
         metrics = await read_json_object(workspace, join(program_dir, "metrics.json"))
         if summary_text is None or status is None or correctness is None or metrics is None:
             return unknown
-        rows = list(csv.DictReader(io.StringIO(summary_text, newline="")))
+        rows = list(csv.DictReader(io.StringIO(summary_text)))
         if len(rows) != 1:
             return unknown
         row = rows[0]

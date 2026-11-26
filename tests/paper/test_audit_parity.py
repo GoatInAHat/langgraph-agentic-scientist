@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -115,3 +116,49 @@ async def test_an_unreadable_input_is_an_operational_failure(
     out = await _run(ctx, task)
     assert out["audit"].outcome == "operational_failure"
     assert out["audit"].detail == "figure_manifest.json is invalid JSON"
+
+
+async def test_hash_exclusions_follow_upstream(workspace: Any) -> None:
+    await _paper(workspace)
+    for name in (
+        "revisions/notes.md",
+        "sub/.agents/k.md",
+        ".agents/notes.md",
+        "paper_events_1.jsonl",
+        ".claude/skills/s/SKILL.md",
+        ".agents/skills/s/SKILL.md",
+        "results/run.json",
+    ):
+        await workspace.write_bytes(f"{PAPER_DIR}/{name}", b"x")
+    hashes = await audit_input_sha256(workspace, PAPER_DIR)
+    sources = {key.removeprefix("evidence-source/") for key in hashes if "evidence-source/" in key}
+    assert {"revisions/notes.md", "sub/.agents/k.md", ".agents/notes.md"} <= sources
+    assert not sources & {
+        "paper_events_1.jsonl",
+        ".claude/skills/s/SKILL.md",
+        ".agents/skills/s/SKILL.md",
+        "results/run.json",
+    }
+
+
+async def test_the_audit_copy_excludes_only_skill_directories(
+    make_context: Any, workspace: Any
+) -> None:
+    seen: list[bool] = []
+
+    def look(messages: Any) -> Any:
+        root = workspace.host_path("run/paper/.paper_evidence_audit_workspaces/p-round1-attempt1")
+        seen.append(Path(root, ".agents/notes.md").exists())
+        seen.append(Path(root, ".agents/skills/s/SKILL.md").exists())
+        return audit_pass()
+
+    ctx = make_context(
+        models=models({Role.EVIDENCE_AUDITOR: [look]}), config=fast_config(paper=paper_config())
+    )
+    task = await setup_task(workspace)
+    await _paper(workspace)
+    await workspace.write_bytes(f"{PAPER_DIR}/.agents/notes.md", b"x")
+    await workspace.write_bytes(f"{PAPER_DIR}/.agents/skills/s/SKILL.md", b"x")
+    out = await _run(ctx, task)
+    assert out["audit"].outcome == "pass"
+    assert seen == [True, False]

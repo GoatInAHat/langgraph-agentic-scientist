@@ -56,8 +56,10 @@ from .contexts import (
     write_validation_feedback_from_current_report,
 )
 from .models import AuditPayload, AuditResult
+from .validation.evidence import WORKSPACE_ALIAS_DIRS
 from .validation.files import SnapshotTree
 from .validation.fingerprint import AUDIT_INPUT_PATHS, paper_input_sha256
+from .validation.tex import AGENT_SKILL_DIR_PREFIXES
 
 MAX_TEX_CHARS = 30000
 MAX_JSON_CHARS = 14000
@@ -103,7 +105,6 @@ EVIDENCE_SKIP_DIR_NAMES = frozenset(
         ".venv",
         "__pycache__",
         "scientific-evidence",
-        ".agents",
     }
 )
 EVIDENCE_GENERATED_NAMES = frozenset(
@@ -122,10 +123,21 @@ SCIENTIFIC_EVIDENCE_SCRIPT = ".agents/skills/scientific-evidence/scripts/scienti
 # --- hashing -------------------------------------------------------------------------------------
 
 
+def is_agent_skill_path(relative: str) -> bool:
+    """``_is_agent_skill_path``: a path inside an agent's skill directory."""
+    parts = PurePosixPath(relative).parts
+    return any(parts[: len(prefix)] == prefix for prefix in AGENT_SKILL_DIR_PREFIXES)
+
+
+def _is_alias_path(relative: str) -> bool:
+    parts = PurePosixPath(relative).parts
+    return len(parts) > 1 and parts[0] in WORKSPACE_ALIAS_DIRS
+
+
 def is_generated_audit_artifact(relative: str) -> bool:
     """``_is_generated_audit_artifact``: files the host writes while an audit runs."""
     parts = PurePosixPath(relative).parts
-    if parts and parts[0] in ("paper_diagnostics", "revisions"):
+    if parts and parts[0] == "paper_diagnostics":
         return True
     if relative == "scientific-evidence/verification-report.json":
         return True
@@ -134,6 +146,8 @@ def is_generated_audit_artifact(relative: str) -> bool:
     if len(parts) != 1:
         return False
     name = parts[0]
+    if name.startswith("paper_events_") and PurePosixPath(name).suffix == ".jsonl":
+        return True
     return bool(
         name in EVIDENCE_GENERATED_NAMES
         or name == AUDIT_INPUT_HASH_MANIFEST
@@ -185,7 +199,9 @@ async def audit_input_sha256(workspace: Workspace, paper_dir: str) -> dict[str, 
         if entry.kind != "file":
             continue
         parts = PurePosixPath(entry.path).parts
-        if any(part in EVIDENCE_SKIP_DIR_NAMES for part in parts[:-1]):
+        if any(part in EVIDENCE_SKIP_DIR_NAMES for part in parts):
+            continue
+        if is_agent_skill_path(entry.path) or _is_alias_path(entry.path):
             continue
         if is_generated_audit_artifact(entry.path):
             continue
@@ -199,7 +215,8 @@ async def audit_input_sha256(workspace: Workspace, paper_dir: str) -> dict[str, 
             continue
         hashes[f"evidence-source/{entry.path}"] = await _file_digest(workspace, paper_dir, entry)
     ledger = join(paper_dir, "scientific-evidence/ledger.jsonl")
-    if await workspace.exists(ledger):
+    ledger_entry = await workspace.stat(ledger)
+    if ledger_entry is not None and ledger_entry.kind == "file":
         hashes["evidence-source/scientific-evidence/ledger.jsonl"] = hashlib.sha256(
             await workspace.read_bytes(ledger)
         ).hexdigest()
@@ -703,7 +720,11 @@ async def _prepare(state: AuditState, runtime: Runtime[ScientistContext]) -> dic
         return update
     copy_dir = _copy_dir(paper_dir, f"round{audit_round}-attempt{attempt}")
     await ws.remove(copy_dir)
-    await ws.copy_tree(paper_dir, copy_dir, ignore=("/.agents/",))
+    await ws.copy_tree(
+        paper_dir,
+        copy_dir,
+        ignore=tuple(f"/{'/'.join(prefix)}/" for prefix in AGENT_SKILL_DIR_PREFIXES),
+    )
     refresh_error = await refresh_evidence_report(
         ctx, copy_dir, join(paper_dir, SCIENTIFIC_EVIDENCE_SCRIPT)
     )
@@ -911,6 +932,7 @@ __all__ = [
     "build_audit_graph",
     "build_audit_packet",
     "final_outcome_summary",
+    "is_agent_skill_path",
     "is_generated_audit_artifact",
     "refresh_evidence_report",
     "render_audit_markdown",

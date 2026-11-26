@@ -130,10 +130,7 @@ async def _is_flat_extra_task(workspace: Workspace, task_dir: str) -> bool:
         child = join(task_dir, name)
         if await is_file(workspace, join(child, "variant_spec.json")):
             return True
-        if any(
-            not directory and entry.endswith(".csv")
-            for entry, directory in await list_children(workspace, child)
-        ):
+        if any(entry.endswith(".csv") for entry, _ in await list_children(workspace, child)):
             return True
     return False
 

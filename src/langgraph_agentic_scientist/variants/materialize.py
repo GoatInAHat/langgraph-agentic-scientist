@@ -96,8 +96,12 @@ REFERENCE_COPY_IGNORE = (
 
 
 def piece(prompts: PromptRegistry, group: str, name: str, **values: str) -> str:
-    """Render one piece of an assembled text from ``workflow/variants/<group>/<name>``."""
-    return prompts.render(f"workflow/variants/{group}/{name}", values, fragments=False)
+    """Render one piece of an assembled text from ``workflow/variants/<group>/<name>``.
+
+    A value is formatted as an f-string formats it, so a JSON ``null`` reads ``None``.
+    """
+    rendered = {key: str(value) for key, value in values.items()}
+    return prompts.render(f"workflow/variants/{group}/{name}", rendered, fragments=False)
 
 
 async def task_ignore_patterns(workspace: Workspace, source: str) -> tuple[str, ...]:

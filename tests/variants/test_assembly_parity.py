@@ -116,3 +116,48 @@ async def test_ignore_patterns_apply_to_top_level_names_as_written(
         "sub/b.tmp",
         "k",
     }
+
+
+async def test_the_original_task_and_reference_evaluator_are_read_with_universal_newlines(
+    workspace: LocalWorkspace,
+) -> None:
+    from langgraph_agentic_scientist.variants.cross_task import (
+        find_original_task_md,
+        read_retrofitted_evaluator,
+    )
+
+    await workspace.write_bytes("o/_retrofitted_bundle/task.md", b"# T\r\nline\rend\r\n")
+    await workspace.write_bytes("o/_retrofitted_bundle/evaluate.py", b"a = 1\r\nb = 2\r")
+    assert await find_original_task_md(workspace, "o") == "# T\nline\nend\n"
+    assert await read_retrofitted_evaluator(workspace, "o") == "a = 1\nb = 2\n"
+    await workspace.write_bytes("p/variants/v/task_bundle/original_task.md", b"x\r\ny")
+    assert await find_original_task_md(workspace, "p") == "x\ny"
+
+
+async def test_the_canonical_control_must_be_based_on_the_best_program(
+    workspace: LocalWorkspace,
+    study: Any,
+    phase_context: Any,
+    monkeypatch: Any,
+) -> None:
+    from langgraph_agentic_scientist.testing import write_minimal_task
+    from langgraph_agentic_scientist.variants import graph
+
+    from .test_cross_task import _run, _scripts
+
+    real = graph.materialize_variant_workspaces
+
+    async def reference_based(*args: Any, **kwargs: Any) -> Any:
+        specs = await real(*args, **kwargs)
+        for spec in specs:
+            if spec.variant_id == "control_best":
+                spec.details["base_program"] = "reference"
+        return specs
+
+    monkeypatch.setattr(graph, "materialize_variant_workspaces", reference_based)
+    task, best = study
+    await write_minimal_task(workspace, "extra1")
+    ctx = phase_context(_scripts(), extra_tasks=("extra1",))
+    result = await _run(ctx, task, best)
+    assert result.failure is not None
+    assert "canonical control_best" in result.failure.detail

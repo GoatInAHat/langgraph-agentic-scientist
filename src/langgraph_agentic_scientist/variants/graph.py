@@ -93,6 +93,7 @@ from .models import (
     VariantRun,
     VariantSelection,
     VariantSummariesAnswer,
+    spec_detail,
     spec_to_dict,
 )
 from .readme import (
@@ -472,6 +473,7 @@ async def materialize(state: VariantsState, runtime: Runtime[ScientistContext]) 
     if cross_requested and not (
         len(controls) == 1
         and controls[0].kind == "control"
+        and spec_detail(controls[0], "base_program") == "best"
         and controls[0].variant_dir == join(_out(state), "variants", CONTROL_BEST_ID)
     ):
         return {

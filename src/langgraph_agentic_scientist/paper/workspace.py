@@ -417,12 +417,12 @@ async def seed_edit_workspace(
         if name == "paper.tex" and options.main_file is not None:
             continue
         source = join(previous_paper_dir, name)
-        entry = await ws.stat(source)
-        if entry is None:
+        found = await ws.stat(source)
+        if found is None:
             continue
-        if entry.kind == "dir":
+        if found.kind == "dir":
             await copy_tree_regular(ws, source, join(paper_dir, name), skipped)
-        elif entry.kind == "file":
+        elif found.kind == "file":
             await ws.write_bytes(join(paper_dir, name), await ws.read_bytes(source))
         else:
             skipped.append({"path": source, "reason": "non_regular"})

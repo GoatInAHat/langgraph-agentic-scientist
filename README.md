@@ -116,7 +116,14 @@ async def run(
 ```
 
 `python examples/quickstart.py` runs it with the model named by `LAS_MODEL` (any name accepted by
-LangChain's `init_chat_model`). [`tests/pipeline/whole_flow.py`](tests/pipeline/whole_flow.py) is a
+LangChain's `init_chat_model`). [`examples/served_model.py`](examples/served_model.py) runs the same
+pipeline durably against an OpenAI-compatible server with a Postgres checkpointer, resumes its
+thread when started again, and logs every model call's usage; it takes all its settings from
+`LAS_*` environment variables. Since `LocalWorkspace` runs agent commands where the process runs,
+run it in a container whose only writable mount is the run directory:
+[`examples/container/Dockerfile`](examples/container/Dockerfile) (built from the repository root)
+has the TeX Live and PDF tools of the paper phase and the example task's packages, and expects the
+checkout mounted read-only at `/pkg`. [`tests/pipeline/whole_flow.py`](tests/pipeline/whole_flow.py) is a
 complete run of every phase's own graph with scripted roles and fake evaluators, which shows what
 each role is asked to produce. What the code shows:
 
@@ -437,6 +444,18 @@ override by role; `pool` is upstream's multi-agent sampling (one model chosen pe
   Deep Agents' `task` tool has the same retries and limit. A subclass of `DeepAgentFactory` that
   extends `middleware()` adds middleware of your own (LangChain's `ToolCallLimitMiddleware`, for
   one) to every agent and its subagent.
+- **Slow models.** Upstream's session wall clocks (`config.paper.timeout_seconds` is 7200 s, for
+  one) were set for fast hosted models. On a served open-weights model producing a few dozen
+  tokens a second per stream, the paper writer used its whole clock; the method then does what
+  upstream does with a timed-out session (its outputs are checked and a repair round follows), so
+  the run completes, but each round costs a full clock. Raise the per-phase timeouts for such a
+  model. A server that caches prompt prefixes saves most of the input cost, since a session's
+  history only grows.
+- **Images.** The writer and the figure checks look at figures with `read_file`, which returns
+  them as image content. A server that refuses images in tool results, or caps the images per
+  request, answers such a request with an error; Deep Agents then replaces the image with a text
+  notice and the agent goes on without seeing it. Each refused image costs one request, and an
+  agent that cannot see its figures checks them by other means or not at all.
 
 ## Concurrency
 

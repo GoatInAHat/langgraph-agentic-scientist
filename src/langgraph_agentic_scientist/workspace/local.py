@@ -229,17 +229,24 @@ class LocalWorkspace:
         of a command's output. A command that times out or whose session is cancelled is killed
         with its whole process group. Deep Agents' own files (offloaded
         large tool results and conversation history) are routed to
-        ``.agent_artifacts/<root>/`` outside the role's root, so that the role's directory holds
-        only what the agent wrote on purpose. The shell and the file tools come from
-        :meth:`shell_backend`.
+        ``.agent_artifacts/<root>/`` outside the role's root, for read-only backends too, so that
+        the role's directory holds only what the agent wrote on purpose. The shell and the file
+        tools come from :meth:`shell_backend`.
         """
         root_path = self._path(root, follow=True)
         root_path.mkdir(parents=True, exist_ok=True)
+        key = hashlib.sha256(safe_relpath(root).encode()).hexdigest()[:16]
+        artifacts = self.root / AGENT_ARTIFACTS_DIR / key
+        artifacts.mkdir(parents=True, exist_ok=True)
         if read_only:
             return ReadOnlyBackend(
                 _HostPathsFilesystemBackend(
                     root_dir=root_path, virtual_mode=True, workspace_root=self.root
-                )
+                ),
+                routes={
+                    AGENT_ARTIFACTS_ROUTE: FilesystemBackend(root_dir=artifacts, virtual_mode=True)
+                },
+                artifacts_root=AGENT_ARTIFACTS_ROUTE.rstrip("/"),
             )
         shell = self.shell_backend(
             root_path,
@@ -247,9 +254,6 @@ class LocalWorkspace:
             max_output_bytes=max_output_bytes,
             env={**self.env, **dict(env or {})},
         )
-        key = hashlib.sha256(safe_relpath(root).encode()).hexdigest()[:16]
-        artifacts = self.root / AGENT_ARTIFACTS_DIR / key
-        artifacts.mkdir(parents=True, exist_ok=True)
         return _BoundedCompositeBackend(
             default=shell,
             routes={

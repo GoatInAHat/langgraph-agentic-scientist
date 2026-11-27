@@ -1,16 +1,20 @@
 """A Deep Agents backend through which an agent can read but change nothing.
 
 Upstream runs its read-only roles (judges, auditors, planners, selectors) on a read-only copy in
-a container. The port gives them :class:`ReadOnlyBackend`. It implements only
-``BackendProtocol``, not ``SandboxBackendProtocol``, so Deep Agents' ``execute`` tool reports that
-execution is unavailable; reads, listings, glob and grep delegate to the inner backend; writes,
-edits, deletes and uploads are refused with a message the agent reads. Deep Agents' own
-``permissions`` are not used for this, because they apply only to the built-in file tools and not
-to ``execute`` or to direct backend calls.
+a container. The port gives them :class:`ReadOnlyBackend`, a ``CompositeBackend`` whose default
+backend implements only ``BackendProtocol``, not ``SandboxBackendProtocol``, so Deep Agents'
+``execute`` tool reports that execution is unavailable; reads, listings, glob and grep delegate to
+the inner backend; writes, edits, deletes and uploads are refused with a message the agent reads.
+Its routes, when given, hold only Deep Agents' own files outside the role's directory. Deep Agents'
+own ``permissions`` are not used for this, because they apply only to the built-in file tools and
+not to ``execute`` or to direct backend calls.
 """
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
+from deepagents.backends.composite import CompositeBackend
 from deepagents.backends.protocol import (
     PERMISSION_DENIED,
     BackendProtocol,
@@ -31,12 +35,8 @@ READ_ONLY_MESSAGE = (
 )
 
 
-class ReadOnlyBackend(BackendProtocol):
-    """Wrap a backend so that every read works and every change is refused.
-
-    Args:
-        inner: The backend that serves reads.
-    """
+class _ReadOnlyView(BackendProtocol):
+    """Wrap a backend so that every read works and every change is refused."""
 
     def __init__(self, inner: BackendProtocol) -> None:
         self.inner = inner
@@ -142,6 +142,33 @@ class ReadOnlyBackend(BackendProtocol):
     async def aupload_files(self, files: list[tuple[str, bytes]]) -> list[FileUploadResponse]:
         """Refuse every upload."""
         return self.upload_files(files)
+
+
+class ReadOnlyBackend(CompositeBackend):
+    """A backend whose role can read ``inner`` and change nothing in it.
+
+    Deep Agents keeps its own files (conversation history offloaded when a session is summarised,
+    large tool results) under the ``artifacts_root`` of a ``CompositeBackend``; ``routes`` are the
+    writable backends that hold them, outside the role's directory. Without routes nothing at all
+    can be written.
+
+    Args:
+        inner: The backend that serves reads.
+        routes: Writable backends for Deep Agents' own files, by path prefix.
+        artifacts_root: Where Deep Agents puts its own files (a prefix of ``routes``).
+    """
+
+    def __init__(
+        self,
+        inner: BackendProtocol,
+        *,
+        routes: Mapping[str, BackendProtocol] | None = None,
+        artifacts_root: str = "/",
+    ) -> None:
+        super().__init__(
+            default=_ReadOnlyView(inner), routes=dict(routes or {}), artifacts_root=artifacts_root
+        )
+        self.inner = inner
 
 
 __all__ = ["READ_ONLY_MESSAGE", "ReadOnlyBackend"]

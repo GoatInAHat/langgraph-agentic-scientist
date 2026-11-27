@@ -504,4 +504,4 @@ def _kill_group(pid: int) -> None:
         os.killpg(pid, signal.SIGKILL)
 
 
-__all__ = ["AGENT_ARTIFACTS_DIR", "SNAPSHOT_DIR", "LocalWorkspace"]
+__all__ = ["AGENT_ARTIFACTS_DIR", "AGENT_ARTIFACTS_ROUTE", "SNAPSHOT_DIR", "LocalWorkspace"]

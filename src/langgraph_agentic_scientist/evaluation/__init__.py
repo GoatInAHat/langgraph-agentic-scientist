@@ -16,7 +16,14 @@ from .evidence import (
     validate_evaluator_outputs,
     validate_summaries,
 )
-from .ids import candidate_id, evaluation_id, final_id, worker_baseline_id
+from .ids import (
+    campaign_baseline_id,
+    candidate_id,
+    evaluation_id,
+    final_id,
+    id_to_path,
+    worker_baseline_id,
+)
 from .local import LocalCommandEvaluator, LocalFinalEvaluator, validate_final_manifest
 from .program_clone import (
     clone_program,
@@ -73,6 +80,7 @@ __all__ = [
     "LocalFinalEvaluator",
     "ProgramSpec",
     "SealedInputs",
+    "campaign_baseline_id",
     "candidate_id",
     "clone_program",
     "compute_usage",
@@ -81,6 +89,7 @@ __all__ = [
     "evaluation_results_complete",
     "evidence_metadata",
     "final_id",
+    "id_to_path",
     "load_program_spec",
     "parse_evaluation_evidence",
     "parse_program_spec",

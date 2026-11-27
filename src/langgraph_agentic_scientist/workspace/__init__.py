@@ -1,8 +1,9 @@
 """Workspaces: where a run keeps its files, and the agents' backends over them."""
 
+from ..core.errors import WorkspacePathError
 from .base import WorkspaceBase
 from .digest import sha256_bytes, tree_digest
-from .local import LocalWorkspace
+from .local import AGENT_ARTIFACTS_DIR, AGENT_ARTIFACTS_ROUTE, LocalWorkspace
 from .paths import (
     TASK_COPY_IGNORE_FILENAME,
     is_within,
@@ -26,6 +27,8 @@ from .protocol import (
 from .readonly import ReadOnlyBackend
 
 __all__ = [
+    "AGENT_ARTIFACTS_DIR",
+    "AGENT_ARTIFACTS_ROUTE",
     "TASK_COPY_IGNORE_FILENAME",
     "CommandResult",
     "FileEntry",
@@ -34,6 +37,7 @@ __all__ = [
     "SnapshotRef",
     "Workspace",
     "WorkspaceBase",
+    "WorkspacePathError",
     "is_dir",
     "is_file",
     "is_symlink",

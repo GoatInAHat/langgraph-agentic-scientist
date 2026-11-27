@@ -180,6 +180,11 @@ graph = build_investigation_graph(checkpointer=saver, store=store)
 out = await graph.ainvoke({"task": task, "run_id": "r1"}, run_config, context=context)
 ```
 
+The snapshot is the workspace directory `TASK_SNAPSHOT_DIR` (`task`). A caller that changes the
+snapshot's files before a phase reads them (publishing a scaffold of its own, as drafting does)
+calls `await reseal_task_snapshot(workspace)` so that the snapshot's recorded digest is its current
+one.
+
 **Investigation on an existing scaffold** is that code: the task already has its evaluator and a
 baseline program, so drafting has nothing to do. **A paper written into an existing LaTeX paper**
 runs the paper graph alone in `edit` mode with the previous paper, your own results as
@@ -315,6 +320,20 @@ structured roles (the ideator's answer, for one). Pass your own pydantic models 
 extra arguments of `serde_allowlist(...)`. A newer
 release refuses a checkpoint written by an incompatible older one (`IncompatibleCheckpoint`) rather
 than misreading it.
+
+**Names for implementers.** What an evaluator, a slot, a toolchain or a workspace of your own
+receives, returns or raises is public:
+
+| Import from | Names | For |
+|---|---|---|
+| `langgraph_agentic_scientist` | `TaskRef`, `ProgramRef`, `BestManifest`, `TaskContract`, `load_task_contract`, `TaskContractError` | The task, a program and the incumbent as the graphs pass them; a task's contract read and verified from `<task>/task_contract.json` |
+| `langgraph_agentic_scientist` | `FinalEvaluationError`, `ProgramSpecError` | A sealed final evaluation that could not run or cannot be trusted (`FinalEvaluationAlreadyStarted` is one), and a `program_spec.toml` that is missing or invalid |
+| `langgraph_agentic_scientist` | `DRAW_INPUTS_SLOT`, `DrawInputsInput`, `DrawInputsOutput` | The slot `final_evaluation.draw_inputs` and its input (`run_id`, `task`, `frozen`) and output (`sealed_inputs`) |
+| `langgraph_agentic_scientist` | `TASK_SNAPSHOT_DIR`, `reseal_task_snapshot` | The run-local task snapshot (`task`) and the call that records its digest again after you changed it |
+| `langgraph_agentic_scientist` | `CompileResult`, `ReferenceQuery`, `ReferenceRecord`, `GroundingSource` | What `PaperToolchain.compile` returns, what a `ReferenceRetriever` takes and returns, and one grounding entry of `PaperData` |
+| `langgraph_agentic_scientist.evaluation` | `campaign_baseline_id`, `id_to_path` | The id of a campaign's baseline evaluation, and the directory under which `LocalCommandEvaluator` records an evaluation id |
+| `langgraph_agentic_scientist.final_evaluation` | `task_digest`, `evaluator_digest` | The digests that the freeze records (`FreezeRecord.task_tree_sha256`, `evaluator_sha256`), for a final evaluator that checks them |
+| `langgraph_agentic_scientist.workspace` | `AGENT_ARTIFACTS_DIR`, `AGENT_ARTIFACTS_ROUTE`, `WorkspacePathError` | Where `LocalWorkspace` keeps Deep Agents' own files (`.agent_artifacts`, routed at `/.agent_artifacts/`); the error for a path that escapes a workspace |
 
 ## Served models
 

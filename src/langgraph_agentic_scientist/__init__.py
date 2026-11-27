@@ -30,10 +30,20 @@ from .context import (
     ScientistContext,
     StepHook,
 )
-from .core.errors import ConfigurationMismatch, IncompatibleCheckpoint
+from .core.contract import TaskContract, load_task_contract
+from .core.errors import (
+    ConfigurationMismatch,
+    FinalEvaluationError,
+    IncompatibleCheckpoint,
+    ProgramSpecError,
+    TaskContractError,
+)
 from .core.interfaces import (
+    CompileResult,
     ConceptFigureRenderer,
     PaperToolchain,
+    ReferenceQuery,
+    ReferenceRecord,
     ReferenceRetriever,
     RubricVerifier,
     TaskGate,
@@ -45,6 +55,7 @@ from .core.results import (
     DownstreamSelection,
     DraftingResult,
     EditOptions,
+    GroundingSource,
     IdeaRecord,
     InvestigationResult,
     PaperData,
@@ -57,6 +68,7 @@ from .core.results import (
     VariantSpec,
     VariantsResult,
 )
+from .core.state import BestManifest, ProgramRef, TaskRef
 from .drafting import LocalTaskGate, build_task_design_graph, build_task_drafting_graph
 from .evaluation import (
     DeferredEvaluator,
@@ -73,7 +85,12 @@ from .evaluation import (
     LocalFinalEvaluator,
     SealedInputs,
 )
-from .final_evaluation import build_final_evaluation_graph
+from .final_evaluation import (
+    DRAW_INPUTS_SLOT,
+    DrawInputsInput,
+    DrawInputsOutput,
+    build_final_evaluation_graph,
+)
 from .investigation import (
     HarnessRubricVerifier,
     build_attempt_graph,
@@ -91,6 +108,7 @@ from .paper import (
     build_references_graph,
 )
 from .pipeline import (
+    TASK_SNAPSHOT_DIR,
     PipelineConfigurationError,
     PipelineInput,
     PipelineOutput,
@@ -98,6 +116,7 @@ from .pipeline import (
     build_pipeline_graph,
     load_task_ref,
     prepare_task_snapshot,
+    reseal_task_snapshot,
 )
 from .posthoc import build_posthoc_graph
 from .prompts import PromptRegistry
@@ -108,12 +127,16 @@ from .variants import build_variants_graph
 from .workspace import CommandResult, LocalWorkspace, SnapshotRef, Workspace, WorkspaceBase
 
 __all__ = [
+    "DRAW_INPUTS_SLOT",
+    "TASK_SNAPSHOT_DIR",
     "AIReview",
     "AnalysisResult",
     "AttemptRecord",
     "AutoApprovePolicy",
     "AutoillustrateRenderer",
+    "BestManifest",
     "CommandResult",
+    "CompileResult",
     "ConceptFigureRenderer",
     "ConfigurationMismatch",
     "DeferredEvaluator",
@@ -121,6 +144,8 @@ __all__ = [
     "DownstreamSelection",
     "DraftingConfig",
     "DraftingResult",
+    "DrawInputsInput",
+    "DrawInputsOutput",
     "EditOptions",
     "EvaluationEvidence",
     "EvaluationRequest",
@@ -128,10 +153,12 @@ __all__ = [
     "Evaluator",
     "FinalEvaluationAlreadyStarted",
     "FinalEvaluationConfig",
+    "FinalEvaluationError",
     "FinalEvaluationRequest",
     "FinalEvaluationResult",
     "FinalEvaluator",
     "GraphOverrides",
+    "GroundingSource",
     "HarnessRubricVerifier",
     "Hooks",
     "HumanPolicy",
@@ -155,7 +182,11 @@ __all__ = [
     "PipelineState",
     "PosthocConfig",
     "PosthocResult",
+    "ProgramRef",
+    "ProgramSpecError",
     "PromptRegistry",
+    "ReferenceQuery",
+    "ReferenceRecord",
     "ReferenceRetriever",
     "ReviewConfig",
     "ReviewResult",
@@ -168,7 +199,10 @@ __all__ = [
     "SemanticScholarRetriever",
     "SnapshotRef",
     "StepHook",
+    "TaskContract",
+    "TaskContractError",
     "TaskGate",
+    "TaskRef",
     "ValidationReport",
     "VariantResult",
     "VariantSpec",
@@ -192,7 +226,9 @@ __all__ = [
     "build_task_design_graph",
     "build_task_drafting_graph",
     "build_variants_graph",
+    "load_task_contract",
     "load_task_ref",
     "prepare_task_snapshot",
+    "reseal_task_snapshot",
     "serde_allowlist",
 ]

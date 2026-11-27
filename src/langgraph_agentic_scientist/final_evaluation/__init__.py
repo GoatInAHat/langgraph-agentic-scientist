@@ -3,8 +3,10 @@
 from .graph import DRAW_INPUTS_SLOT, build_final_evaluation_graph
 from .manifest import (
     Incumbent,
+    evaluator_digest,
     freeze_incumbent,
     resolve_incumbent,
+    task_digest,
     verify_final_result,
 )
 from .models import (
@@ -24,7 +26,9 @@ __all__ = [
     "FinalEvaluationState",
     "Incumbent",
     "build_final_evaluation_graph",
+    "evaluator_digest",
     "freeze_incumbent",
     "resolve_incumbent",
+    "task_digest",
     "verify_final_result",
 ]

@@ -62,7 +62,10 @@ def test_exported_values() -> None:
 
     assert DRAW_INPUTS_SLOT == "final_evaluation.draw_inputs"
     assert TASK_SNAPSHOT_DIR == "task"
-    assert AGENT_ARTIFACTS_ROUTE == f"/{AGENT_ARTIFACTS_DIR}/"
+    assert (AGENT_ARTIFACTS_DIR, AGENT_ARTIFACTS_ROUTE) == (
+        ".agent_artifacts",
+        "/.agent_artifacts/",
+    )
 
 
 @pytest.mark.parametrize(

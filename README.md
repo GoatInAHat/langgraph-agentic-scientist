@@ -245,7 +245,7 @@ to be forked.
 
 | Extension point | What it is for |
 |---|---|
-| `Workspace` (`LocalWorkspace`, `WorkspaceBase`) | Where files live and commands run. Substitute a git worktree, a container or a remote sandbox; agents get a Deep Agents backend from `agent_backend`. Subclass `WorkspaceBase` to implement only the core (`read_bytes`, `write_bytes`, `stat`, `list_tree`, `remove`, `run`, `agent_backend`); it derives `exists`, `digest`, `copy_tree`, `snapshot` and `restore`. |
+| `Workspace` (`LocalWorkspace`, `WorkspaceBase`) | Where files live and commands run. Substitute a git worktree, a container or a remote sandbox; agents get a Deep Agents backend from `agent_backend`. Subclass `WorkspaceBase` to implement only the core (`read_bytes`, `write_bytes`, `stat`, `list_tree`, `remove`, `run`, `agent_backend`); it derives `exists`, `digest`, `copy_tree`, `snapshot` and `restore`. Subclass `LocalWorkspace` and override `shell_backend` to run only the agents' commands elsewhere. `testing.workspace_contract` tests an implementation. |
 | The incumbent of a harness-evaluated campaign | Give `incumbent` (a `BestManifest` with a validated score) in the investigation's input when you hold a validated baseline; otherwise the task's qualification receipt or one evaluation supplies it. |
 | `Evaluator`, `FinalEvaluator` | Everything the candidate must not touch. Implementations answer a repeated `evaluation_id` from their record or re-attach to the evaluation still running, so an evaluation of hours survives a crash. `DeferredEvaluator` interrupts with the request and takes the result from `Command(resume=...)`, so your own executor can run evaluations. |
 | `GraphOverrides.phases` | Replace a whole phase with your own compiled graph. |
@@ -348,6 +348,37 @@ workspace root at `/workspace` returns `/workspace/<root>`, and a shell whose to
 use the shell.
 A subclass whose shell isolates the agents from the host also overrides `isolated` to return
 true. `run`, the command of the host steps, still runs on the host unless it is overridden too.
+
+**Testing a workspace of your own.** `langgraph_agentic_scientist.testing.workspace_contract`
+holds the protocol's promises as pytest tests (they need pytest and pytest-asyncio; the module is
+imported only by your tests). Define a fixture named `contract_workspace` that returns a fresh,
+empty workspace, and subclass `WorkspaceContract`:
+
+```python
+import pytest
+from langgraph_agentic_scientist.testing.workspace_contract import WorkspaceContract
+
+class TestContainerWorkspace(WorkspaceContract):
+    @pytest.fixture
+    def contract_workspace(self, tmp_path):
+        return ContainerWorkspace(tmp_path)
+```
+
+or define the fixture in a `conftest.py` and write
+`from langgraph_agentic_scientist.testing.workspace_contract import *` in a test module, which
+brings in the ready class `TestWorkspaceContract`. The tests check reading, writing and exclusive
+writing; `stat`, `exists` and `list_tree` with and without digests; `remove`; `copy_tree` with
+ignore patterns; `digest` of a file and of a tree; `snapshot` and `restore` of a file, a tree and a
+missing path, through a stored `SnapshotRef`; the refusal of escaping paths (`WorkspacePathError`)
+by every operation; `run` (argv passed without a shell, `cwd` relative to the root, `env`, a timeout
+ending in `timed_out` and return code 124, the output bound); and the agent backends: a writable
+one shares the files at `agent_path` and its `execute` starts in the root, takes `env`, refuses a
+timeout above the maximum, ends a command and what it started on its timeout or on cancellation,
+and bounds its output, and a read-only one is a `ReadOnlyBackend` that refuses writes. Commands are
+`sh -c` scripts that name no host path, so they run unchanged in a container. A workspace that runs
+no real commands sets `runs_commands = False` on its subclass to skip those tests. Calling
+`pytest.register_assert_rewrite("langgraph_agentic_scientist.testing.workspace_contract")` in your
+`conftest.py` before the import gives detailed assertion messages.
 
 **Names for implementers.** What an evaluator, a slot, a toolchain or a workspace of your own
 receives, returns or raises is public:

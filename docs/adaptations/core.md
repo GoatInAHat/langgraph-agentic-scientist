@@ -57,8 +57,9 @@ above 7200 s. Deep Agents' `FilesystemMiddleware` refuses timeouts above 3600 s 
 agent factory replaces it with one whose maximum is the configured 7200 s. `LocalWorkspace`'s shell
 is Deep Agents' `LocalShellBackend`, unmodified, so that a command that times out, or whose session
 is cancelled by its wall clock, is killed with its whole process group; the maximum is checked by
-the composite backend around it. A command keeps at most `config.agents.max_tool_output_bytes` of
-its output.
+the composite backend around it, which also cuts any longer output to
+`config.agents.max_tool_output_bytes`, so a shell that a `LocalWorkspace` subclass supplies through
+`shell_backend` is bounded the same way.
 
 **Deep Agents' own files.** Deep Agents writes offloaded large tool results and conversation
 history to its backend. `LocalWorkspace` routes those paths (`/.agent_artifacts/...`) to

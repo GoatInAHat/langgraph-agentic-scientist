@@ -41,6 +41,10 @@ PUBLIC = {
         "AGENT_ARTIFACTS_ROUTE",
         "WorkspacePathError",
     ],
+    "langgraph_agentic_scientist.testing.workspace_contract": [
+        "TestWorkspaceContract",
+        "WorkspaceContract",
+    ],
 }
 
 README = (Path(__file__).resolve().parents[2] / "README.md").read_text(encoding="utf-8")

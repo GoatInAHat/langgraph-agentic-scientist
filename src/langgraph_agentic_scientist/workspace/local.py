@@ -21,11 +21,12 @@ import stat
 import time
 import uuid
 from collections.abc import Mapping, Sequence
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
 from deepagents.backends import CompositeBackend, FilesystemBackend, LocalShellBackend
-from deepagents.backends.protocol import BackendProtocol, ExecuteResponse
+from deepagents.backends.protocol import BackendProtocol, ExecuteResponse, SandboxBackendProtocol
 
 from ..core.errors import WorkspacePathError
 from .digest import sha256_bytes, tree_digest
@@ -77,17 +78,27 @@ class _HostPathsShellBackend(LocalShellBackend):
 
 
 class _BoundedCompositeBackend(CompositeBackend):
-    """``CompositeBackend`` that refuses a per-command timeout above a maximum.
+    """``CompositeBackend`` that refuses a per-command timeout above a maximum and bounds output.
 
-    The bound sits on the composite so that the shell stays an unmodified ``LocalShellBackend``:
+    The bounds sit on the composite so that the shell stays an unmodified ``LocalShellBackend``:
     Deep Agents gives cancellation cleanup only to a ``LocalShellBackend`` whose ``execute`` is not
     overridden, and that cleanup is what kills a command's process group when the session's wall
-    clock cancels it.
+    clock cancels it. Output beyond ``max_output_bytes`` and the truncation note is cut to its
+    first ``max_output_bytes``, so a shell that ignores the bound it was given is bounded too.
     """
 
-    def __init__(self, *args: Any, max_timeout: int, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, max_timeout: int, max_output_bytes: int, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._max_timeout = max_timeout
+        self._max_output_bytes = max_output_bytes
+
+    def _bounded(self, response: ExecuteResponse) -> ExecuteResponse:
+        note = f"\n\n... Output truncated at {self._max_output_bytes} bytes."
+        data = response.output.encode("utf-8")
+        if len(data) <= self._max_output_bytes + len(note.encode("utf-8")):
+            return response
+        head = data[: self._max_output_bytes].decode("utf-8", errors="ignore")
+        return replace(response, output=head + note, truncated=True)
 
     def _refusal(self, timeout: int | None) -> ExecuteResponse | None:
         if timeout is not None and timeout > self._max_timeout:
@@ -101,11 +112,14 @@ class _BoundedCompositeBackend(CompositeBackend):
 
     def execute(self, command: str, *, timeout: int | None = None) -> ExecuteResponse:
         """Run ``command`` unless its timeout exceeds the maximum."""
-        return self._refusal(timeout) or super().execute(command, timeout=timeout)
+        return self._refusal(timeout) or self._bounded(super().execute(command, timeout=timeout))
 
     async def aexecute(self, command: str, *, timeout: int | None = None) -> ExecuteResponse:
         """Run ``command`` unless its timeout exceeds the maximum."""
-        return self._refusal(timeout) or await super().aexecute(command, timeout=timeout)
+        refusal = self._refusal(timeout)
+        if refusal is not None:
+            return refusal
+        return self._bounded(await super().aexecute(command, timeout=timeout))
 
 
 class LocalWorkspace:
@@ -117,7 +131,9 @@ class LocalWorkspace:
             environment (upstream's agent CLIs do). When false only ``env`` is passed.
         env: Extra environment variables for agent commands and :meth:`run`.
 
-    ``execute`` runs on the host and is not a sandbox (see the module docstring).
+    ``execute`` runs on the host and is not a sandbox (see the module docstring). A subclass
+    whose agent commands run elsewhere overrides :meth:`shell_backend` (and, when that shell sees
+    the workspace at another path, :meth:`agent_path`) and keeps the files and the rest.
     """
 
     def __init__(
@@ -160,8 +176,41 @@ class LocalWorkspace:
         return str(self._path(path))
 
     def agent_path(self, root: str, *, read_only: bool = False) -> str:
-        """Return the host path of ``root``: what an agent's shell prints, and its tools take."""
+        """Return the host path of ``root``: what an agent's shell prints, and its tools take.
+
+        A subclass whose :meth:`shell_backend` sees the workspace at another path returns the
+        path at which that shell and its file tools name ``root``.
+        """
         return str(self._path(root, follow=True))
+
+    def shell_backend(
+        self,
+        root_path: Path,
+        *,
+        timeout: int,
+        max_output_bytes: int,
+        env: Mapping[str, str],
+    ) -> SandboxBackendProtocol:
+        """Return the shell and file tools of a writable agent backend rooted at ``root_path``.
+
+        ``root_path`` is the host directory of the agent's root, already created; ``timeout`` is
+        the default timeout of a command, ``max_output_bytes`` the output to keep and ``env`` the
+        workspace's ``env`` updated with the session's (``inherit_env`` is on ``self``). The
+        returned backend runs commands in that directory and kills a command, with whatever it
+        started, when it times out or its call is cancelled. :meth:`agent_backend` puts it under
+        the route of Deep Agents' own files, the refusal of a timeout above the maximum and the
+        output bound. The default runs ``LocalShellBackend`` on the host, whose file tools take
+        the host paths of ``root_path`` as well as ``/``-rooted ones.
+        """
+        return _HostPathsShellBackend(
+            root_dir=root_path,
+            virtual_mode=True,
+            workspace_root=self.root,
+            timeout=timeout,
+            max_output_bytes=max_output_bytes,
+            env=dict(env),
+            inherit_env=self.inherit_env,
+        )
 
     def agent_backend(
         self,
@@ -181,7 +230,8 @@ class LocalWorkspace:
         with its whole process group. Deep Agents' own files (offloaded
         large tool results and conversation history) are routed to
         ``.agent_artifacts/<root>/`` outside the role's root, so that the role's directory holds
-        only what the agent wrote on purpose.
+        only what the agent wrote on purpose. The shell and the file tools come from
+        :meth:`shell_backend`.
         """
         root_path = self._path(root, follow=True)
         root_path.mkdir(parents=True, exist_ok=True)
@@ -191,15 +241,11 @@ class LocalWorkspace:
                     root_dir=root_path, virtual_mode=True, workspace_root=self.root
                 )
             )
-        command_env = {**self.env, **dict(env or {})}
-        shell = _HostPathsShellBackend(
-            root_dir=root_path,
-            virtual_mode=True,
-            workspace_root=self.root,
+        shell = self.shell_backend(
+            root_path,
             timeout=execute_timeout,
             max_output_bytes=max_output_bytes,
-            env=command_env,
-            inherit_env=self.inherit_env,
+            env={**self.env, **dict(env or {})},
         )
         key = hashlib.sha256(safe_relpath(root).encode()).hexdigest()[:16]
         artifacts = self.root / AGENT_ARTIFACTS_DIR / key
@@ -211,6 +257,7 @@ class LocalWorkspace:
             },
             artifacts_root=AGENT_ARTIFACTS_ROUTE.rstrip("/"),
             max_timeout=execute_max_timeout,
+            max_output_bytes=max_output_bytes,
         )
 
     async def read_bytes(self, path: str) -> bytes:

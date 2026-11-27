@@ -321,6 +321,34 @@ extra arguments of `serde_allowlist(...)`. A newer
 release refuses a checkpoint written by an incompatible older one (`IncompatibleCheckpoint`) rather
 than misreading it.
 
+**Agent commands elsewhere, files on the host.** A workspace whose files are a host directory but
+whose agent commands run in a container or a remote sandbox subclasses `LocalWorkspace` and
+overrides one method:
+
+```python
+class ContainerWorkspace(LocalWorkspace):
+    def shell_backend(self, root_path, *, timeout, max_output_bytes, env):
+        return MyContainerShell(root_path, timeout=timeout, max_output_bytes=max_output_bytes, env=env)
+
+    def agent_path(self, root, *, read_only=False):
+        return f"/workspace/{root}"    # where the container mounts the workspace root
+```
+
+`shell_backend` returns a Deep Agents `SandboxBackendProtocol` (its `execute` and its file tools)
+rooted at the host directory `root_path`, with the default command timeout, the output to keep and
+the environment (the workspace's `env` updated with the session's). `agent_backend` keeps the rest
+around it: Deep Agents' own files routed to `.agent_artifacts/`, the refusal of a timeout above
+`execute_max_timeout`, and the output bound, which cuts any longer output to `max_output_bytes`.
+The shell must kill a command and what it started when the command times out or its call is
+cancelled. `agent_path` is the path the agents are told is their directory, so it is the path at
+which the shell's commands and its file tools see `root`: the default shell runs on the host and
+its tools take host paths, so the default is the host path; a shell in a container that mounts the
+workspace root at `/workspace` returns `/workspace/<root>`, and a shell whose tools name the root
+`/` and whose commands start in it returns `"/"`. Read-only backends read the host files and do not
+use the shell.
+A subclass whose shell isolates the agents from the host also overrides `isolated` to return
+true. `run`, the command of the host steps, still runs on the host unless it is overridden too.
+
 **Names for implementers.** What an evaluator, a slot, a toolchain or a workspace of your own
 receives, returns or raises is public:
 
@@ -418,7 +446,8 @@ remains, as upstream does.
 `LocalWorkspace` runs agent commands on the host with the permissions of the calling process; it is
 not a sandbox, and the agents are given full tool permissions in their directories, as upstream's are
 (upstream keeps them in containers). Run untrusted tasks only in a workspace you isolate: implement
-`Workspace` over a container or a remote sandbox, or give your own `AgentFactory`.
+`Workspace` over a container or a remote sandbox, run the agents' commands there with a
+`LocalWorkspace` subclass that overrides `shell_backend`, or give your own `AgentFactory`.
 
 A task with a contract has an evaluator that the candidate must not reach, and the package refuses
 to search or finally evaluate such a task with an `Evaluator` whose `isolated` property is false,
